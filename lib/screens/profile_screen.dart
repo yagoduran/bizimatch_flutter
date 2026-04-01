@@ -251,6 +251,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         return ElevatedButton(
                           onPressed: canSave
                               ? () async {
+                                  final confirmar = await showDialog<bool>(
+                                    context: context,
+                                    builder: (dialogContext) {
+                                      return AlertDialog(
+                                        title: const Text('Confirmar cambios'),
+                                        content: const Text(
+                                          '¿Estás seguro de que quieres actualizar tu perfil?',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(
+                                              dialogContext,
+                                              false,
+                                            ),
+                                            child: const Text('Cancelar'),
+                                          ),
+                                          ElevatedButton(
+                                            onPressed: () => Navigator.pop(
+                                              dialogContext,
+                                              true,
+                                            ),
+                                            child: const Text('Aceptar'),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                  if (confirmar != true) {
+                                    return;
+                                  }
+
                                   int? precio;
                                   if (tienePiso) {
                                     precio = int.tryParse(

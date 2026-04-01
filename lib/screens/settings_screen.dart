@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../app_theme.dart';
 import 'login_screen.dart';
@@ -24,6 +25,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  Future<void> _onNuevosMensajesChanged(bool value) async {
+    HapticFeedback.selectionClick();
+    if (!value) {
+      setState(() => _notificacionesMensajes = false);
+      return;
+    }
+
+    var status = await Permission.notification.status;
+    if (status.isDenied) {
+      status = await Permission.notification.request();
+    }
+
+    if (status.isGranted || status.isLimited || status.isProvisional) {
+      setState(() => _notificacionesMensajes = true);
+      return;
+    }
+
+    setState(() => _notificacionesMensajes = false);
+    _showInfo(
+      'Necesitas permitir notificaciones para activar "Nuevos mensajes".',
+    );
+
+    if (status.isPermanentlyDenied || status.isRestricted) {
+      await openAppSettings();
+    }
+  }
 
   @override
   void initState() {
@@ -283,10 +311,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   value: _notificacionesMensajes,
                   title: const Text('Nuevos mensajes'),
                   subtitle: const Text('Alertas cuando recibas mensajes.'),
-                  onChanged: (value) {
-                    HapticFeedback.selectionClick();
-                    setState(() => _notificacionesMensajes = value);
-                  },
+                  onChanged: _onNuevosMensajesChanged,
                 ),
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
@@ -307,38 +332,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: 'Privacidad',
             child: Column(
               children: [
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(
-                    Icons.visibility_outlined,
-                    color: AppTheme.textSecondary,
-                  ),
-                  title: const Text('Quién puede ver mi perfil'),
-                  subtitle: Text(_quienVePerfil),
-                  trailing: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _quienVePerfil,
-                      borderRadius: BorderRadius.circular(14),
-                      items: const [
-                        DropdownMenuItem(value: 'Todos', child: Text('Todos')),
-                        DropdownMenuItem(
-                          value: 'Solo verificados',
-                          child: Text('Solo verificados'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Solo mis contactos',
-                          child: Text('Solo mis contactos'),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        if (value == null) {
-                          return;
-                        }
-                        HapticFeedback.selectionClick();
-                        setState(() => _quienVePerfil = value);
-                      },
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(top: 12),
+                      child: Icon(
+                        Icons.visibility_outlined,
+                        color: AppTheme.textSecondary,
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _quienVePerfil,
+                        decoration: const InputDecoration(
+                          labelText: 'Quién puede ver mi perfil',
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'Todos',
+                            child: Text('Todos'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'Solo verificados',
+                            child: Text('Solo verificados'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'Solo mis contactos',
+                            child: Text('Solo mis contactos'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value == null) {
+                            return;
+                          }
+                          HapticFeedback.selectionClick();
+                          setState(() => _quienVePerfil = value);
+                        },
+                      ),
+                    ),
+                  ],
                 ),
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
