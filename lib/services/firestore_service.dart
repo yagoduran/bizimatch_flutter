@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:math' as math;
 
 import '../models/user_profile.dart';
 
@@ -16,6 +17,9 @@ class FirestoreService {
 
   CollectionReference<Map<String, dynamic>> get _chats =>
       _firestore.collection('chats');
+
+  CollectionReference<Map<String, dynamic>> get _interacciones =>
+      _firestore.collection('interacciones');
 
   Future<void> saveUserProfile(UserProfile profile) async {
     await _users.doc(profile.uid).set(profile.toMap(), SetOptions(merge: true));
@@ -36,9 +40,18 @@ class FirestoreService {
 
   Stream<List<UserProfile>> discoverProfiles() {
     final currentUid = _auth.currentUser?.uid;
-    return _users.snapshots().map((snapshot) {
+    if (currentUid == null) {
+      return const Stream<List<UserProfile>>.empty();
+    }
+
+    return _users.snapshots().asyncMap((snapshot) async {
+      // Obtener IDs de usuarios ya interactuados
+      final interaccionados = await obtenerInteraccionados();
+
       return snapshot.docs
-          .where((doc) => doc.id != currentUid)
+          .where(
+            (doc) => doc.id != currentUid && !interaccionados.contains(doc.id),
+          )
           .map((doc) => UserProfile.fromMap(doc.data()))
           .toList(growable: false);
     });
@@ -138,6 +151,248 @@ class FirestoreService {
       return null;
     }
     return UserProfile.fromMap(doc.data()!);
+  }
+
+  /// Guardar un swipe (like o dislike) en la colección de interacciones
+  Future<void> guardarSwipe({
+    required String toUid,
+    required String tipo, // 'like' o 'dislike'
+  }) async {
+    final myUid = _auth.currentUser?.uid;
+    if (myUid == null) return;
+
+    final interaccionId =
+        '${myUid}_${toUid}_${tipo}_${DateTime.now().millisecondsSinceEpoch}';
+    await _interacciones.doc(interaccionId).set({
+      'fromId': myUid,
+      'toId': toUid,
+      'tipo': tipo,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+
+    // Si es un like, verificar si hay match
+    if (tipo == 'like') {
+      await _buscarYCrearMatch(myUid, toUid);
+    }
+  }
+
+  /// Buscar si el otro usuario ya me dio like (match mutuo)
+  Future<void> _buscarYCrearMatch(String myUid, String otroUid) async {
+    final querySnapshot = await _interacciones
+        .where('fromId', isEqualTo: otroUid)
+        .where('toId', isEqualTo: myUid)
+        .where('tipo', isEqualTo: 'like')
+        .limit(1)
+        .get();
+
+    if (querySnapshot.docs.isNotEmpty) {
+      // Hay like mutuo - crear chat automáticamente
+      await ensureThreadWith(otroUid);
+    }
+  }
+
+  /// Obtener IDs de usuarios ya interactuados
+  Future<Set<String>> obtenerInteraccionados() async {
+    final myUid = _auth.currentUser?.uid;
+    if (myUid == null) return {};
+
+    final snapshot = await _interacciones
+        .where('fromId', isEqualTo: myUid)
+        .get();
+
+    return snapshot.docs.map((doc) => (doc['toId'] ?? '') as String).toSet();
+  }
+
+  /// Obtener likes no leídos (personas que me dieron like)
+  Stream<List<String>> obtenerLikesNoLeidos() {
+    final myUid = _auth.currentUser?.uid;
+    if (myUid == null) return const Stream<List<String>>.empty();
+
+    return _interacciones
+        .where('toId', isEqualTo: myUid)
+        .where('tipo', isEqualTo: 'like')
+        .snapshots()
+        .asyncMap((snapshot) async {
+          final fromIds = <String>{};
+          for (final doc in snapshot.docs) {
+            final fromId = (doc['fromId'] ?? '') as String;
+            // Verificar que yo aún no haya interactuado con esta persona
+            final miInteraccion = await _interacciones
+                .where('fromId', isEqualTo: myUid)
+                .where('toId', isEqualTo: fromId)
+                .limit(1)
+                .get();
+            if (miInteraccion.docs.isEmpty) {
+              fromIds.add(fromId);
+            }
+          }
+          return fromIds.toList();
+        });
+  }
+
+  /// Poblar España con 50 usuarios realistas
+  Future<void> poblarEspana() async {
+    var batch = _firestore.batch();
+    final usuarios = _generarUsuarios50();
+
+    int count = 0;
+    for (final usuario in usuarios) {
+      final docRef = _users.doc();
+      batch.set(docRef, usuario);
+      count++;
+      if (count % 500 == 0) {
+        await batch.commit();
+        batch = _firestore.batch();
+      }
+    }
+    await batch.commit();
+  }
+
+  /// Generar 50 usuarios con datos realistas
+  List<Map<String, dynamic>> _generarUsuarios50() {
+    final nombresMasculinos = [
+      'Carlos',
+      'Miguel',
+      'Luis',
+      'José',
+      'Antonio',
+      'Juan',
+      'Javier',
+      'Sergio',
+      'Pablo',
+      'Diego',
+      'Francisco',
+      'Andrés',
+      'Ángel',
+      'Roberto',
+      'Ramón',
+    ];
+    final nombresFemeninos = [
+      'María',
+      'Ana',
+      'Isabel',
+      'Carmen',
+      'Francisca',
+      'Teresa',
+      'Sofía',
+      'Laura',
+      'Gabriela',
+      'Martina',
+      'Catalina',
+      'Valentina',
+      'Lucía',
+      'Marta',
+      'Patricia',
+    ];
+    final apellidos = [
+      'García',
+      'López',
+      'González',
+      'Hernández',
+      'Pérez',
+      'Martínez',
+      'Sánchez',
+      'Díaz',
+      'Ruiz',
+      'Moreno',
+      'Álvarez',
+      'Jiménez',
+      'Navarro',
+      'Fernández',
+      'Rodríguez',
+    ];
+
+    const ciudades = ['Madrid', 'Barcelona', 'Valencia', 'Sevilla', 'Bilbao'];
+    const estudios = [
+      'Ingeniería',
+      'Medicina',
+      'Derecho',
+      'Administración',
+      'Turismo',
+      'Marketing',
+    ];
+    const bios = [
+      'Busco compañeros relajados para compartir piso',
+      'Me encanta pasar tiempo con amigos',
+      'Yoga y café por las mañanas',
+      'Músico en mis ratos libres',
+      'Viajes y aventuras',
+      'Cinéfila de corazón',
+      'Cocinero aficionado',
+      'Amante del running',
+      'Fotógrafo amateur',
+      'Emprendedor en desarrollo',
+    ];
+
+    const fotosPortrait = [
+      'https://source.unsplash.com/featured/?man,portrait,20-30',
+      'https://source.unsplash.com/featured/?woman,portrait,20-30',
+      'https://source.unsplash.com/featured/?person,face',
+      'https://source.unsplash.com/featured/?student,portrait',
+      'https://source.unsplash.com/featured/?young,face',
+    ];
+
+    const fotosRoom = [
+      'https://source.unsplash.com/featured/?apartment,room',
+      'https://source.unsplash.com/featured/?bedroom,modern',
+      'https://source.unsplash.com/featured/?room,student',
+      'https://source.unsplash.com/featured/?flat,living',
+      'https://source.unsplash.com/featured/?apartment,bedroom',
+    ];
+
+    final random = math.Random();
+    final usuarios = <Map<String, dynamic>>[];
+
+    for (int i = 0; i < 50; i++) {
+      final esHombre = random.nextBool();
+      final nombre = esHombre
+          ? nombresMasculinos[random.nextInt(nombresMasculinos.length)]
+          : nombresFemeninos[random.nextInt(nombresFemeninos.length)];
+      final apellido = apellidos[random.nextInt(apellidos.length)];
+      final genero = esHombre ? 'Hombre' : 'Mujer';
+      final edad = 20 + random.nextInt(25);
+      final ciudad = ciudades[random.nextInt(ciudades.length)];
+      final estudio = estudios[random.nextInt(estudios.length)];
+      final bio = bios[random.nextInt(bios.length)];
+      final horario = ['Manana', 'Tarde', 'Noche'][random.nextInt(3)];
+      final fumador = random.nextBool();
+      final mascotas = random.nextBool();
+
+      // 40% tiene piso, 60% si no tiene
+      final tienePiso = random.nextDouble() < 0.4;
+      final precio = tienePiso ? 350 + random.nextInt(300) : null;
+
+      usuarios.add({
+        'nombre': nombre,
+        'apellido': apellido,
+        'email': '$nombre.$apellido$i@bizimatch.local',
+        'edad': edad,
+        'genero': genero,
+        'origen': ciudad,
+        'lugarDeseado': ciudades[random.nextInt(ciudades.length)],
+        'fotoPerfil': fotosPortrait[random.nextInt(fotosPortrait.length)],
+        'fotosPiso': tienePiso
+            ? [fotosRoom[random.nextInt(fotosRoom.length)]]
+            : [],
+        'estudios': estudio,
+        'bio': bio,
+        'intereses': [
+          estudios[random.nextInt(estudios.length)],
+          bios[random.nextInt(bios.length)],
+        ],
+        'habitos': [if (fumador) 'Fumar', if (mascotas) 'Mascotas', 'Limpiar'],
+        'horario': horario,
+        'fumador': fumador,
+        'mascotas': mascotas,
+        'tienePiso': tienePiso,
+        'precioAlquilerPorPersona': precio,
+        'direccionZona': '$ciudad, España',
+        'verificado': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+
+    return usuarios;
   }
 }
 

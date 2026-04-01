@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../app_theme.dart';
+import '../services/firestore_service.dart';
 import 'login_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -25,6 +26,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirestoreService _firestoreService = FirestoreService();
 
   Future<void> _onNuevosMensajesChanged(bool value) async {
     HapticFeedback.selectionClick();
@@ -478,6 +480,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ? null
                   : () {
                       HapticFeedback.mediumImpact();
+                      _poblarEspana();
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF10B981),
+              ),
+              icon: _isBusy
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                      ),
+                    )
+                  : const Text('🔥', style: TextStyle(fontSize: 20)),
+              label: const Text(
+                'POBLAR ESPAÑA (50 Vínculos)',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            height: 58,
+            child: ElevatedButton.icon(
+              onPressed: _isBusy
+                  ? null
+                  : () {
+                      HapticFeedback.mediumImpact();
                       seedDatabase();
                     },
               icon: _isBusy
@@ -755,6 +790,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     } catch (_) {
       _showInfo('No se pudo eliminar la cuenta.');
+    } finally {
+      if (mounted) {
+        setState(() => _isBusy = false);
+      }
+    }
+  }
+
+  Future<void> _poblarEspana() async {
+    if (_isBusy) {
+      return;
+    }
+
+    setState(() => _isBusy = true);
+    try {
+      await _firestoreService.poblarEspana();
+      if (mounted) {
+        _showInfo('¡España poblada con 50 Vínculos realistas!');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showInfo('Error al poblar España: $e');
+      }
     } finally {
       if (mounted) {
         setState(() => _isBusy = false);

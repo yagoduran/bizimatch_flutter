@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app_theme.dart';
+import '../services/firestore_service.dart';
 import 'discover_screen.dart';
 import 'map_screen.dart';
 import 'matches_screen.dart';
 import 'profile_screen.dart';
+import 'profile_detail_screen.dart';
 import 'settings_screen.dart';
 
 class MainScaffold extends StatefulWidget {
@@ -19,6 +21,7 @@ class _MainScaffoldState extends State<MainScaffold>
     with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
   late final TabController _tabController;
+  final FirestoreService _firestoreService = FirestoreService();
 
   final _screens = const [
     DiscoverScreen(),
@@ -40,6 +43,111 @@ class _MainScaffoldState extends State<MainScaffold>
         _currentIndex = _tabController.index;
       });
     });
+
+    // Verificar likes no leídos al iniciar
+    _verificarLikesRecibidos();
+  }
+
+  Future<void> _verificarLikesRecibidos() async {
+    try {
+      // Pequeño delay para asegurar que el widget esté montado
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (!mounted) return;
+
+      // Obtener los primeros likes no leídos
+      final likesStream = _firestoreService.obtenerLikesNoLeidos();
+      likesStream.listen((likesFromIds) {
+        if (likesFromIds.isNotEmpty && mounted) {
+          _mostrarDialogLikesRecibidos(likesFromIds.first);
+        }
+      });
+    } catch (e) {
+      debugPrint('Error verificando likes: $e');
+    }
+  }
+
+  void _mostrarDialogLikesRecibidos(String likerUid) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF10B981).withValues(alpha: 0.9),
+                const Color(0xFF0D9B6F),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.favorite_rounded, size: 64, color: Colors.white),
+              const SizedBox(height: 16),
+              const Text(
+                '¡Alguien tiene interés en ti!',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Alguien dio me gusta a tu perfil 🏠',
+                style: TextStyle(fontSize: 14, color: Colors.white70),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white24,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Después'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ProfileDetailScreen(userUid: likerUid),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: const Color(0xFF10B981),
+                      ),
+                      child: const Text(
+                        'Ver Perfil',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -98,9 +99,14 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           })
           ..addStatusListener((status) {
             if (status == AnimationStatus.completed) {
-              if (_swipeLike && _pendingApprovedUid != null) {
-                _firestoreService.ensureThreadWith(_pendingApprovedUid!);
+              // Guardar swipe en interacciones
+              if (_pendingApprovedUid != null &&
+                  _activeIndex < _filteredProfiles.length) {
+                final toUid = _filteredProfiles[_activeIndex].uid;
+                final tipo = _swipeLike ? 'like' : 'dislike';
+                _guardarSwipeYDetectarMatch(toUid, tipo);
               }
+
               _swipeOutController.reset();
               _dragOffset = Offset.zero;
               _didThresholdHaptic = false;
@@ -122,6 +128,101 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               setState(() => _dragOffset = _snapBackAnimation!.value);
             }
           });
+  }
+
+  Future<void> _guardarSwipeYDetectarMatch(String toUid, String tipo) async {
+    try {
+      await _firestoreService.guardarSwipe(toUid: toUid, tipo: tipo);
+
+      // Si es like, verificar si hay match
+      if (tipo == 'like' && mounted) {
+        // Pequeño delay para asegurar que Firestore ha guardado el documento
+        await Future.delayed(const Duration(milliseconds: 300));
+
+        final myUid = _myProfile?.uid;
+        if (myUid == null) return;
+
+        // Buscar si el otro usuario ya me dio like
+        final snapshot = await FirebaseFirestore.instance
+            .collection('interacciones')
+            .where('fromId', isEqualTo: toUid)
+            .where('toId', isEqualTo: myUid)
+            .where('tipo', isEqualTo: 'like')
+            .limit(1)
+            .get();
+
+        if (snapshot.docs.isNotEmpty && mounted) {
+          _mostrarPopupMatch(toUid);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error guardando swipe: $e');
+    }
+  }
+
+  void _mostrarPopupMatch(String otroUid) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                const Color(0xFF10B981).withValues(alpha: 0.95),
+                const Color(0xFF10B981),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '¡Es un Vínculo! 🎉',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Ya podéis hablar',
+                style: TextStyle(fontSize: 16, color: Colors.white70),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFF10B981),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  '¡Genial!',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
