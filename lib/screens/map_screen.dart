@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../models/user_profile.dart';
 import 'profile_detail_screen.dart';
@@ -13,21 +16,71 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  late GoogleMapController _mapController;
+  GoogleMapController? _mapController;
   final Set<Marker> _markers = {};
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _markersSub;
+  bool _checkingPermission = true;
+  bool _hasLocationPermission = false;
 
   // Posición inicial (Madrid, España)
   static const LatLng _initialPosition = LatLng(40.4168, -3.7038);
+  static const String _mapsApiKeyFromDefine = String.fromEnvironment(
+    'GOOGLE_MAPS_API_KEY',
+    defaultValue: '',
+  );
 
   @override
   void initState() {
     super.initState();
+    _logMapsKeyStatus();
+    _checkLocationPermissionAndLoad();
+  }
+
+  void _logMapsKeyStatus() {
+    final hasDartDefineKey = _mapsApiKeyFromDefine.trim().isNotEmpty;
+    if (hasDartDefineKey) {
+      debugPrint('Google Maps API key detectada via --dart-define.');
+    } else {
+      debugPrint(
+        'Google Maps API key: no detectada via --dart-define. Se usará la clave nativa del manifiesto/plist si existe.',
+      );
+    }
+  }
+
+  Future<void> _checkLocationPermissionAndLoad() async {
+    setState(() {
+      _checkingPermission = true;
+    });
+
+    var status = await Permission.locationWhenInUse.status;
+    if (status.isDenied) {
+      status = await Permission.locationWhenInUse.request();
+    }
+
+    if (status.isPermanentlyDenied) {
+      if (mounted) {
+        setState(() {
+          _hasLocationPermission = false;
+          _checkingPermission = false;
+        });
+      }
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _hasLocationPermission = status.isGranted || status.isLimited;
+        _checkingPermission = false;
+      });
+    }
+
     _loadMarkersFromFirestore();
   }
 
   void _loadMarkersFromFirestore() {
-    _firestore
+    _markersSub?.cancel();
+    _markersSub = _firestore
         .collection('usuarios')
         .where('tienePiso', isEqualTo: true)
         .snapshots()
@@ -205,26 +258,71 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: GoogleMap(
-        onMapCreated: (controller) {
-          _mapController = controller;
-        },
-        initialCameraPosition: const CameraPosition(
-          target: _initialPosition,
-          zoom: 12,
+    if (_checkingPermission) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (!_hasLocationPermission) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.location_off_rounded, size: 42),
+                const SizedBox(height: 10),
+                const Text(
+                  'Necesitamos permiso de ubicación para mostrar el mapa.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: _checkLocationPermissionAndLoad,
+                  child: const Text('Reintentar permisos'),
+                ),
+                TextButton(
+                  onPressed: openAppSettings,
+                  child: const Text('Abrir ajustes del sistema'),
+                ),
+              ],
+            ),
+          ),
         ),
-        markers: _markers,
-        myLocationEnabled: true,
-        myLocationButtonEnabled: true,
-        zoomControlsEnabled: true,
+      );
+    }
+
+    return Scaffold(
+      body: SafeArea(
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          constraints: const BoxConstraints(minHeight: 320),
+          child: GoogleMap(
+            onMapCreated: (controller) {
+              _mapController = controller;
+              debugPrint(
+                'Google Maps cargado correctamente. Si ves tiles y controles, la API Key está detectada.',
+              );
+            },
+            initialCameraPosition: const CameraPosition(
+              target: _initialPosition,
+              zoom: 12,
+            ),
+            markers: _markers,
+            myLocationEnabled: _hasLocationPermission,
+            myLocationButtonEnabled: _hasLocationPermission,
+            zoomControlsEnabled: true,
+          ),
+        ),
       ),
     );
   }
 
   @override
   void dispose() {
-    _mapController.dispose();
+    _markersSub?.cancel();
+    _mapController?.dispose();
     super.dispose();
   }
 }
