@@ -80,7 +80,7 @@ class FirestoreService {
     return _chats
         .doc(chatId)
         .collection('mensajes')
-        .orderBy('createdAt', descending: false)
+        .orderBy('timestamp', descending: false)
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
@@ -111,9 +111,9 @@ class FirestoreService {
 
       tx.set(msgRef, {
         'id': msgRef.id,
-        'text': text,
-        'fromUid': fromUid,
-        'createdAt': FieldValue.serverTimestamp(),
+        'texto': text,
+        'emisorId': fromUid,
+        'timestamp': FieldValue.serverTimestamp(),
       });
     });
   }
@@ -171,9 +171,10 @@ class ChatMessage {
   factory ChatMessage.fromMap(Map<String, dynamic> map) {
     return ChatMessage(
       id: (map['id'] ?? '') as String,
-      text: (map['text'] ?? '') as String,
-      fromUid: (map['fromUid'] ?? '') as String,
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
+      text: ((map['texto'] ?? map['text']) ?? '') as String,
+      fromUid: ((map['emisorId'] ?? map['fromUid']) ?? '') as String,
+      createdAt: ((map['timestamp'] ?? map['createdAt']) as Timestamp?)
+          ?.toDate(),
     );
   }
 }

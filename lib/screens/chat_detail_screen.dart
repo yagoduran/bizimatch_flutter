@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../app_theme.dart';
 import '../services/firestore_service.dart';
@@ -25,6 +26,14 @@ class ChatDetailScreen extends StatefulWidget {
 class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final FirestoreService _firestore = FirestoreService();
   final TextEditingController _controller = TextEditingController();
+  late final Stream<List<ChatMessage>> _messagesStream;
+  bool _isSending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _messagesStream = _firestore.chatMessages(widget.chatId);
+  }
 
   @override
   void dispose() {
@@ -34,21 +43,30 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   Future<void> _send() async {
     final text = _controller.text.trim();
-    if (text.isEmpty) {
+    if (text.isEmpty || _isSending) {
       return;
     }
 
+    HapticFeedback.lightImpact();
+    setState(() => _isSending = true);
     _controller.clear();
-    await _firestore.sendMessage(
-      chatId: widget.chatId,
-      text: text,
-      toUid: widget.otherUid,
-    );
+    try {
+      await _firestore.sendMessage(
+        chatId: widget.chatId,
+        text: text,
+        toUid: widget.otherUid,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSending = false);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final myUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -65,7 +83,18 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   : null,
             ),
             const SizedBox(width: 10),
-            Text(widget.otherName),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(widget.otherName, style: textTheme.titleMedium),
+                Text(
+                  'Conversacion activa',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -74,7 +103,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           children: [
             Expanded(
               child: StreamBuilder<List<ChatMessage>>(
-                stream: _firestore.chatMessages(widget.chatId),
+                stream: _messagesStream,
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
@@ -96,26 +125,51 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     itemBuilder: (context, index) {
                       final message = messages[index];
                       final isMine = message.fromUid == myUid;
-                      return Align(
-                        alignment: isMine
-                            ? Alignment.centerRight
-                            : Alignment.centerLeft,
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
-                          ),
-                          constraints: const BoxConstraints(maxWidth: 290),
-                          decoration: BoxDecoration(
-                            color: isMine
-                                ? const Color(0xFFDDF5EC)
-                                : Colors.white,
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          child: Text(
-                            message.text,
-                            style: const TextStyle(color: AppTheme.textPrimary),
+                      return TweenAnimationBuilder<double>(
+                        key: ValueKey<String>(message.id),
+                        duration: AppTheme.motionChatMessage,
+                        curve: AppTheme.motionCurve,
+                        tween: Tween<double>(begin: 0, end: 1),
+                        builder: (context, value, child) {
+                          final from = isMine ? 16.0 : -16.0;
+                          return Opacity(
+                            opacity: value,
+                            child: Transform.translate(
+                              offset: Offset((1 - value) * from, 0),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: Align(
+                          alignment: isMine
+                              ? Alignment.centerRight
+                              : Alignment.centerLeft,
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            constraints: const BoxConstraints(maxWidth: 290),
+                            decoration: BoxDecoration(
+                              color: isMine
+                                  ? const Color(0xFF10B981)
+                                  : const Color(0xFFF1F3F4),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: isMine
+                                    ? const Color(0xFF0F9D74)
+                                    : const Color(0xFFE2E8E4),
+                              ),
+                            ),
+                            child: Text(
+                              message.text,
+                              style: TextStyle(
+                                color: isMine
+                                    ? Colors.white
+                                    : AppTheme.textPrimary,
+                              ),
+                            ),
                           ),
                         ),
                       );
@@ -131,6 +185,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   Expanded(
                     child: TextField(
                       controller: _controller,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => _send(),
                       decoration: const InputDecoration(
                         hintText: 'Escribe un mensaje',
                         contentPadding: EdgeInsets.symmetric(
@@ -144,15 +200,29 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   SizedBox(
                     width: 48,
                     height: 48,
-                    child: ElevatedButton(
-                      onPressed: _send,
-                      style: ElevatedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                    child: AnimatedScale(
+                      scale: _isSending ? 0.94 : 1,
+                      duration: AppTheme.motionChatMessage,
+                      curve: AppTheme.motionCurve,
+                      child: ElevatedButton(
+                        onPressed: _isSending ? null : _send,
+                        style: ElevatedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          padding: EdgeInsets.zero,
                         ),
-                        padding: EdgeInsets.zero,
+                        child: _isSending
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.send_rounded),
                       ),
-                      child: const Icon(Icons.send_rounded),
                     ),
                   ),
                 ],

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../app_theme.dart';
 import 'discover_screen.dart';
 import 'map_screen.dart';
 import 'matches_screen.dart';
@@ -51,16 +53,23 @@ class _MainScaffoldState extends State<MainScaffold>
     return Scaffold(
       body: TabBarView(
         controller: _tabController,
-        physics: const BouncingScrollPhysics(),
+        physics: _currentIndex == 0
+            ? const NeverScrollableScrollPhysics()
+            : const BouncingScrollPhysics(),
         children: _screens,
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
+          HapticFeedback.selectionClick();
           setState(() {
             _currentIndex = index;
           });
-          _tabController.animateTo(index);
+          _tabController.animateTo(
+            index,
+            duration: AppTheme.motionNavigation,
+            curve: AppTheme.motionCurveEmphasized,
+          );
         },
         items: const [
           BottomNavigationBarItem(

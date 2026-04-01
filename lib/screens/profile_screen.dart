@@ -32,12 +32,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final updated = UserProfile(
       uid: profile.uid,
+      email: profile.email,
       nombre: profile.nombre,
       fechaNacimiento: profile.fechaNacimiento,
       genero: profile.genero,
       origen: profile.origen,
+      estudios: profile.estudios,
       fumador: profile.fumador,
       mascotas: profile.mascotas,
+      tienePiso: profile.tienePiso,
+      precioAlquilerPorPersona: profile.precioAlquilerPorPersona,
       horario: profile.horario,
       bio: profile.bio,
       fotoPerfil: image.path,
@@ -49,10 +53,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _editarPerfil(UserProfile profile) async {
     final nombreCtrl = TextEditingController(text: profile.nombre);
     final origenCtrl = TextEditingController(text: profile.origen);
+    final estudiosCtrl = TextEditingController(text: profile.estudios);
     final bioCtrl = TextEditingController(text: profile.bio);
+    final precioCtrl = TextEditingController(
+      text: profile.precioAlquilerPorPersona?.toStringAsFixed(0) ?? '',
+    );
     String horario = profile.horario;
     bool fumador = profile.fumador;
     bool mascotas = profile.mascotas;
+    bool tienePiso = profile.tienePiso;
 
     await showModalBottomSheet<void>(
       context: context,
@@ -106,8 +115,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       decoration: const InputDecoration(labelText: 'Origen'),
                     ),
                     const SizedBox(height: 10),
+                    TextField(
+                      controller: estudiosCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Que estudias',
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
-                      value: horario,
+                      initialValue: horario,
                       decoration: const InputDecoration(labelText: 'Horario'),
                       items: const [
                         DropdownMenuItem(
@@ -125,18 +141,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     SwitchListTile(
                       value: fumador,
-                      activeColor: AppTheme.primary,
+                      activeThumbColor: AppTheme.primary,
                       title: const Text('Fumador/a'),
                       onChanged: (value) =>
                           setModalState(() => fumador = value),
                     ),
                     SwitchListTile(
                       value: mascotas,
-                      activeColor: AppTheme.primary,
+                      activeThumbColor: AppTheme.primary,
                       title: const Text('Mascotas'),
                       onChanged: (value) =>
                           setModalState(() => mascotas = value),
                     ),
+                    SwitchListTile(
+                      value: tienePiso,
+                      activeThumbColor: AppTheme.primary,
+                      title: const Text('Tengo piso ya'),
+                      onChanged: (value) {
+                        setModalState(() {
+                          tienePiso = value;
+                          if (!tienePiso) {
+                            precioCtrl.clear();
+                          }
+                        });
+                      },
+                    ),
+                    if (tienePiso) ...[
+                      TextField(
+                        controller: precioCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'Precio alquiler por persona (EUR/mes)',
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
                     TextField(
                       controller: bioCtrl,
                       maxLines: 3,
@@ -160,8 +201,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 14),
                     ElevatedButton(
                       onPressed: () async {
+                        int? precio;
+                        if (tienePiso) {
+                          precio = int.tryParse(
+                            precioCtrl.text.trim().replaceAll(',', '.'),
+                          );
+                          if (precio == null || precio <= 0) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Introduce un precio valido mayor que 0.',
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+                        }
+
                         final updated = UserProfile(
                           uid: profile.uid,
+                          email: profile.email,
                           nombre: nombreCtrl.text.trim().isEmpty
                               ? profile.nombre
                               : nombreCtrl.text.trim(),
@@ -170,8 +229,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           origen: origenCtrl.text.trim().isEmpty
                               ? profile.origen
                               : origenCtrl.text.trim(),
+                          estudios: estudiosCtrl.text.trim().isEmpty
+                              ? profile.estudios
+                              : estudiosCtrl.text.trim(),
                           fumador: fumador,
                           mascotas: mascotas,
+                          tienePiso: tienePiso,
+                          precioAlquilerPorPersona: precio,
                           horario: horario,
                           bio: bioCtrl.text.trim().isEmpty
                               ? profile.bio
@@ -198,7 +262,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     nombreCtrl.dispose();
     origenCtrl.dispose();
+  estudiosCtrl.dispose();
     bioCtrl.dispose();
+  precioCtrl.dispose();
   }
 
   String _generarBioIA(
@@ -229,6 +295,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     return StreamBuilder<UserProfile?>(
       stream: _firestore.myProfileStream(),
       builder: (context, snapshot) {
@@ -254,7 +321,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 const Text(
                   'Perfil',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Gestiona tu informacion y preferencias',
+                  style: textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 20),
                 Center(
@@ -297,10 +369,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Center(
                   child: Text(
                     profile.nombre,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: textTheme.titleLarge?.copyWith(fontSize: 24),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -315,8 +384,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 12),
                 _section(
                   'Habitos',
-                  'Horario: ${profile.horario}\nFumador/a: ${profile.fumador ? 'Si' : 'No'}\nMascotas: ${profile.mascotas ? 'Si' : 'No'}',
+                  'Horario: ${profile.horario}\nFumador/a: ${profile.fumador ? 'Si' : 'No'}\nMascotas: ${profile.mascotas ? 'Si' : 'No'}\nTiene piso: ${profile.tienePiso ? 'Si' : 'No'}${profile.tienePiso && profile.precioAlquilerPorPersona != null ? '\nAlquiler por persona: ${profile.precioAlquilerPorPersona!.toStringAsFixed(0)} EUR/mes' : ''}',
                 ),
+                const SizedBox(height: 12),
+                _section('Estudios', profile.estudios),
                 const SizedBox(height: 12),
                 _section('Intereses', profile.intereses.join(', ')),
                 const SizedBox(height: 24),
@@ -339,6 +410,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE8EFEB)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

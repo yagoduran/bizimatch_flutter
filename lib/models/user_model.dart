@@ -8,8 +8,11 @@ class UserModel {
   final DateTime fechaNacimiento;
   final String genero;
   final String origen;
+  final String estudios;
   final bool esFumador;
   final bool tieneMascotas;
+  final bool tienePiso;
+  final double? precioAlquilerPorPersona;
   final String horario; // Mañana, Tarde, Noche
   final String bio;
   final int afinidad; // % de afinidad calculado
@@ -22,8 +25,11 @@ class UserModel {
     required this.fechaNacimiento,
     required this.genero,
     required this.origen,
+    required this.estudios,
     required this.esFumador,
     required this.tieneMascotas,
+    required this.tienePiso,
+    this.precioAlquilerPorPersona,
     required this.horario,
     required this.bio,
     this.afinidad = 0,
@@ -33,8 +39,9 @@ class UserModel {
   int get edad {
     final ahora = DateTime.now();
     int edad = ahora.year - fechaNacimiento.year;
-    if (ahora.month < fechaNacimiento.month || 
-        (ahora.month == fechaNacimiento.month && ahora.day < fechaNacimiento.day)) {
+    if (ahora.month < fechaNacimiento.month ||
+        (ahora.month == fechaNacimiento.month &&
+            ahora.day < fechaNacimiento.day)) {
       edad--;
     }
     return edad;
@@ -50,8 +57,11 @@ class UserModel {
       'fechaNacimiento': fechaNacimiento,
       'genero': genero,
       'origen': origen,
+      'estudios': estudios,
       'esFumador': esFumador,
       'tieneMascotas': tieneMascotas,
+      'tienePiso': tienePiso,
+      'precioAlquilerPorPersona': precioAlquilerPorPersona,
       'horario': horario,
       'bio': bio,
     };
@@ -68,8 +78,12 @@ class UserModel {
       fechaNacimiento: (data['fechaNacimiento'] as Timestamp).toDate(),
       genero: data['genero'] ?? '',
       origen: data['origen'] ?? '',
+      estudios: data['estudios'] ?? '',
       esFumador: data['esFumador'] ?? false,
       tieneMascotas: data['tieneMascotas'] ?? false,
+      tienePiso: data['tienePiso'] ?? false,
+      precioAlquilerPorPersona: (data['precioAlquilerPorPersona'] as num?)
+          ?.toDouble(),
       horario: data['horario'] ?? '',
       bio: data['bio'] ?? '',
     );

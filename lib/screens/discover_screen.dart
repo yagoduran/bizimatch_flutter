@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:io';
 
@@ -20,29 +21,75 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   static const double _swipeThreshold = 140;
 
   final FirestoreService _firestoreService = FirestoreService();
+  StreamSubscription<UserProfile?>? _myProfileSub;
+  StreamSubscription<List<UserProfile>>? _discoverSub;
 
   late final AnimationController _swipeOutController;
+  late final AnimationController _snapBackController;
   Animation<Offset>? _swipeOutAnimation;
+  Animation<Offset>? _snapBackAnimation;
 
   int _activeIndex = 0;
   Offset _dragOffset = Offset.zero;
   bool _didThresholdHaptic = false;
   bool _swipeLike = false;
   String? _pendingApprovedUid;
+  bool _loading = true;
+  UserProfile? _myProfile;
+  List<UserProfile> _allProfiles = const <UserProfile>[];
+  List<UserProfile> _filteredProfiles = const <UserProfile>[];
 
   RangeValues _edadRango = const RangeValues(20, 40);
   String _filtroGenero = 'Todos';
   bool? _filtroFumador;
   bool? _filtroMascotas;
 
+  int get _activeFiltersCount {
+    int count = 0;
+    if (_edadRango.start.round() != 20 || _edadRango.end.round() != 40) {
+      count += 1;
+    }
+    if (_filtroGenero != 'Todos') {
+      count += 1;
+    }
+    if (_filtroFumador != null) {
+      count += 1;
+    }
+    if (_filtroMascotas != null) {
+      count += 1;
+    }
+    return count;
+  }
+
   @override
   void initState() {
     super.initState();
+    _myProfileSub = _firestoreService.myProfileStream().listen((profile) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _myProfile = profile;
+        _loading = false;
+      });
+    });
+    _discoverSub = _firestoreService.discoverProfiles().listen((profiles) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _allProfiles = profiles;
+        _filteredProfiles = _filtrar(_allProfiles);
+        _loading = false;
+        if (_activeIndex >= _filteredProfiles.length &&
+            _filteredProfiles.isNotEmpty) {
+          _activeIndex = 0;
+        }
+      });
+    });
+
     _swipeOutController =
-        AnimationController(
-            vsync: this,
-            duration: const Duration(milliseconds: 260),
-          )
+        AnimationController(vsync: this, duration: AppTheme.motionDiscoverSwipe)
           ..addListener(() {
             if (_swipeOutAnimation != null) {
               setState(() => _dragOffset = _swipeOutAnimation!.value);
@@ -59,14 +106,29 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               _pendingApprovedUid = null;
               setState(() {
                 _activeIndex += 1;
+                if (_activeIndex >= _filteredProfiles.length &&
+                    _filteredProfiles.isNotEmpty) {
+                  _activeIndex = 0;
+                }
               });
+            }
+          });
+
+    _snapBackController =
+        AnimationController(vsync: this, duration: AppTheme.motionDiscoverSnap)
+          ..addListener(() {
+            if (_snapBackAnimation != null) {
+              setState(() => _dragOffset = _snapBackAnimation!.value);
             }
           });
   }
 
   @override
   void dispose() {
+    _myProfileSub?.cancel();
+    _discoverSub?.cancel();
     _swipeOutController.dispose();
+    _snapBackController.dispose();
     super.dispose();
   }
 
@@ -80,17 +142,22 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         ).animate(
           CurvedAnimation(
             parent: _swipeOutController,
-            curve: Curves.easeOutCubic,
+            curve: AppTheme.motionCurveEmphasized,
           ),
         );
     _swipeOutController.forward(from: 0);
   }
 
   void _snapBack() {
-    setState(() {
-      _dragOffset = Offset.zero;
-      _didThresholdHaptic = false;
-    });
+    _snapBackAnimation = Tween<Offset>(begin: _dragOffset, end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _snapBackController,
+            curve: Curves.elasticOut,
+          ),
+        );
+    _didThresholdHaptic = false;
+    _snapBackController.forward(from: 0);
   }
 
   int _calcAfinidad(UserProfile yo, UserProfile otro) {
@@ -115,6 +182,21 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     }
     final result = (base + bonus).clamp(0, 99);
     return result;
+  }
+
+  String _unsplashPortraitByGender(String genero) {
+    final normalized = genero.trim().toLowerCase();
+    if (normalized.contains('mujer')) {
+      return 'https://source.unsplash.com/featured/?young,woman,portrait';
+    }
+    if (normalized.contains('hombre')) {
+      return 'https://source.unsplash.com/featured/?young,man,portrait';
+    }
+    return 'https://source.unsplash.com/featured/?student,portrait';
+  }
+
+  String _unsplashRoomByContext() {
+    return 'https://source.unsplash.com/featured/?student,room,apartment';
   }
 
   List<UserProfile> _filtrar(List<UserProfile> users) {
@@ -183,7 +265,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: tempGenero,
+                    initialValue: tempGenero,
                     decoration: const InputDecoration(labelText: 'Genero'),
                     items: const [
                       DropdownMenuItem(value: 'Todos', child: Text('Todos')),
@@ -255,6 +337,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                           _filtroGenero = tempGenero;
                           _filtroFumador = tempFumador;
                           _filtroMascotas = tempMascotas;
+                          _filteredProfiles = _filtrar(_allProfiles);
                           _activeIndex = 0;
                         });
                         Navigator.pop(context);
@@ -273,185 +356,217 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<UserProfile?>(
-      stream: _firestoreService.myProfileStream(),
-      builder: (context, mySnapshot) {
-        final yo = mySnapshot.data;
+    final textTheme = Theme.of(context).textTheme;
+    final yo = _myProfile;
+    final perfiles = _filteredProfiles;
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-        return StreamBuilder<List<UserProfile>>(
-          stream: _firestoreService.discoverProfiles(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            final perfiles = _filtrar(snapshot.data ?? const <UserProfile>[]);
-            if (perfiles.isEmpty || yo == null) {
-              return SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          const Text(
-                            'Descubrir',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const Spacer(),
-                          IconButton(
-                            onPressed: _abrirFiltros,
-                            icon: const Icon(
-                              Icons.tune_rounded,
-                              color: AppTheme.primary,
-                            ),
-                          ),
-                        ],
+    if (perfiles.isEmpty || yo == null) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Text('Descubrir', style: textTheme.headlineMedium),
+                  const Spacer(),
+                  FilledButton.tonalIcon(
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      _abrirFiltros();
+                    },
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
                       ),
-                      const Spacer(),
-                      const Text(
-                        'No hay perfiles que coincidan con tus filtros.',
-                      ),
-                      const Spacer(),
-                    ],
+                      backgroundColor: const Color(0x2210B981),
+                      foregroundColor: AppTheme.primary,
+                    ),
+                    icon: const Icon(Icons.tune_rounded, size: 20),
+                    label: Text(
+                      _activeFiltersCount > 0
+                          ? 'Filtros ($_activeFiltersCount)'
+                          : 'Filtros',
+                    ),
                   ),
-                ),
-              );
-            }
-
-            final clampedIndex = _activeIndex % perfiles.length;
-            final current = perfiles[clampedIndex];
-            final next = perfiles[(clampedIndex + 1) % perfiles.length];
-            final third = perfiles[(clampedIndex + 2) % perfiles.length];
-            final afinidad = _calcAfinidad(yo, current);
-
-            final dragProgress = (_dragOffset.dx.abs() / _swipeThreshold).clamp(
-              0.0,
-              1.0,
-            );
-
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        const Text(
-                          'Descubrir',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          onPressed: _abrirFiltros,
-                          icon: const Icon(
-                            Icons.tune_rounded,
-                            color: AppTheme.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Expanded(
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          _profileCard(
-                            third,
-                            _calcAfinidad(yo, third),
-                            topOffset: 26,
-                            scale: 0.9,
-                            opacity: 0.35,
-                          ),
-                          _profileCard(
-                            next,
-                            _calcAfinidad(yo, next),
-                            topOffset: 12,
-                            scale: 0.95,
-                            opacity: 0.56,
-                          ),
-                          GestureDetector(
-                            onPanStart: (_) => HapticFeedback.lightImpact(),
-                            onPanUpdate: (details) {
-                              setState(() => _dragOffset += details.delta);
-                              final crossed =
-                                  _dragOffset.dx.abs() >= _swipeThreshold;
-                              if (crossed && !_didThresholdHaptic) {
-                                HapticFeedback.mediumImpact();
-                                _didThresholdHaptic = true;
-                              }
-                            },
-                            onPanEnd: (details) {
-                              final v = details.velocity.pixelsPerSecond.dx;
-                              if (_dragOffset.dx > _swipeThreshold || v > 800) {
-                                _pendingApprovedUid = current.uid;
-                                _animateOut(true);
-                              } else if (_dragOffset.dx < -_swipeThreshold ||
-                                  v < -800) {
-                                _pendingApprovedUid = null;
-                                _animateOut(false);
-                              } else {
-                                _snapBack();
-                              }
-                            },
-                            child: Transform.translate(
-                              offset: _dragOffset,
-                              child: Transform.rotate(
-                                angle: (_dragOffset.dx / 340) * (math.pi / 14),
-                                child: _profileCard(
-                                  current,
-                                  afinidad,
-                                  topOffset: 0,
-                                  scale: 1,
-                                  opacity: 1,
-                                  showApprove: _dragOffset.dx > 8,
-                                  showReject: _dragOffset.dx < -8,
-                                  overlayOpacity: dragProgress,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _actionButton(
-                          icon: Icons.close_rounded,
-                          color: const Color(0xFFEA5A5A),
-                          onTap: () {
-                            _pendingApprovedUid = null;
-                            _animateOut(false);
-                          },
-                        ),
-                        const SizedBox(width: 26),
-                        _actionButton(
-                          icon: _swipeLike
-                              ? Icons.home_rounded
-                              : Icons.check_rounded,
-                          color: AppTheme.primary,
-                          onTap: () {
-                            _pendingApprovedUid = current.uid;
-                            _animateOut(true);
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
+                ],
+              ),
+              const SizedBox(height: 2),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Perfiles recomendados segun tu afinidad',
+                  style: textTheme.bodyMedium,
                 ),
               ),
-            );
-          },
-        );
-      },
+              const Spacer(),
+              const Text('No hay perfiles que coincidan con tus filtros.'),
+              const Spacer(),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final clampedIndex = _activeIndex % perfiles.length;
+    final current = perfiles[clampedIndex];
+    final next = perfiles[(clampedIndex + 1) % perfiles.length];
+    final third = perfiles[(clampedIndex + 2) % perfiles.length];
+    final afinidad = _calcAfinidad(yo, current);
+
+    final dragProgress = (_dragOffset.dx.abs() / _swipeThreshold).clamp(
+      0.0,
+      1.0,
+    );
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Text('Descubrir', style: textTheme.headlineMedium),
+                const Spacer(),
+                FilledButton.tonalIcon(
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    _abrirFiltros();
+                  },
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    backgroundColor: const Color(0x2210B981),
+                    foregroundColor: AppTheme.primary,
+                  ),
+                  icon: const Icon(Icons.tune_rounded, size: 20),
+                  label: Text(
+                    _activeFiltersCount > 0
+                        ? 'Filtros ($_activeFiltersCount)'
+                        : 'Filtros',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Perfiles recomendados segun tu afinidad',
+                style: textTheme.bodyMedium,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  _profileCard(
+                    third,
+                    _calcAfinidad(yo, third),
+                    topOffset: 26,
+                    scale: 0.9,
+                    opacity: 0.35,
+                  ),
+                  _profileCard(
+                    next,
+                    _calcAfinidad(yo, next),
+                    topOffset: 12,
+                    scale: 0.95,
+                    opacity: 0.56,
+                  ),
+                  GestureDetector(
+                    onPanStart: (_) {
+                      _snapBackController.stop();
+                      HapticFeedback.lightImpact();
+                    },
+                    onPanUpdate: (details) {
+                      setState(() => _dragOffset += details.delta);
+                      final crossed = _dragOffset.dx.abs() >= _swipeThreshold;
+                      if (crossed && !_didThresholdHaptic) {
+                        HapticFeedback.mediumImpact();
+                        _didThresholdHaptic = true;
+                      }
+                    },
+                    onPanEnd: (details) {
+                      final v = details.velocity.pixelsPerSecond.dx;
+                      if (_dragOffset.dx > _swipeThreshold || v > 800) {
+                        _pendingApprovedUid = current.uid;
+                        if (afinidad >= 85) {
+                          HapticFeedback.heavyImpact();
+                        } else {
+                          HapticFeedback.lightImpact();
+                        }
+                        _animateOut(true);
+                      } else if (_dragOffset.dx < -_swipeThreshold ||
+                          v < -800) {
+                        _pendingApprovedUid = null;
+                        HapticFeedback.selectionClick();
+                        _animateOut(false);
+                      } else {
+                        _snapBack();
+                      }
+                    },
+                    child: Transform.translate(
+                      offset: _dragOffset,
+                      child: Transform.rotate(
+                        angle: (_dragOffset.dx / 340) * (math.pi / 14),
+                        child: _profileCard(
+                          current,
+                          afinidad,
+                          topOffset: 0,
+                          scale: 1,
+                          opacity: 1,
+                          showApprove: _dragOffset.dx > 8,
+                          showReject: _dragOffset.dx < -8,
+                          overlayOpacity: dragProgress,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _actionButton(
+                  icon: Icons.close_rounded,
+                  color: const Color(0xFFEA5A5A),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    _pendingApprovedUid = null;
+                    _animateOut(false);
+                  },
+                ),
+                const SizedBox(width: 26),
+                _actionButton(
+                  icon: _swipeLike
+                      ? Icons.home_work_rounded
+                      : Icons.check_rounded,
+                  color: AppTheme.primary,
+                  onTap: () {
+                    if (afinidad >= 85) {
+                      HapticFeedback.heavyImpact();
+                    } else {
+                      HapticFeedback.lightImpact();
+                    }
+                    _pendingApprovedUid = current.uid;
+                    _animateOut(true);
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -470,6 +585,13 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           color: Colors.white,
           borderRadius: BorderRadius.circular(100),
           border: Border.all(color: color.withValues(alpha: 0.4), width: 1.4),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x140E1E18),
+              blurRadius: 18,
+              offset: Offset(0, 8),
+            ),
+          ],
         ),
         child: Icon(icon, color: color, size: 34),
       ),
@@ -486,6 +608,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     bool showReject = false,
     double overlayOpacity = 0,
   }) {
+    final fallbackImage = user.tienePiso
+        ? _unsplashRoomByContext()
+        : _unsplashPortraitByGender(user.genero);
+
     final image = user.fotoPerfil.startsWith('/')
         ? Image.file(
             File(user.fotoPerfil),
@@ -494,17 +620,15 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                 Container(color: const Color(0xFFE8EFEA)),
           )
         : Image.network(
-            user.fotoPerfil.isEmpty
-                ? 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=700&q=80'
-                : user.fotoPerfil,
+            user.fotoPerfil.isEmpty ? fallbackImage : user.fotoPerfil,
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) =>
-                Container(color: const Color(0xFFE8EFEA)),
+                Image.network(fallbackImage, fit: BoxFit.cover),
           );
 
     return AnimatedPositioned(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOut,
+      duration: AppTheme.motionFast,
+      curve: AppTheme.motionCurve,
       top: topOffset,
       left: 0,
       right: 0,
@@ -566,6 +690,27 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                         style: const TextStyle(color: Colors.white70),
                       ),
                       const SizedBox(height: 10),
+                      if (user.tienePiso &&
+                          user.precioAlquilerPorPersona != null) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Text(
+                            '¡Tiene piso! - ${user.precioAlquilerPorPersona!.round()}€/mes',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,

@@ -23,35 +23,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final FirestoreService _firestoreService = FirestoreService();
 
   final _nombreCtrl = TextEditingController();
+  final _estudiosCtrl = TextEditingController();
   final _origenCtrl = TextEditingController();
-  final _bioCtrl = TextEditingController();
+  final _precioAlquilerCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _repeatPasswordCtrl = TextEditingController();
 
   DateTime? _fechaNacimiento;
   String _genero = 'Mujer';
-  String _horario = 'Manana';
+  String _horario = 'Mañana';
   bool _fumador = false;
   bool _mascotas = false;
+  bool _tienePiso = false;
   bool _loading = false;
   XFile? _pickedFile;
-
-  final List<String> _interesesDisponibles = const [
-    'Limpieza',
-    'Cocina',
-    'Trabajo remoto',
-    'Vida tranquila',
-    'Deporte',
-    'Estudio',
-  ];
-  final Set<String> _interesesSeleccionados = <String>{};
 
   @override
   void dispose() {
     _nombreCtrl.dispose();
+    _estudiosCtrl.dispose();
     _origenCtrl.dispose();
-    _bioCtrl.dispose();
+    _precioAlquilerCtrl.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     _repeatPasswordCtrl.dispose();
@@ -99,11 +92,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _showError('Selecciona tu fecha de nacimiento.');
       return;
     }
-    if (_interesesSeleccionados.isEmpty) {
-      _showError('Selecciona al menos un interes.');
-      return;
-    }
-
     setState(() => _loading = true);
     try {
       final credential = await _authService.register(
@@ -117,12 +105,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
         fechaNacimiento: _fechaNacimiento!,
         genero: _genero,
         origen: _origenCtrl.text.trim(),
+        estudios: _estudiosCtrl.text.trim(),
         fumador: _fumador,
         mascotas: _mascotas,
+        tienePiso: _tienePiso,
+        precioAlquilerPorPersona: _tienePiso
+            ? int.tryParse(_precioAlquilerCtrl.text.trim().replaceAll(',', '.'))
+            : null,
         horario: _horario,
-        bio: _bioCtrl.text.trim(),
+        bio: 'Buscando compañeros de piso compatibles para convivir bien.',
         fotoPerfil: _pickedFile?.path ?? '',
-        intereses: _interesesSeleccionados.toList(growable: false),
+        intereses: const <String>[],
+        email: _emailCtrl.text.trim(),
       );
 
       await _firestoreService.saveUserProfile(profile);
@@ -135,7 +129,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         MaterialPageRoute<void>(builder: (_) => const MainScaffold()),
       );
     } on FirebaseAuthException catch (e) {
-      _showError('Error de autenticacion: ${e.code}');
+      _showError('Error de autenticación: ${e.code}');
     } catch (_) {
       _showError('No se pudo completar el registro.');
     } finally {
@@ -154,7 +148,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Crear cuenta completa')),
+      appBar: AppBar(title: const Text('Crear cuenta')),
       body: SafeArea(
         child: Form(
           key: _formKey,
@@ -204,8 +198,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _genero,
-                decoration: const InputDecoration(labelText: 'Genero'),
+                initialValue: _genero,
+                decoration: const InputDecoration(labelText: 'Género'),
                 items: const [
                   DropdownMenuItem(value: 'Mujer', child: Text('Mujer')),
                   DropdownMenuItem(value: 'Hombre', child: Text('Hombre')),
@@ -232,13 +226,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     v == null || v.trim().isEmpty ? 'Obligatorio' : null,
               ),
               const SizedBox(height: 12),
+              TextFormField(
+                controller: _estudiosCtrl,
+                decoration: const InputDecoration(labelText: '¿Qué estudias?'),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Obligatorio' : null,
+              ),
+              const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _horario,
+                initialValue: _horario,
                 decoration: const InputDecoration(
                   labelText: 'Horario principal',
                 ),
                 items: const [
-                  DropdownMenuItem(value: 'Manana', child: Text('Manana')),
+                  DropdownMenuItem(value: 'Mañana', child: Text('Mañana')),
                   DropdownMenuItem(value: 'Tarde', child: Text('Tarde')),
                   DropdownMenuItem(value: 'Noche', child: Text('Noche')),
                 ],
@@ -251,81 +252,75 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 8),
               SwitchListTile(
                 value: _fumador,
-                activeColor: AppTheme.primary,
-                title: const Text('Soy fumador/a'),
+                activeThumbColor: AppTheme.primary,
+                title: const Text('¿Fumador?'),
                 onChanged: (value) => setState(() => _fumador = value),
               ),
               SwitchListTile(
                 value: _mascotas,
-                activeColor: AppTheme.primary,
-                title: const Text('Tengo mascotas'),
+                activeThumbColor: AppTheme.primary,
+                title: const Text('¿Mascotas?'),
                 onChanged: (value) => setState(() => _mascotas = value),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Intereses para afinidad',
-                style: TextStyle(fontWeight: FontWeight.w700),
+              SwitchListTile(
+                value: _tienePiso,
+                activeThumbColor: AppTheme.primary,
+                title: const Text('¿Tienes piso ya?'),
+                onChanged: (value) => setState(() {
+                  _tienePiso = value;
+                  if (!value) {
+                    _precioAlquilerCtrl.clear();
+                  }
+                }),
               ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _interesesDisponibles
-                    .map((interes) {
-                      final selected = _interesesSeleccionados.contains(
-                        interes,
-                      );
-                      return FilterChip(
-                        label: Text(interes),
-                        selected: selected,
-                        selectedColor: const Color(0xFFDDF5EC),
-                        onSelected: (value) {
-                          setState(() {
-                            if (value) {
-                              _interesesSeleccionados.add(interes);
-                            } else {
-                              _interesesSeleccionados.remove(interes);
-                            }
-                          });
-                        },
-                      );
-                    })
-                    .toList(growable: false),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _bioCtrl,
-                maxLines: 3,
-                decoration: const InputDecoration(labelText: 'Bio'),
-                validator: (v) => v == null || v.trim().length < 12
-                    ? 'Minimo 12 caracteres'
-                    : null,
-              ),
+              if (_tienePiso) ...[
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _precioAlquilerCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Precio alquiler por persona (EUR/mes)',
+                  ),
+                  validator: (value) {
+                    if (!_tienePiso) {
+                      return null;
+                    }
+                    final raw = (value ?? '').trim().replaceAll(',', '.');
+                    final parsed = double.tryParse(raw);
+                    if (parsed == null || parsed <= 0) {
+                      return 'Introduce un precio valido mayor a 0';
+                    }
+                    return null;
+                  },
+                ),
+              ],
               const SizedBox(height: 12),
               TextFormField(
                 controller: _emailCtrl,
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(labelText: 'Email'),
                 validator: (v) =>
-                    v == null || !v.contains('@') ? 'Email invalido' : null,
+                    v == null || !v.contains('@') ? 'Email inválido' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _passwordCtrl,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'Contrasena'),
+                decoration: const InputDecoration(labelText: 'Contraseña'),
                 validator: (v) =>
-                    v == null || v.length < 6 ? 'Minimo 6 caracteres' : null,
+                    v == null || v.length < 6 ? 'Mínimo 6 caracteres' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _repeatPasswordCtrl,
                 obscureText: true,
                 decoration: const InputDecoration(
-                  labelText: 'Repetir contrasena',
+                  labelText: 'Repetir contraseña',
                 ),
                 validator: (v) => v != _passwordCtrl.text
-                    ? 'Las contrasenas no coinciden'
+                    ? 'Las contraseñas no coinciden'
                     : null,
               ),
               const SizedBox(height: 18),
@@ -337,7 +332,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Crear cuenta profesional'),
+                    : const Text('Registrar'),
               ),
             ],
           ),

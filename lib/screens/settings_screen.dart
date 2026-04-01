@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -18,9 +19,78 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _quienVePerfil = 'Todos';
   bool _ocultarTemporalmente = false;
   bool _isBusy = false;
+  bool _tienePiso = false;
+  String _precioAlquiler = '';
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarDatosVivienda();
+  }
+
+  Future<void> _cargarDatosVivienda() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      return;
+    }
+
+    try {
+      final doc = await _firestore.collection('usuarios').doc(user.uid).get();
+      if (doc.exists && mounted) {
+        final data = doc.data();
+        setState(() {
+          _tienePiso = data?['tienePiso'] ?? false;
+          _precioAlquiler = data?['precioAlquilerPorPersona']?.toString() ?? '';
+        });
+      }
+    } catch (_) {
+      // Silenciosamente ignorar errores de carga
+    }
+  }
+
+  Future<void> _guardarDatosVivienda() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      return;
+    }
+
+    if (_tienePiso && _precioAlquiler.trim().isEmpty) {
+      _showInfo('Por favor, ingresa el precio de alquiler por persona.');
+      return;
+    }
+
+    if (_tienePiso) {
+      final precioNum = int.tryParse(_precioAlquiler.trim());
+      if (precioNum == null || precioNum <= 0) {
+        _showInfo('El precio debe ser un numero valido mayor que cero.');
+        return;
+      }
+    }
+
+    setState(() => _isBusy = true);
+    try {
+      final update = <String, dynamic>{
+        'tienePiso': _tienePiso,
+        if (_tienePiso) 'precioAlquilerPorPersona': int.parse(_precioAlquiler),
+        if (!_tienePiso) 'precioAlquilerPorPersona': null,
+      };
+      await _firestore.collection('usuarios').doc(user.uid).update(update);
+      if (mounted) {
+        _showInfo('Datos de vivienda actualizados.');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showInfo('Error al guardar: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isBusy = false);
+      }
+    }
+  }
 
   Future<void> seedDatabase() async {
     if (_isBusy) {
@@ -46,14 +116,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'fechaNacimiento': Timestamp.fromDate(DateTime(1996, 6, 14)),
         'genero': 'Prefiero no decirlo',
         'origen': 'Madrid, Espana',
+        'estudios': 'Arquitectura',
         'fumador': false,
         'mascotas': false,
+        'tienePiso': false,
         'horario': 'Manana',
         'bio':
             'Perfil inicial de BiziMatch. Busco convivencia respetuosa y ordenada.',
         'fotoPerfil':
             user.photoURL ??
-            'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800',
+            'https://source.unsplash.com/featured/?student,portrait',
         'intereses': ['Orden', 'Cocina', 'Deporte'],
         'updatedAt': FieldValue.serverTimestamp(),
         'seedOwnerUid': user.uid,
@@ -66,13 +138,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'fechaNacimiento': DateTime(1998, 3, 20),
           'genero': 'Mujer',
           'origen': 'Valencia, Espana',
+          'estudios': 'Publicidad',
           'fumador': false,
           'mascotas': true,
+          'tienePiso': true,
+          'precioAlquilerPorPersona': 430,
           'horario': 'Tarde',
           'bio':
               'Trabajo en marketing remoto y me encanta convivir con buen rollo.',
           'fotoPerfil':
-              'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800',
+              'https://source.unsplash.com/featured/?young,woman,portrait',
           'intereses': ['Cocina', 'Yoga', 'Series'],
         },
         {
@@ -80,13 +155,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'fechaNacimiento': DateTime(1995, 11, 12),
           'genero': 'Hombre',
           'origen': 'Sevilla, Espana',
+          'estudios': 'Ingenieria informatica',
           'fumador': false,
           'mascotas': false,
+          'tienePiso': false,
           'horario': 'Noche',
           'bio':
               'Ingeniero de software, limpio y responsable con los gastos del piso.',
           'fotoPerfil':
-              'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800',
+              'https://source.unsplash.com/featured/?young,man,portrait',
           'intereses': ['Tecnologia', 'Gaming', 'Deporte'],
         },
         {
@@ -94,13 +171,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'fechaNacimiento': DateTime(2000, 1, 5),
           'genero': 'Mujer',
           'origen': 'Bilbao, Espana',
+          'estudios': 'Master en psicologia',
           'fumador': true,
           'mascotas': false,
+          'tienePiso': true,
+          'precioAlquilerPorPersona': 380,
           'horario': 'Manana',
           'bio':
               'Estudio un master y busco companeros tranquilos y organizados.',
-          'fotoPerfil':
-              'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=800',
+          'fotoPerfil': 'https://source.unsplash.com/featured/?student,room',
           'intereses': ['Lectura', 'Musica', 'Orden'],
         },
       ];
@@ -154,18 +233,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const Text(
-            'Ajustes',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 4),
-          const Text(
+          Text('Ajustes', style: textTheme.headlineMedium),
+          const SizedBox(height: 2),
+          Text(
             'Configura tu cuenta, privacidad y soporte.',
-            style: TextStyle(color: AppTheme.textSecondary),
+            style: textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
           _section(
@@ -207,6 +284,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: const Text('Nuevos mensajes'),
                   subtitle: const Text('Alertas cuando recibas mensajes.'),
                   onChanged: (value) {
+                    HapticFeedback.selectionClick();
                     setState(() => _notificacionesMensajes = value);
                   },
                 ),
@@ -217,6 +295,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: const Text('Nuevos companeros cerca'),
                   subtitle: const Text('Sugerencias por zona y afinidad.'),
                   onChanged: (value) {
+                    HapticFeedback.selectionClick();
                     setState(() => _notificacionesCercanos = value);
                   },
                 ),
@@ -255,6 +334,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         if (value == null) {
                           return;
                         }
+                        HapticFeedback.selectionClick();
                         setState(() => _quienVePerfil = value);
                       },
                     ),
@@ -269,9 +349,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     'Tu perfil no aparecera en Explorar mientras este activo.',
                   ),
                   onChanged: (value) {
+                    HapticFeedback.selectionClick();
                     setState(() => _ocultarTemporalmente = value);
                   },
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          _section(
+            title: 'Vivienda',
+            child: Column(
+              children: [
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  activeColor: AppTheme.primary,
+                  value: _tienePiso,
+                  title: const Text('Tengo piso ya'),
+                  subtitle: const Text('Indicar si dispones de vivienda.'),
+                  onChanged: (value) {
+                    HapticFeedback.selectionClick();
+                    setState(() => _tienePiso = value);
+                  },
+                ),
+                if (_tienePiso)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: TextField(
+                      enabled: !_isBusy,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Precio alquiler por persona (EUR/mes)',
+                        hintText: 'ej: 400',
+                      ),
+                      onChanged: (value) =>
+                          setState(() => _precioAlquiler = value),
+                      controller: TextEditingController(text: _precioAlquiler),
+                    ),
+                  ),
+                if (_tienePiso)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 44,
+                      child: ElevatedButton(
+                        onPressed: _isBusy ? null : _guardarDatosVivienda,
+                        child: _isBusy
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Guardar datos de vivienda'),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -304,7 +439,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             width: double.infinity,
             height: 58,
             child: ElevatedButton.icon(
-              onPressed: _isBusy ? null : seedDatabase,
+              onPressed: _isBusy
+                  ? null
+                  : () {
+                      HapticFeedback.mediumImpact();
+                      seedDatabase();
+                    },
               icon: _isBusy
                   ? const SizedBox(
                       width: 18,
@@ -333,7 +473,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  onTap: _isBusy ? null : _cerrarSesion,
+                  onTap: _isBusy
+                      ? null
+                      : () {
+                          HapticFeedback.mediumImpact();
+                          _cerrarSesion();
+                        },
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
@@ -352,7 +497,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     'Esta accion es permanente.',
                     style: TextStyle(color: AppTheme.textSecondary),
                   ),
-                  onTap: _isBusy ? null : _confirmarEliminarCuenta,
+                  onTap: _isBusy
+                      ? null
+                      : () {
+                          HapticFeedback.heavyImpact();
+                          _confirmarEliminarCuenta();
+                        },
                 ),
               ],
             ),
@@ -377,7 +527,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Icons.chevron_right_rounded,
         color: AppTheme.textSecondary,
       ),
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
     );
   }
 
@@ -387,6 +540,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFE9F0EC)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A0D1D17),
+            blurRadius: 16,
+            offset: Offset(0, 6),
+          ),
+        ],
       ),
       padding: const EdgeInsets.all(16),
       child: Column(

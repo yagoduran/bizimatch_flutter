@@ -66,5 +66,13 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- Permisos de geolocalización -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>BiziMatch necesita acceso a tu ubicación para mostrarte compañeros de piso cercanos.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>BiziMatch necesita acceso a tu ubicación para mostrarte compañeros de piso cercanos.</string>
+	<!-- Google Maps API Key -->
+	<key>GMS_API_KEY</key>
+	<string>YOUR_GOOGLE_MAPS_API_KEY_HERE</string>
 </dict>
 </plist>
