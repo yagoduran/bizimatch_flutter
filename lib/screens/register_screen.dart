@@ -26,6 +26,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _estudiosCtrl = TextEditingController();
   final _origenCtrl = TextEditingController();
   final _lugarDeseadoCtrl = TextEditingController();
+  final _direccionZonaCtrl = TextEditingController();
   final _precioAlquilerCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
@@ -39,6 +40,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _tienePiso = false;
   bool _loading = false;
   XFile? _pickedFile;
+  List<XFile> _fotosPiso = const <XFile>[];
+
+  bool get _datosPisoValidos {
+    if (!_tienePiso) {
+      return true;
+    }
+    final precio = int.tryParse(_precioAlquilerCtrl.text.trim());
+    return _direccionZonaCtrl.text.trim().isNotEmpty &&
+        _fotosPiso.length >= 2 &&
+        precio != null &&
+        precio > 0;
+  }
 
   @override
   void dispose() {
@@ -46,11 +59,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _estudiosCtrl.dispose();
     _origenCtrl.dispose();
     _lugarDeseadoCtrl.dispose();
+    _direccionZonaCtrl.dispose();
     _precioAlquilerCtrl.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     _repeatPasswordCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickFloorImages() async {
+    final picker = ImagePicker();
+    final images = await picker.pickMultiImage(imageQuality: 85);
+    if (images.isEmpty) {
+      return;
+    }
+    setState(() {
+      _fotosPiso = images;
+    });
   }
 
   Future<void> _pickImage() async {
@@ -94,6 +119,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _showError('Selecciona tu fecha de nacimiento.');
       return;
     }
+    if (!_datosPisoValidos) {
+      _showError(
+        'Si tienes piso, debes indicar dirección/zona, precio y al menos 2 fotos del piso.',
+      );
+      return;
+    }
     setState(() => _loading = true);
     try {
       final credential = await _authService.register(
@@ -120,6 +151,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         intereses: const <String>[],
         email: _emailCtrl.text.trim(),
         lugarDeseado: _lugarDeseadoCtrl.text.trim(),
+        direccionZona: _direccionZonaCtrl.text.trim(),
+        fotosPiso: _fotosPiso.map((e) => e.path).toList(growable: false),
       );
 
       await _firestoreService.saveUserProfile(profile);
@@ -241,8 +274,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 decoration: const InputDecoration(
                   labelText: '¿Dónde deseas vivir? (Ciudad/Zona)',
                 ),
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Opcional' : null,
+                validator: (_) => null,
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
@@ -295,17 +327,54 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Precio alquiler por persona (EUR/mes)',
                   ),
+                  onChanged: (_) => setState(() {}),
                   validator: (value) {
                     if (!_tienePiso) {
                       return null;
                     }
-                    final raw = (value ?? '').trim().replaceAll(',', '.');
-                    final parsed = double.tryParse(raw);
+                    final parsed = int.tryParse((value ?? '').trim());
                     if (parsed == null || parsed <= 0) {
-                      return 'Introduce un precio valido mayor a 0';
+                      return 'Introduce un precio válido mayor a 0';
                     }
                     return null;
                   },
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _direccionZonaCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Dirección o zona del piso',
+                  ),
+                  onChanged: (_) => setState(() {}),
+                  validator: (v) {
+                    if (!_tienePiso) {
+                      return null;
+                    }
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Indica la dirección o zona del piso';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _pickFloorImages,
+                  icon: const Icon(Icons.add_photo_alternate_outlined),
+                  label: Text(
+                    _fotosPiso.isEmpty
+                        ? 'Subir fotos del piso'
+                        : 'Fotos del piso: ${_fotosPiso.length}',
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Debes subir al menos 2 fotos del piso.',
+                  style: TextStyle(
+                    color: _fotosPiso.length >= 2
+                        ? AppTheme.textSecondary
+                        : Colors.red.shade600,
+                    fontSize: 12,
+                  ),
                 ),
               ],
               const SizedBox(height: 12),
@@ -337,7 +406,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               const SizedBox(height: 18),
               ElevatedButton(
-                onPressed: _loading ? null : _submit,
+                onPressed: _loading || !_datosPisoValidos ? null : _submit,
                 child: _loading
                     ? const SizedBox(
                         width: 20,

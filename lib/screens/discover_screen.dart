@@ -70,6 +70,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       }
       setState(() {
         _myProfile = profile;
+        _filteredProfiles = _filtrar(_allProfiles);
         _loading = false;
       });
     });
@@ -200,8 +201,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   }
 
   List<UserProfile> _filtrar(List<UserProfile> users) {
+    final yoTienePiso = _myProfile?.tienePiso == true;
     return users
         .where((u) {
+          if (yoTienePiso && u.tienePiso) {
+            return false;
+          }
           final ageOk =
               u.edad >= _edadRango.start.round() &&
               u.edad <= _edadRango.end.round();
@@ -254,7 +259,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   ),
                   const SizedBox(height: 14),
                   Text(
-                    'Edad: ${tempEdad.start.round()} - ${tempEdad.end.round()} anos',
+                    'Edad: ${tempEdad.start.round()} - ${tempEdad.end.round()} años',
                   ),
                   RangeSlider(
                     values: tempEdad,
@@ -266,7 +271,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     initialValue: tempGenero,
-                    decoration: const InputDecoration(labelText: 'Genero'),
+                    decoration: const InputDecoration(labelText: 'Género'),
                     items: const [
                       DropdownMenuItem(value: 'Todos', child: Text('Todos')),
                       DropdownMenuItem(value: 'Mujer', child: Text('Mujer')),
@@ -290,7 +295,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                             setModalState(() => tempFumador = null),
                       ),
                       ChoiceChip(
-                        label: const Text('Fumador: Si'),
+                        label: const Text('Fumador: Sí'),
                         selected: tempFumador == true,
                         onSelected: (_) =>
                             setModalState(() => tempFumador = true),
@@ -314,7 +319,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                             setModalState(() => tempMascotas = null),
                       ),
                       ChoiceChip(
-                        label: const Text('Mascotas: Si'),
+                        label: const Text('Mascotas: Sí'),
                         selected: tempMascotas == true,
                         onSelected: (_) =>
                             setModalState(() => tempMascotas = true),
@@ -399,7 +404,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Perfiles recomendados segun tu afinidad',
+                  'Perfiles recomendados según tu afinidad',
                   style: textTheme.bodyMedium,
                 ),
               ),
@@ -458,7 +463,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Perfiles recomendados segun tu afinidad',
+                'Perfiles recomendados según tu afinidad',
                 style: textTheme.bodyMedium,
               ),
             ),
@@ -637,113 +642,143 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         opacity: opacity,
         child: Transform.scale(
           scale: scale,
-          child: Card(
-            margin: EdgeInsets.zero,
-            clipBehavior: Clip.antiAlias,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                image,
-                DecoratedBox(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Color(0x22000000), Color(0xCC1C2A25)],
-                    ),
-                  ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x160D1B16),
+                  blurRadius: 24,
+                  offset: Offset(0, 10),
                 ),
-                if (showApprove)
-                  _overlayTag(
-                    text: 'APROBADO',
-                    icon: Icons.home_work_rounded,
-                    color: AppTheme.primary,
-                    alignLeft: true,
-                    opacity: overlayOpacity,
-                  ),
-                if (showReject)
-                  _overlayTag(
-                    text: 'DESCARTAR',
-                    icon: Icons.close_rounded,
-                    color: const Color(0xFFEA5A5A),
-                    alignLeft: false,
-                    opacity: overlayOpacity,
-                  ),
-                Positioned(
-                  left: 18,
-                  right: 18,
-                  bottom: 18,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${user.nombre}, ${user.edad}',
-                        style: const TextStyle(
-                          fontSize: 25,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${user.origen} · ${user.horario}',
-                        style: const TextStyle(color: Colors.white70),
-                      ),
-                      const SizedBox(height: 10),
-                      if (user.tienePiso &&
-                          user.precioAlquilerPorPersona != null) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 7,
-                          ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: Column(
+                children: [
+                  Expanded(
+                    flex: 8,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        image,
+                        const DecoratedBox(
                           decoration: BoxDecoration(
-                            color: const Color(0xFF10B981),
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          child: Text(
-                            '¡Tiene piso! - ${user.precioAlquilerPorPersona!.round()}€/mes',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              stops: [0.55, 1.0],
+                              colors: [Color(0x00000000), Color(0xCC000000)],
                             ),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        if (showApprove)
+                          _overlayTag(
+                            text: 'APROBADO',
+                            icon: Icons.home_work_rounded,
+                            color: AppTheme.primary,
+                            alignLeft: true,
+                            opacity: overlayOpacity,
+                          ),
+                        if (showReject)
+                          _overlayTag(
+                            text: 'DESCARTAR',
+                            icon: Icons.close_rounded,
+                            color: const Color(0xFFEA5A5A),
+                            alignLeft: false,
+                            opacity: overlayOpacity,
+                          ),
+                        Positioned(
+                          left: 18,
+                          right: 18,
+                          bottom: 18,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${user.nombre}, ${user.edad}',
+                                style: const TextStyle(
+                                  fontSize: 25,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '${user.origen} · ${user.horario == 'Manana' ? 'Mañana' : user.horario}',
+                                style: const TextStyle(color: Colors.white70),
+                              ),
+                              const SizedBox(height: 10),
+                              if (user.tienePiso &&
+                                  user.precioAlquilerPorPersona != null) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 7,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF10B981),
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  child: Text(
+                                    '¡Tiene piso! - ${user.precioAlquilerPorPersona!.round()}€/mes',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                       ],
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          '$afinidad% de afinidad',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(100),
-                        child: LinearProgressIndicator(
-                          minHeight: 10,
-                          value: afinidad / 100,
-                          backgroundColor: Colors.white24,
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                            AppTheme.primary,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                  Expanded(
+                    flex: 2,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0x1410B981),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              '$afinidad% de afinidad',
+                              style: const TextStyle(
+                                color: AppTheme.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(100),
+                            child: LinearProgressIndicator(
+                              minHeight: 10,
+                              value: afinidad / 100,
+                              backgroundColor: const Color(0xFFE9F2EE),
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                AppTheme.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

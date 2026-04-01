@@ -78,7 +78,7 @@ class _MainScaffoldState extends State<MainScaffold>
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.groups_rounded),
-            label: 'Companeros',
+            label: 'Vínculos',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline_rounded),

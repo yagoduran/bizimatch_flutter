@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'app_theme.dart';
 import 'screens/splash_screen.dart';
 
@@ -13,10 +14,16 @@ class BiziMatchApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final baseTheme = AppTheme.lightTheme();
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'BiziMatch',
-      theme: AppTheme.lightTheme(),
+      theme: baseTheme.copyWith(
+        textTheme: GoogleFonts.poppinsTextTheme(baseTheme.textTheme),
+        primaryTextTheme: GoogleFonts.poppinsTextTheme(
+          baseTheme.primaryTextTheme,
+        ),
+      ),
       home: const _FirebaseBootstrap(),
     );
   }

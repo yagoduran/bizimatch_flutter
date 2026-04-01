@@ -86,7 +86,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
               alignment: Alignment.centerLeft,
               child: Padding(
                 padding: EdgeInsets.only(left: 4),
-                child: Text('Companeros', style: textTheme.headlineMedium),
+                child: Text('Vínculos', style: textTheme.headlineMedium),
               ),
             ),
             Align(

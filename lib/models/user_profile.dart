@@ -18,6 +18,8 @@ class UserProfile {
     required this.fotoPerfil,
     required this.intereses,
     this.lugarDeseado = '',
+    this.direccionZona = '',
+    this.fotosPiso = const <String>[],
   });
 
   final String uid;
@@ -36,6 +38,8 @@ class UserProfile {
   final String fotoPerfil;
   final List<String> intereses;
   final String lugarDeseado;
+  final String direccionZona;
+  final List<String> fotosPiso;
 
   int get edad {
     final now = DateTime.now();
@@ -66,6 +70,8 @@ class UserProfile {
       'fotoPerfil': fotoPerfil,
       'intereses': intereses,
       'lugarDeseado': lugarDeseado,
+      'direccionZona': direccionZona,
+      'fotosPiso': fotosPiso,
       'updatedAt': FieldValue.serverTimestamp(),
     };
 
@@ -103,6 +109,8 @@ class UserProfile {
       fotoPerfil: (map['fotoPerfil'] ?? '') as String,
       intereses: List<String>.from(map['intereses'] ?? const <String>[]),
       lugarDeseado: (map['lugarDeseado'] ?? '') as String,
+      direccionZona: (map['direccionZona'] ?? '') as String,
+      fotosPiso: List<String>.from(map['fotosPiso'] ?? const <String>[]),
     );
   }
 }

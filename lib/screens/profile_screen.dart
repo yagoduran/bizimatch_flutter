@@ -46,6 +46,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       bio: profile.bio,
       fotoPerfil: image.path,
       intereses: profile.intereses,
+      lugarDeseado: profile.lugarDeseado,
+      direccionZona: profile.direccionZona,
+      fotosPiso: profile.fotosPiso,
     );
     await _firestore.saveUserProfile(updated);
   }
@@ -55,9 +58,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final origenCtrl = TextEditingController(text: profile.origen);
     final estudiosCtrl = TextEditingController(text: profile.estudios);
     final bioCtrl = TextEditingController(text: profile.bio);
+    final direccionCtrl = TextEditingController(text: profile.direccionZona);
     final precioCtrl = TextEditingController(
-      text: profile.precioAlquilerPorPersona?.toStringAsFixed(0) ?? '',
+      text: profile.precioAlquilerPorPersona?.toString() ?? '',
     );
+    List<String> fotosPiso = List<String>.from(profile.fotosPiso);
     String horario = profile.horario;
     bool fumador = profile.fumador;
     bool mascotas = profile.mascotas;
@@ -118,7 +123,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     TextField(
                       controller: estudiosCtrl,
                       decoration: const InputDecoration(
-                        labelText: 'Que estudias',
+                        labelText: 'Qué estudias',
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -128,7 +133,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       items: const [
                         DropdownMenuItem(
                           value: 'Manana',
-                          child: Text('Manana'),
+                          child: Text('Mañana'),
                         ),
                         DropdownMenuItem(value: 'Tarde', child: Text('Tarde')),
                         DropdownMenuItem(value: 'Noche', child: Text('Noche')),
@@ -175,6 +180,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         decoration: const InputDecoration(
                           labelText: 'Precio alquiler por persona (EUR/mes)',
                         ),
+                        onChanged: (_) => setModalState(() {}),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: direccionCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Dirección o zona del piso',
+                        ),
+                        onChanged: (_) => setModalState(() {}),
+                      ),
+                      const SizedBox(height: 10),
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          final picker = ImagePicker();
+                          final images = await picker.pickMultiImage(
+                            imageQuality: 85,
+                          );
+                          if (images.isEmpty) {
+                            return;
+                          }
+                          setModalState(() {
+                            fotosPiso = images
+                                .map((e) => e.path)
+                                .toList(growable: false);
+                          });
+                        },
+                        icon: const Icon(Icons.add_photo_alternate_outlined),
+                        label: Text(
+                          fotosPiso.isEmpty
+                              ? 'Subir fotos del piso'
+                              : 'Fotos del piso: ${fotosPiso.length}',
+                        ),
                       ),
                       const SizedBox(height: 10),
                     ],
@@ -199,57 +236,78 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       label: const Text('Generar Bio con IA'),
                     ),
                     const SizedBox(height: 14),
-                    ElevatedButton(
-                      onPressed: () async {
-                        int? precio;
-                        if (tienePiso) {
-                          precio = int.tryParse(
-                            precioCtrl.text.trim().replaceAll(',', '.'),
-                          );
-                          if (precio == null || precio <= 0) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Introduce un precio valido mayor que 0.',
-                                ),
-                              ),
-                            );
-                            return;
-                          }
-                        }
-
-                        final updated = UserProfile(
-                          uid: profile.uid,
-                          email: profile.email,
-                          nombre: nombreCtrl.text.trim().isEmpty
-                              ? profile.nombre
-                              : nombreCtrl.text.trim(),
-                          fechaNacimiento: profile.fechaNacimiento,
-                          genero: profile.genero,
-                          origen: origenCtrl.text.trim().isEmpty
-                              ? profile.origen
-                              : origenCtrl.text.trim(),
-                          estudios: estudiosCtrl.text.trim().isEmpty
-                              ? profile.estudios
-                              : estudiosCtrl.text.trim(),
-                          fumador: fumador,
-                          mascotas: mascotas,
-                          tienePiso: tienePiso,
-                          precioAlquilerPorPersona: precio,
-                          horario: horario,
-                          bio: bioCtrl.text.trim().isEmpty
-                              ? profile.bio
-                              : bioCtrl.text.trim(),
-                          fotoPerfil: profile.fotoPerfil,
-                          intereses: profile.intereses,
+                    Builder(
+                      builder: (context) {
+                        final precioParse = int.tryParse(
+                          precioCtrl.text.trim().replaceAll(',', '.'),
                         );
+                        final precioValido =
+                            precioParse != null && precioParse > 0;
+                        final canSave =
+                            !tienePiso ||
+                            (direccionCtrl.text.trim().isNotEmpty &&
+                                fotosPiso.length >= 2 &&
+                                precioValido);
+                        return ElevatedButton(
+                          onPressed: canSave
+                              ? () async {
+                                  int? precio;
+                                  if (tienePiso) {
+                                    precio = int.tryParse(
+                                      precioCtrl.text.trim().replaceAll(
+                                        ',',
+                                        '.',
+                                      ),
+                                    );
+                                  }
 
-                        await _firestore.saveUserProfile(updated);
-                        if (mounted) {
-                          Navigator.pop(context);
-                        }
+                                  final updated = UserProfile(
+                                    uid: profile.uid,
+                                    email: profile.email,
+                                    nombre: nombreCtrl.text.trim().isEmpty
+                                        ? profile.nombre
+                                        : nombreCtrl.text.trim(),
+                                    fechaNacimiento: profile.fechaNacimiento,
+                                    genero: profile.genero,
+                                    origen: origenCtrl.text.trim().isEmpty
+                                        ? profile.origen
+                                        : origenCtrl.text.trim(),
+                                    estudios: estudiosCtrl.text.trim().isEmpty
+                                        ? profile.estudios
+                                        : estudiosCtrl.text.trim(),
+                                    fumador: fumador,
+                                    mascotas: mascotas,
+                                    tienePiso: tienePiso,
+                                    precioAlquilerPorPersona: precio,
+                                    horario: horario,
+                                    bio: bioCtrl.text.trim().isEmpty
+                                        ? profile.bio
+                                        : bioCtrl.text.trim(),
+                                    fotoPerfil: profile.fotoPerfil,
+                                    intereses: profile.intereses,
+                                    lugarDeseado: profile.lugarDeseado,
+                                    direccionZona: tienePiso
+                                        ? direccionCtrl.text.trim()
+                                        : '',
+                                    fotosPiso: tienePiso
+                                        ? fotosPiso
+                                        : const <String>[],
+                                  );
+
+                                  await _firestore.saveUserProfile(updated);
+                                  if (!context.mounted) {
+                                    return;
+                                  }
+                                  Navigator.of(context).pop();
+                                }
+                              : null,
+                          child: Text(
+                            canSave
+                                ? 'Guardar cambios'
+                                : 'Completa piso (2 fotos + dirección + precio)',
+                          ),
+                        );
                       },
-                      child: const Text('Guardar cambios'),
                     ),
                   ],
                 ),
@@ -262,9 +320,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     nombreCtrl.dispose();
     origenCtrl.dispose();
-  estudiosCtrl.dispose();
+    estudiosCtrl.dispose();
     bioCtrl.dispose();
-  precioCtrl.dispose();
+    direccionCtrl.dispose();
+    precioCtrl.dispose();
   }
 
   String _generarBioIA(
@@ -274,11 +333,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     bool mascotas,
   ) {
     final nombreSeguro = nombre.isEmpty ? 'Esta persona' : nombre;
-    final fumadorTxt = fumador ? 'tiene habito de fumar' : 'no fuma';
+    final fumadorTxt = fumador ? 'tiene hábito de fumar' : 'no fuma';
     final mascotasTxt = mascotas
         ? 'convive bien con mascotas'
         : 'prefiere ambientes sin mascotas';
-    return '$nombreSeguro busca convivencia respetuosa, con comunicacion clara y buena organizacion del piso. Su ritmo principal es de $horario, $fumadorTxt y $mascotasTxt. Le interesa mantener limpieza y acuerdos semanales.';
+    return '$nombreSeguro busca convivencia respetuosa, con comunicación clara y buena organización del piso. Su ritmo principal es de $horario, $fumadorTxt y $mascotasTxt. Le interesa mantener limpieza y acuerdos semanales.';
   }
 
   Future<void> _logout() async {
@@ -325,7 +384,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Gestiona tu informacion y preferencias',
+                  'Gestiona tu información y preferencias',
                   style: textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 20),
@@ -375,17 +434,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 4),
                 Center(
                   child: Text(
-                    '${profile.edad} anos · ${profile.genero} · ${profile.origen}',
+                    '${profile.edad} años · ${profile.genero} · ${profile.origen}',
                     style: const TextStyle(color: AppTheme.textSecondary),
                   ),
                 ),
                 const SizedBox(height: 18),
-                _section('Sobre mi', profile.bio),
+                _section('Sobre mí', profile.bio),
                 const SizedBox(height: 12),
-                _section(
-                  'Habitos',
-                  'Horario: ${profile.horario}\nFumador/a: ${profile.fumador ? 'Si' : 'No'}\nMascotas: ${profile.mascotas ? 'Si' : 'No'}\nTiene piso: ${profile.tienePiso ? 'Si' : 'No'}${profile.tienePiso && profile.precioAlquilerPorPersona != null ? '\nAlquiler por persona: ${profile.precioAlquilerPorPersona!.toStringAsFixed(0)} EUR/mes' : ''}',
-                ),
+                _habitsSection(profile),
                 const SizedBox(height: 12),
                 _section('Estudios', profile.estudios),
                 const SizedBox(height: 12),
@@ -394,7 +450,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ElevatedButton.icon(
                   onPressed: _logout,
                   icon: const Icon(Icons.logout_rounded),
-                  label: const Text('Cerrar sesion'),
+                  label: const Text('Cerrar sesión'),
                 ),
               ],
             ),
@@ -426,6 +482,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _habitsSection(UserProfile profile) {
+    final alquiler =
+        profile.tienePiso && profile.precioAlquilerPorPersona != null
+        ? ' · ${profile.precioAlquilerPorPersona}€/mes'
+        : '';
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE8EFEB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Hábitos',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          ),
+          const SizedBox(height: 10),
+          _habitRow(
+            '🕒',
+            'Horario',
+            profile.horario == 'Manana' ? 'Mañana' : profile.horario,
+          ),
+          const SizedBox(height: 8),
+          _habitRow(
+            profile.fumador ? '🚬' : '🚭',
+            'Fumador',
+            profile.fumador ? 'Sí' : 'No',
+          ),
+          const SizedBox(height: 8),
+          _habitRow('🐾', 'Mascotas', profile.mascotas ? 'Sí' : 'No'),
+          const SizedBox(height: 8),
+          _habitRow(
+            '🏠',
+            'Tiene piso',
+            profile.tienePiso ? 'Sí$alquiler' : 'No',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _habitRow(String emoji, String label, String value) {
+    return Row(
+      children: [
+        Text(emoji, style: const TextStyle(fontSize: 16)),
+        const SizedBox(width: 8),
+        Text(
+          '$label: ',
+          style: const TextStyle(
+            color: AppTheme.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(color: AppTheme.textSecondary),
+          ),
+        ),
+      ],
     );
   }
 }

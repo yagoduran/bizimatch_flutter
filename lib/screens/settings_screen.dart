@@ -65,7 +65,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (_tienePiso) {
       final precioNum = int.tryParse(_precioAlquiler.trim());
       if (precioNum == null || precioNum <= 0) {
-        _showInfo('El precio debe ser un numero valido mayor que cero.');
+        _showInfo('El precio debe ser un número válido mayor que cero.');
         return;
       }
     }
@@ -99,7 +99,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     final user = _auth.currentUser;
     if (user == null) {
-      _showInfo('Necesitas iniciar sesion para inicializar la base de datos.');
+      _showInfo('Necesitas iniciar sesión para inicializar la base de datos.');
       return;
     }
 
@@ -115,7 +115,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             : 'Mi Perfil',
         'fechaNacimiento': Timestamp.fromDate(DateTime(1996, 6, 14)),
         'genero': 'Prefiero no decirlo',
-        'origen': 'Madrid, Espana',
+        'origen': 'Madrid, España',
         'estudios': 'Arquitectura',
         'fumador': false,
         'mascotas': false,
@@ -137,7 +137,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'nombre': 'Sofia Martin',
           'fechaNacimiento': DateTime(1998, 3, 20),
           'genero': 'Mujer',
-          'origen': 'Valencia, Espana',
+          'origen': 'Valencia, España',
           'estudios': 'Publicidad',
           'fumador': false,
           'mascotas': true,
@@ -154,8 +154,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'nombre': 'Daniel Ruiz',
           'fechaNacimiento': DateTime(1995, 11, 12),
           'genero': 'Hombre',
-          'origen': 'Sevilla, Espana',
-          'estudios': 'Ingenieria informatica',
+          'origen': 'Sevilla, España',
+          'estudios': 'Ingeniería informática',
           'fumador': false,
           'mascotas': false,
           'tienePiso': false,
@@ -170,7 +170,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'nombre': 'Lucia Fernandez',
           'fechaNacimiento': DateTime(2000, 1, 5),
           'genero': 'Mujer',
-          'origen': 'Bilbao, Espana',
+          'origen': 'Bilbao, España',
           'estudios': 'Master en psicologia',
           'fumador': true,
           'mascotas': false,
@@ -178,7 +178,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'precioAlquilerPorPersona': 380,
           'horario': 'Manana',
           'bio':
-              'Estudio un master y busco companeros tranquilos y organizados.',
+              'Estudio un máster y busco compañeros tranquilos y organizados.',
           'fotoPerfil': 'https://source.unsplash.com/featured/?student,room',
           'intereses': ['Lectura', 'Musica', 'Orden'],
         },
@@ -257,13 +257,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 _settingTile(
                   icon: Icons.lock_reset_rounded,
-                  title: 'Cambiar contrasena',
+                  title: 'Cambiar contraseña',
                   subtitle: 'Te enviaremos un enlace por correo',
                   onTap: _cambiarContrasena,
                 ),
                 _settingTile(
                   icon: Icons.verified_user_outlined,
-                  title: 'Verificacion de identidad',
+                  title: 'Verificación de identidad',
                   subtitle: _auth.currentUser?.emailVerified == true
                       ? 'Cuenta verificada'
                       : 'Verifica tu email para mayor confianza',
@@ -292,7 +292,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   contentPadding: EdgeInsets.zero,
                   activeThumbColor: AppTheme.primary,
                   value: _notificacionesCercanos,
-                  title: const Text('Nuevos companeros cerca'),
+                  title: const Text('Nuevos compañeros cerca'),
                   subtitle: const Text('Sugerencias por zona y afinidad.'),
                   onChanged: (value) {
                     HapticFeedback.selectionClick();
@@ -313,7 +313,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Icons.visibility_outlined,
                     color: AppTheme.textSecondary,
                   ),
-                  title: const Text('Quien puede ver mi perfil'),
+                  title: const Text('Quién puede ver mi perfil'),
                   subtitle: Text(_quienVePerfil),
                   trailing: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
@@ -346,7 +346,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   value: _ocultarTemporalmente,
                   title: const Text('Ocultar mi perfil temporalmente'),
                   subtitle: const Text(
-                    'Tu perfil no aparecera en Explorar mientras este activo.',
+                    'Tu perfil no aparecerá en Explorar mientras esté activo.',
                   ),
                   onChanged: (value) {
                     HapticFeedback.selectionClick();
@@ -420,15 +420,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: 'Centro de ayuda',
                   subtitle: 'Preguntas frecuentes y contacto',
                   onTap: () => _showInfo(
-                    'Centro de ayuda disponible proximamente en la version web.',
+                    'Centro de ayuda disponible próximamente en la versión web.',
                   ),
                 ),
                 _settingTile(
                   icon: Icons.description_outlined,
-                  title: 'Terminos y condiciones',
+                  title: 'Términos y condiciones',
                   subtitle: 'Condiciones de uso y privacidad',
                   onTap: () => _showInfo(
-                    'Terminos y condiciones disponibles proximamente.',
+                    'Términos y condiciones disponibles próximamente.',
                   ),
                 ),
               ],
@@ -467,7 +467,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.logout_rounded, color: Colors.red),
                   title: const Text(
-                    'Cerrar sesion',
+                    'Cerrar sesión',
                     style: TextStyle(
                       color: Colors.red,
                       fontWeight: FontWeight.w700,
@@ -601,7 +601,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) {
         return;
       }
-      _showInfo('Te enviamos un correo de verificacion al nuevo email.');
+      _showInfo('Te enviamos un correo de verificación al nuevo email.');
     } on FirebaseAuthException catch (e) {
       _showInfo('No se pudo actualizar el email: ${e.code}');
     }
@@ -616,7 +616,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     try {
       await _auth.sendPasswordResetEmail(email: email);
-      _showInfo('Revisa tu correo para cambiar la contrasena.');
+      _showInfo('Revisa tu correo para cambiar la contraseña.');
     } on FirebaseAuthException catch (e) {
       _showInfo('No se pudo enviar el correo: ${e.code}');
     }
@@ -625,12 +625,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _verificarIdentidad() async {
     final user = _auth.currentUser;
     if (user == null) {
-      _showInfo('No hay sesion activa.');
+      _showInfo('No hay sesión activa.');
       return;
     }
 
     if (user.emailVerified) {
-      _showInfo('Tu identidad ya esta verificada.');
+      _showInfo('Tu identidad ya está verificada.');
       return;
     }
 
@@ -638,7 +638,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await user.sendEmailVerification();
       _showInfo('Te enviamos un correo para verificar tu identidad.');
     } on FirebaseAuthException catch (e) {
-      _showInfo('No fue posible enviar la verificacion: ${e.code}');
+      _showInfo('No fue posible enviar la verificación: ${e.code}');
     }
   }
 
@@ -654,7 +654,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
       );
     } catch (_) {
-      _showInfo('No se pudo cerrar sesion.');
+      _showInfo('No se pudo cerrar sesión.');
     } finally {
       if (mounted) {
         setState(() => _isBusy = false);
@@ -694,7 +694,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        _showInfo('No hay sesion activa.');
+        _showInfo('No hay sesión activa.');
         return;
       }
 
@@ -713,7 +713,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
         _showInfo(
-          'Por seguridad, vuelve a iniciar sesion antes de eliminar la cuenta.',
+          'Por seguridad, vuelve a iniciar sesión antes de eliminar la cuenta.',
         );
       } else {
         _showInfo('No se pudo eliminar la cuenta: ${e.code}');

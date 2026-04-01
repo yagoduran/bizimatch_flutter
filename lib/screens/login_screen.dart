@@ -36,7 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      _showInfo('Completa email y contrasena.');
+      _showInfo('Completa email y contraseña.');
       return;
     }
 
@@ -54,9 +54,9 @@ class _LoginScreenState extends State<LoginScreen> {
         MaterialPageRoute<void>(builder: (_) => const MainScaffold()),
       );
     } on FirebaseAuthException catch (e) {
-      _showInfo('Error al iniciar sesion: ${e.code}');
+      _showInfo('Error al iniciar sesión: ${e.code}');
     } catch (_) {
-      _showInfo('No se pudo iniciar sesion. Intenta nuevamente.');
+      _showInfo('No se pudo iniciar sesión. Intenta nuevamente.');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -102,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Encuentra companeros de piso compatibles',
+                    'Encuentra compañeros de piso compatibles',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: AppTheme.textSecondary),
                   ),
@@ -120,7 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _passwordController,
                     obscureText: true,
                     decoration: const InputDecoration(
-                      labelText: 'Contrasena',
+                      labelText: 'Contraseña',
                       prefixIcon: Icon(Icons.lock_outline_rounded),
                     ),
                   ),
@@ -133,7 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             height: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Iniciar sesion'),
+                        : const Text('Iniciar sesión'),
                   ),
                   const SizedBox(height: 8),
                   TextButton.icon(
