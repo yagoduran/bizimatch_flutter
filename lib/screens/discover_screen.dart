@@ -478,6 +478,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     topOffset: 26,
                     scale: 0.9,
                     opacity: 0.35,
+                    key: ValueKey(third.uid),
                   ),
                   _profileCard(
                     next,
@@ -485,6 +486,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     topOffset: 12,
                     scale: 0.95,
                     opacity: 0.56,
+                    key: ValueKey(next.uid),
                   ),
                   GestureDetector(
                     onPanStart: (_) {
@@ -531,6 +533,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                           showApprove: _dragOffset.dx > 8,
                           showReject: _dragOffset.dx < -8,
                           overlayOpacity: dragProgress,
+                          key: ValueKey(current.uid),
                         ),
                       ),
                     ),
@@ -612,6 +615,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     bool showApprove = false,
     bool showReject = false,
     double overlayOpacity = 0,
+    required Key key,
   }) {
     final fallbackImage = user.tienePiso
         ? _unsplashRoomByContext()
@@ -621,14 +625,84 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         ? Image.file(
             File(user.fotoPerfil),
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) =>
-                Container(color: const Color(0xFFE8EFEA)),
+            cacheHeight: 800,
+            cacheWidth: 400,
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: Colors.white,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.image_not_supported_outlined,
+                      size: 48,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Imagen no disponible',
+                      style: TextStyle(color: Colors.grey.shade500),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           )
         : Image.network(
             user.fotoPerfil.isEmpty ? fallbackImage : user.fotoPerfil,
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) =>
-                Image.network(fallbackImage, fit: BoxFit.cover),
+            cacheHeight: 800,
+            cacheWidth: 400,
+            loadingBuilder: (context, child, progress) {
+              if (progress == null) return child;
+              return Container(
+                color: Colors.white,
+                child: Center(
+                  child: SizedBox(
+                    width: 60,
+                    height: 60,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        value: progress.expectedTotalBytes != null
+                            ? progress.cumulativeBytesLoaded /
+                                  progress.expectedTotalBytes!
+                            : null,
+                        color: AppTheme.primary,
+                        strokeWidth: 3,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+            errorBuilder: (context, error, stackTrace) {
+              return Image.network(
+                fallbackImage,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.white,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.image_not_supported_outlined,
+                            size: 48,
+                            color: Colors.grey.shade400,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Error al cargar imagen',
+                            style: TextStyle(color: Colors.grey.shade500),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
           );
 
     return AnimatedPositioned(
@@ -643,6 +717,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         child: Transform.scale(
           scale: scale,
           child: Container(
+            key: key,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(30),
