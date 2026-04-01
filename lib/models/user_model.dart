@@ -16,6 +16,7 @@ class UserModel {
   final String horario; // Mañana, Tarde, Noche
   final String bio;
   final int afinidad; // % de afinidad calculado
+  final String lugarDeseado;
 
   UserModel({
     required this.id,
@@ -33,6 +34,7 @@ class UserModel {
     required this.horario,
     required this.bio,
     this.afinidad = 0,
+    this.lugarDeseado = '',
   });
 
   // Calcular edad automáticamente

@@ -279,7 +279,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
-                  activeColor: AppTheme.primary,
+                  activeThumbColor: AppTheme.primary,
                   value: _notificacionesMensajes,
                   title: const Text('Nuevos mensajes'),
                   subtitle: const Text('Alertas cuando recibas mensajes.'),
@@ -290,7 +290,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
-                  activeColor: AppTheme.primary,
+                  activeThumbColor: AppTheme.primary,
                   value: _notificacionesCercanos,
                   title: const Text('Nuevos companeros cerca'),
                   subtitle: const Text('Sugerencias por zona y afinidad.'),
@@ -342,7 +342,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
-                  activeColor: AppTheme.primary,
+                  activeThumbColor: AppTheme.primary,
                   value: _ocultarTemporalmente,
                   title: const Text('Ocultar mi perfil temporalmente'),
                   subtitle: const Text(
@@ -363,7 +363,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
-                  activeColor: AppTheme.primary,
+                  activeThumbColor: AppTheme.primary,
                   value: _tienePiso,
                   title: const Text('Tengo piso ya'),
                   subtitle: const Text('Indicar si dispones de vivienda.'),

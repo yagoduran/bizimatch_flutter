@@ -27,14 +27,20 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
       final doc = await _firestore
           .collection('usuarios')
           .doc(widget.userUid)
-          .get();
-      if (doc.exists) {
+          .get()
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw Exception('Timeout cargando perfil');
+            },
+          );
+      if (doc.exists && doc.data() != null) {
         return UserProfile.fromMap(doc.data()!);
       }
       return null;
     } catch (e) {
       debugPrint('Error al cargar perfil: $e');
-      return null;
+      rethrow;
     }
   }
 
@@ -49,8 +55,33 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (snapshot.hasError || snapshot.data == null) {
-            return const Center(child: Text('No se pudo cargar el perfil'));
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Error al cargar el perfil'),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Volver'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          if (snapshot.data == null) {
+            return const Center(child: Text('Perfil no encontrado'));
           }
 
           final user = snapshot.data!;
@@ -64,10 +95,10 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                 Center(
                   child: CircleAvatar(
                     radius: 60,
-                    backgroundImage: user.fotoPerfil != null
-                        ? NetworkImage(user.fotoPerfil!)
+                    backgroundImage: user.fotoPerfil.isNotEmpty
+                        ? NetworkImage(user.fotoPerfil)
                         : null,
-                    child: user.fotoPerfil == null
+                    child: user.fotoPerfil.isEmpty
                         ? const Icon(Icons.person, size: 60)
                         : null,
                   ),

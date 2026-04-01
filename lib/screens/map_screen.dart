@@ -31,38 +31,53 @@ class _MapScreenState extends State<MapScreen> {
         .collection('usuarios')
         .where('tienePiso', isEqualTo: true)
         .snapshots()
-        .listen((snapshot) {
-          final newMarkers = <Marker>{};
+        .listen(
+          (snapshot) {
+            final newMarkers = <Marker>{};
 
-          for (final doc in snapshot.docs) {
-            try {
-              final userProfile = UserProfile.fromMap(doc.data());
-              // En producción, deberías guardar lat/lng en Firestore
-              final markerPosition = _getSimulatedPosition(userProfile.uid);
+            for (final doc in snapshot.docs) {
+              try {
+                final userProfile = UserProfile.fromMap(doc.data());
+                // En producción, deberías guardar lat/lng en Firestore
+                final markerPosition = _getSimulatedPosition(userProfile.uid);
 
-              newMarkers.add(
-                Marker(
-                  markerId: MarkerId(userProfile.uid),
-                  position: markerPosition,
-                  infoWindow: InfoWindow(
-                    title: userProfile.nombre,
-                    snippet:
-                        '${userProfile.precioAlquilerPorPersona}€/mes - Tap para ver perfil',
+                newMarkers.add(
+                  Marker(
+                    markerId: MarkerId(userProfile.uid),
+                    position: markerPosition,
+                    infoWindow: InfoWindow(
+                      title: userProfile.nombre,
+                      snippet:
+                          '${userProfile.precioAlquilerPorPersona}€/mes - Tap para ver perfil',
+                      onTap: () => _showUserInfoBottomSheet(userProfile),
+                    ),
                     onTap: () => _showUserInfoBottomSheet(userProfile),
                   ),
-                  onTap: () => _showUserInfoBottomSheet(userProfile),
+                );
+              } catch (e) {
+                debugPrint('Error al procesar usuario: $e');
+              }
+            }
+
+            if (mounted) {
+              setState(() {
+                _markers.clear();
+                _markers.addAll(newMarkers);
+              });
+            }
+          },
+          onError: (error) {
+            debugPrint('Error cargando marcadores: $error');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Sin conexión. No se pueden cargar los pisos.'),
+                  duration: Duration(seconds: 3),
                 ),
               );
-            } catch (e) {
-              debugPrint('Error al procesar usuario: $e');
             }
-          }
-
-          setState(() {
-            _markers.clear();
-            _markers.addAll(newMarkers);
-          });
-        });
+          },
+        );
   }
 
   LatLng _getSimulatedPosition(String uid) {
@@ -97,10 +112,10 @@ class _MapScreenState extends State<MapScreen> {
               // Avatar
               CircleAvatar(
                 radius: 50,
-                backgroundImage: user.fotoPerfil != null
-                    ? NetworkImage(user.fotoPerfil!)
+                backgroundImage: user.fotoPerfil.isNotEmpty
+                    ? NetworkImage(user.fotoPerfil)
                     : null,
-                child: user.fotoPerfil == null
+                child: user.fotoPerfil.isEmpty
                     ? const Icon(Icons.person, size: 50)
                     : null,
               ),

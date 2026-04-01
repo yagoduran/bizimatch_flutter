@@ -25,6 +25,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _nombreCtrl = TextEditingController();
   final _estudiosCtrl = TextEditingController();
   final _origenCtrl = TextEditingController();
+  final _lugarDeseadoCtrl = TextEditingController();
   final _precioAlquilerCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
@@ -44,6 +45,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _nombreCtrl.dispose();
     _estudiosCtrl.dispose();
     _origenCtrl.dispose();
+    _lugarDeseadoCtrl.dispose();
     _precioAlquilerCtrl.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
@@ -117,6 +119,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         fotoPerfil: _pickedFile?.path ?? '',
         intereses: const <String>[],
         email: _emailCtrl.text.trim(),
+        lugarDeseado: _lugarDeseadoCtrl.text.trim(),
       );
 
       await _firestoreService.saveUserProfile(profile);
@@ -231,6 +234,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 decoration: const InputDecoration(labelText: '¿Qué estudias?'),
                 validator: (v) =>
                     v == null || v.trim().isEmpty ? 'Obligatorio' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _lugarDeseadoCtrl,
+                decoration: const InputDecoration(
+                  labelText: '¿Dónde deseas vivir? (Ciudad/Zona)',
+                ),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Opcional' : null,
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
