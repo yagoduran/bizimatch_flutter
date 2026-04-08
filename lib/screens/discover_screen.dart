@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app_theme.dart';
+import '../models/user_model.dart';
 import '../models/user_profile.dart';
 import '../services/firestore_service.dart';
 import '../widgets/app_cached_network_image.dart';
@@ -313,28 +314,43 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     _snapBackController.forward(from: 0);
   }
 
-  int _calcAfinidad(UserProfile yo, UserProfile otro) {
-    final mine = yo.intereses.toSet();
-    final other = otro.intereses.toSet();
-    if (mine.isEmpty && other.isEmpty) {
-      return 60;
-    }
-    final comunes = mine.intersection(other).length;
-    final union = mine.union(other).length;
-    final base = ((comunes / union) * 100).round();
+  UserModel _toUserModel(UserProfile profile) {
+    return UserModel(
+      id: profile.uid,
+      nombre: profile.nombre,
+      email: profile.email,
+      fotoPerfil: profile.fotoPerfil,
+      fechaNacimiento: profile.fechaNacimiento,
+      genero: profile.genero,
+      origen: profile.origen,
+      estudios: profile.estudios,
+      esFumador: profile.fumador,
+      tieneMascotas: profile.mascotas,
+      tienePiso: profile.tienePiso,
+      precioAlquilerPorPersona: profile.precioAlquilerPorPersona?.toDouble(),
+      horario: profile.horario,
+      bio: profile.bio,
+      lugarDeseado: profile.lugarDeseado,
+    );
+  }
 
-    int bonus = 0;
-    if (yo.fumador == otro.fumador) {
-      bonus += 10;
+  int calcularAfinidad(UserModel miUsuario, UserModel otroUsuario) {
+    int score = 0;
+
+    if (miUsuario.esFumador == otroUsuario.esFumador) {
+      score += 25;
     }
-    if (yo.mascotas == otro.mascotas) {
-      bonus += 10;
+    if (miUsuario.tieneMascotas == otroUsuario.tieneMascotas) {
+      score += 25;
     }
-    if (yo.horario == otro.horario) {
-      bonus += 10;
+    if (miUsuario.horario == otroUsuario.horario) {
+      score += 30;
     }
-    final result = (base + bonus).clamp(0, 99);
-    return result;
+    if ((miUsuario.edad - otroUsuario.edad).abs() < 5) {
+      score += 20;
+    }
+
+    return score.clamp(0, 100);
   }
 
   String _unsplashPortraitByGender(String genero) {
@@ -717,7 +733,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final current = perfiles[clampedIndex];
     final next = perfiles[(clampedIndex + 1) % perfiles.length];
     final third = perfiles[(clampedIndex + 2) % perfiles.length];
-    final afinidad = _calcAfinidad(yo, current);
+    final miUsuario = _toUserModel(yo);
+    final afinidad = calcularAfinidad(miUsuario, _toUserModel(current));
 
     final dragProgress = (_dragOffset.dx.abs() / _swipeThreshold).clamp(
       0.0,
@@ -770,7 +787,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                 children: [
                   _profileCard(
                     third,
-                    _calcAfinidad(yo, third),
+                    calcularAfinidad(miUsuario, _toUserModel(third)),
                     topOffset: 26,
                     scale: 0.9,
                     opacity: 0.35,
@@ -778,7 +795,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   ),
                   _profileCard(
                     next,
-                    _calcAfinidad(yo, next),
+                    calcularAfinidad(miUsuario, _toUserModel(next)),
                     topOffset: 12,
                     scale: 0.95,
                     opacity: 0.56,
@@ -913,6 +930,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     double overlayOpacity = 0,
     required Key key,
   }) {
+    final affinityColor = afinidad > 50
+        ? const Color(0xFF10B981)
+        : const Color(0xFFF59E0B);
+
     final fallbackImage = user.tienePiso
         ? _unsplashRoomByContext()
         : _unsplashPortraitByGender(user.genero);
@@ -1063,13 +1084,13 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0x1410B981),
+                              color: affinityColor.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Text(
                               '$afinidad% de afinidad',
-                              style: const TextStyle(
-                                color: AppTheme.primary,
+                              style: TextStyle(
+                                color: affinityColor,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
