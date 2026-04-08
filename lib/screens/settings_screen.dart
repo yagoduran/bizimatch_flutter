@@ -554,17 +554,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(
                     Icons.delete_forever_outlined,
-                    color: Colors.red,
+                    color: Color(0xFFD61F1F),
                   ),
                   title: const Text(
-                    'Eliminar cuenta',
+                    'Eliminar cuenta y datos',
                     style: TextStyle(
-                      color: Colors.red,
+                      color: Color(0xFFD61F1F),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   subtitle: const Text(
-                    'Esta accion es permanente.',
+                    'Acción irreversible: elimina Auth y Firestore.',
                     style: TextStyle(color: AppTheme.textSecondary),
                   ),
                   onTap: _isBusy
@@ -737,9 +737,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Eliminar cuenta'),
+          title: const Text('Confirmación estricta'),
           content: const Text(
-            'Esta accion eliminara tu cuenta y tu perfil. No se puede deshacer.',
+            'Se eliminará tu cuenta de Firebase Auth y tus datos en Firestore. Esta acción no se puede deshacer.',
           ),
           actions: [
             TextButton(
@@ -747,9 +747,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD61F1F),
+              ),
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Eliminar'),
+              child: const Text('Sí, eliminar definitivamente'),
             ),
           ],
         );

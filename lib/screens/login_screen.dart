@@ -64,6 +64,48 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _recuperarContrasena() async {
+    final emailCtrl = TextEditingController(text: _emailController.text.trim());
+
+    final email = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Recuperar contraseña'),
+          content: TextField(
+            controller: emailCtrl,
+            keyboardType: TextInputType.emailAddress,
+            decoration: const InputDecoration(
+              labelText: 'Email',
+              hintText: 'tuemail@dominio.com',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, emailCtrl.text.trim()),
+              child: const Text('Enviar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (email == null || email.isEmpty) {
+      return;
+    }
+
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      _showInfo('Te hemos enviado un correo para restablecer tu contraseña.');
+    } on FirebaseAuthException catch (e) {
+      _showInfo('No se pudo enviar el correo: ${e.code}');
+    }
+  }
+
   void _showInfo(String text) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
@@ -134,6 +176,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Text('Iniciar sesión'),
+                  ),
+                  const SizedBox(height: 6),
+                  TextButton(
+                    onPressed: _isLoading ? null : _recuperarContrasena,
+                    child: const Text('¿Olvidaste tu contraseña?'),
                   ),
                   const SizedBox(height: 8),
                   TextButton.icon(
