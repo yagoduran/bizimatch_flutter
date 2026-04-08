@@ -10,8 +10,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app_theme.dart';
+import '../models/escuadron_model.dart';
 import '../models/user_model.dart';
 import '../models/user_profile.dart';
+import '../screens/squad_screen.dart';
+import '../services/escuadron_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/app_cached_network_image.dart';
 
@@ -59,6 +62,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   Duration _voicePosition = Duration.zero;
   Duration _voiceDuration = Duration.zero;
   final Map<String, Duration> _voiceDurationsByUid = <String, Duration>{};
+
+  // Squad Mode
+  bool _buscarCompaeros =
+      false; // true = look for roommates, false = look for housing
+  final EscuadronService _escuadronService = EscuadronService.instance;
+  Escuadron? _myEscuadron;
 
   RangeValues _edadRango = const RangeValues(20, 40);
   String _filtroGenero = 'Todos';
@@ -258,12 +267,74 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             .get();
 
         if (snapshot.docs.isNotEmpty && mounted) {
-          _mostrarPopupMatch(toUid);
+          // Si estamos en Squad Mode, mostrar dialog para formar escuadrón
+          if (_buscarCompaeros) {
+            _mostrarDialogoFormacionEscuadron(toUid);
+          } else {
+            _mostrarPopupMatch(toUid);
+          }
         }
       }
     } catch (e) {
       debugPrint('Error guardando swipe: $e');
     }
+  }
+
+  void _mostrarDialogoFormacionEscuadron(String otroUid) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            SizedBox(
+              width: 32,
+              height: 32,
+              child: CircleAvatar(
+                backgroundColor: Color(0xFF10B981),
+                child: Icon(Icons.people, color: Colors.white, size: 18),
+              ),
+            ),
+            SizedBox(width: 12),
+            Text('¡Nuevo Escuadrón!'),
+          ],
+        ),
+        content: Text(
+          '¿Queréis formar un Escuadrón para buscar alojamiento juntos?',
+          style: TextStyle(fontSize: 16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Ahora no'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final myUid = _myProfile?.uid;
+              if (myUid != null) {
+                try {
+                  await _escuadronService.crearEscuadron([myUid, otroUid]);
+                  HapticFeedback.mediumImpact();
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('¡Escuadrón creado! 👥'),
+                      backgroundColor: Color(0xFF10B981),
+                    ),
+                  );
+                  // Mostrar el popup de celebración
+                  _mostrarPopupMatch(otroUid);
+                } catch (e) {
+                  debugPrint('Error creando escuadrón: $e');
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF10B981)),
+            child: Text('¡Sí!', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _openSafetyActions(UserProfile targetUser) async {
@@ -816,9 +887,16 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final yoTienePiso = _myProfile?.tienePiso == true;
     return users
         .where((u) {
-          if (yoTienePiso && u.tienePiso) {
-            return false;
+          // Si estoy en Squad Mode, solo mostrar usuarios sin piso (para formar escuadrón)
+          if (_buscarCompaeros) {
+            if (u.tienePiso) return false; // Solo usuarios sin piso
+          } else {
+            // En modo piso: filtrar según alojamiento
+            if (yoTienePiso && u.tienePiso) {
+              return false;
+            }
           }
+
           final ageOk =
               u.edad >= _edadRango.start.round() &&
               u.edad <= _edadRango.end.round();
@@ -1351,6 +1429,64 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     );
   }
 
+  Widget _buildSquadModeToggle() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: _buscarCompaeros
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF10B981), Color(0xFF1F7A9A)],
+              )
+            : null,
+        color: _buscarCompaeros ? null : Color(0xFFF2FBF7),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _buscarCompaeros ? Colors.transparent : Color(0xFFD4EEE1),
+          width: 1.5,
+        ),
+      ),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        children: [
+          Icon(
+            _buscarCompaeros ? Icons.people : Icons.home,
+            color: _buscarCompaeros ? Colors.white : Color(0xFF10B981),
+            size: 20,
+          ),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _buscarCompaeros ? 'Busco Compañeros' : 'Busco Piso',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: _buscarCompaeros ? Colors.white : Color(0xFF10B981),
+              ),
+            ),
+          ),
+          Transform.scale(
+            scale: 0.75,
+            child: Switch(
+              value: _buscarCompaeros,
+              onChanged: (value) {
+                setState(() {
+                  _buscarCompaeros = value;
+                  _filteredProfiles = _filtrar(_allProfiles);
+                  _activeIndex = 0;
+                });
+                HapticFeedback.lightImpact();
+              },
+              activeColor: Colors.white,
+              activeTrackColor: Color(0xFF0F9D74),
+              inactiveThumbColor: Color(0xFF10B981),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -1392,11 +1528,15 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 12),
+              _buildSquadModeToggle(),
+              const SizedBox(height: 8),
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Perfiles recomendados según tu afinidad',
+                  _buscarCompaeros
+                      ? 'Otros usuarios sin piso buscando compañeros'
+                      : 'Perfiles recomendados según tu afinidad',
                   style: textTheme.bodyMedium,
                 ),
               ),
@@ -1439,11 +1579,15 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 12),
+              _buildSquadModeToggle(),
+              const SizedBox(height: 8),
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Perfiles recomendados según tu afinidad',
+                  _buscarCompaeros
+                      ? 'Otros usuarios sin piso buscando compañeros'
+                      : 'Perfiles recomendados según tu afinidad',
                   style: textTheme.bodyMedium,
                 ),
               ),

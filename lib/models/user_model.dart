@@ -23,6 +23,7 @@ class UserModel {
   final double karma;
   final int biziPuntos;
   final String? voiceBioUrl;
+  final String? idEscuadronActual; // Squad ID si pertenece a uno
 
   UserModel({
     required this.id,
@@ -47,6 +48,7 @@ class UserModel {
     this.karma = 0,
     this.biziPuntos = 0,
     this.voiceBioUrl,
+    this.idEscuadronActual,
   });
 
   // Calcular edad automáticamente
@@ -84,6 +86,7 @@ class UserModel {
       'karma': karma,
       'biziPuntos': biziPuntos,
       'voiceBioUrl': voiceBioUrl,
+      'idEscuadronActual': idEscuadronActual,
     };
   }
 
@@ -118,6 +121,7 @@ class UserModel {
       karma: (data['karma'] as num?)?.toDouble() ?? 0,
       biziPuntos: (data['biziPuntos'] as num?)?.toInt() ?? 0,
       voiceBioUrl: data['voiceBioUrl'] as String?,
+      idEscuadronActual: data['idEscuadronActual'] as String?,
     );
   }
 }
