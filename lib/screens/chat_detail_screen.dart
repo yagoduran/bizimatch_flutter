@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../app_theme.dart';
 import '../screens/coexistence_pact_screen.dart';
+import '../screens/expense_calculator_screen.dart';
 import '../services/firestore_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/app_cached_network_image.dart';
@@ -105,6 +106,21 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     }
   }
 
+  Future<void> _openExpenseCalculator() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ExpenseCalculatorScreen(
+          chatId: widget.chatId,
+          onSendToChat: (message) {
+            _controller.text = message;
+            Navigator.pop(context);
+          },
+        ),
+      ),
+    );
+  }
+
   Future<void> _openSafetyActions() async {
     await showModalBottomSheet<void>(
       context: context,
@@ -198,6 +214,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       appBar: AppBar(
         titleSpacing: 0,
         actions: [
+          IconButton(
+            onPressed: _openExpenseCalculator,
+            icon: const Icon(Icons.calculate),
+            tooltip: 'Calculadora de Gastos',
+          ),
           IconButton(
             onPressed: () {
               Navigator.push(
