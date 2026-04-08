@@ -47,10 +47,14 @@ class FirestoreService {
     return _users.snapshots().asyncMap((snapshot) async {
       // Obtener IDs de usuarios ya interactuados
       final interaccionados = await obtenerInteraccionados();
+      final bloqueados = await obtenerBloqueados();
 
       return snapshot.docs
           .where(
-            (doc) => doc.id != currentUid && !interaccionados.contains(doc.id),
+            (doc) =>
+                doc.id != currentUid &&
+                !interaccionados.contains(doc.id) &&
+                !bloqueados.contains(doc.id),
           )
           .map((doc) => UserProfile.fromMap(doc.data()))
           .toList(growable: false);
@@ -72,8 +76,21 @@ class FirestoreService {
         .where('participants', arrayContains: uid)
         .orderBy('updatedAt', descending: true)
         .snapshots()
-        .map((snapshot) {
+        .asyncMap((snapshot) async {
+          final bloqueados = await obtenerBloqueados();
+
           return snapshot.docs
+              .where((doc) {
+                final data = doc.data();
+                final participants = List<String>.from(
+                  data['participants'] ?? const <String>[],
+                );
+                final otherUid = participants.firstWhere(
+                  (id) => id != uid,
+                  orElse: () => '',
+                );
+                return otherUid.isEmpty || !bloqueados.contains(otherUid);
+              })
               .map((doc) {
                 final data = doc.data();
                 return ChatThread(
@@ -87,6 +104,50 @@ class FirestoreService {
               })
               .toList(growable: false);
         });
+  }
+
+  Future<Set<String>> obtenerBloqueados() async {
+    final myUid = _auth.currentUser?.uid;
+    if (myUid == null) return <String>{};
+
+    final doc = await _users.doc(myUid).get();
+    final data = doc.data();
+    if (data == null) {
+      return <String>{};
+    }
+
+    return List<String>.from(data['bloqueados'] ?? const <String>[]).toSet();
+  }
+
+  Future<void> bloquearUsuario(String bloqueadoUid) async {
+    final myUid = _auth.currentUser?.uid;
+    if (myUid == null || bloqueadoUid.trim().isEmpty) {
+      return;
+    }
+
+    await _users.doc(myUid).set({
+      'bloqueados': FieldValue.arrayUnion(<String>[bloqueadoUid]),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> reportarUsuario({
+    required String reportadoUid,
+    required String motivo,
+    String? chatId,
+  }) async {
+    final myUid = _auth.currentUser?.uid;
+    if (myUid == null || reportadoUid.trim().isEmpty || motivo.trim().isEmpty) {
+      return;
+    }
+
+    await _firestore.collection('reportes').add({
+      'reporterId': myUid,
+      'reportadoUid': reportadoUid,
+      'motivo': motivo,
+      'chatId': chatId,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
   }
 
   Stream<List<ChatMessage>> chatMessages(String chatId) {
@@ -386,7 +447,7 @@ class FirestoreService {
         'genero': genero,
         'origen': '$ciudad, España',
         'lugarDeseado':
-          '${(ciudadesBase[random.nextInt(ciudadesBase.length)]['ciudad'] as String)}, España',
+            '${(ciudadesBase[random.nextInt(ciudadesBase.length)]['ciudad'] as String)}, España',
         'fotoPerfil': fotosPortrait[random.nextInt(fotosPortrait.length)],
         'fotosPiso': tienePiso
             ? [fotosRoom[random.nextInt(fotosRoom.length)]]

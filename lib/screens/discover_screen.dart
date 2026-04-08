@@ -172,6 +172,90 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     }
   }
 
+  Future<void> _openSafetyActions(UserProfile targetUser) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.block_rounded, color: Colors.red),
+                  title: const Text('Bloquear usuario'),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _firestoreService.bloquearUsuario(targetUser.uid);
+                    if (!mounted) return;
+                    _showInfo('Usuario bloqueado correctamente.');
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(
+                    Icons.flag_outlined,
+                    color: AppTheme.textPrimary,
+                  ),
+                  title: const Text('Reportar perfil'),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final motivo = await _askReportReason();
+                    if (motivo == null || motivo.isEmpty) {
+                      return;
+                    }
+                    await _firestoreService.reportarUsuario(
+                      reportadoUid: targetUser.uid,
+                      motivo: motivo,
+                    );
+                    if (!mounted) return;
+                    _showInfo('Reporte enviado. Gracias por avisar.');
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<String?> _askReportReason() {
+    return showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Reportar perfil'),
+          content: const Text('Selecciona un motivo:'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'Spam'),
+              child: const Text('Spam'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'Fotos falsas'),
+              child: const Text('Fotos falsas'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'Ofensivo'),
+              child: const Text('Ofensivo'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showInfo(String text) {
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+  }
+
   void _mostrarPopupMatch(String otroUid) {
     showDialog(
       context: context,
@@ -852,6 +936,14 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               children: [
                 Text('Descubrir', style: textTheme.headlineMedium),
                 const Spacer(),
+                IconButton(
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    _openSafetyActions(current);
+                  },
+                  icon: const Icon(Icons.more_vert_rounded),
+                  tooltip: 'Más opciones',
+                ),
                 FilledButton.tonalIcon(
                   onPressed: () {
                     HapticFeedback.selectionClick();

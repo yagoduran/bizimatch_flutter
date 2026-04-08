@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app_theme.dart';
+import '../services/firestore_service.dart';
 import '../widgets/app_cached_network_image.dart';
 
 class ChatDetailScreen extends StatefulWidget {
@@ -26,6 +27,7 @@ class ChatDetailScreen extends StatefulWidget {
 
 class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirestoreService _firestoreService = FirestoreService();
   final TextEditingController _controller = TextEditingController();
   late final Stream<QuerySnapshot<Map<String, dynamic>>> _messagesStream;
   bool _isSending = false;
@@ -87,6 +89,90 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     }
   }
 
+  Future<void> _openSafetyActions() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.block_rounded, color: Colors.red),
+                  title: const Text('Bloquear usuario'),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _firestoreService.bloquearUsuario(widget.otherUid);
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Usuario bloqueado correctamente.'),
+                      ),
+                    );
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.flag_outlined),
+                  title: const Text('Reportar perfil'),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final motivo = await _askReportReason();
+                    if (motivo == null || motivo.isEmpty) {
+                      return;
+                    }
+                    await _firestoreService.reportarUsuario(
+                      reportadoUid: widget.otherUid,
+                      motivo: motivo,
+                      chatId: widget.chatId,
+                    );
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Reporte enviado. Gracias por avisar.'),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<String?> _askReportReason() {
+    return showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Reportar perfil'),
+          content: const Text('Selecciona un motivo:'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'Spam'),
+              child: const Text('Spam'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'Fotos falsas'),
+              child: const Text('Fotos falsas'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'Ofensivo'),
+              child: const Text('Ofensivo'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final myUid = FirebaseAuth.instance.currentUser?.uid ?? '';
@@ -95,6 +181,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
+        actions: [
+          IconButton(
+            onPressed: _openSafetyActions,
+            icon: const Icon(Icons.more_vert_rounded),
+            tooltip: 'Más opciones',
+          ),
+        ],
         title: Row(
           children: [
             AppCachedAvatar(
