@@ -1,86 +1,86 @@
-2. Notas de Voz en la Bio (Escucha a tu compañero)
+1. Notas de Voz en la Bio (Escucha a tu compañero)
 Las fotos engañan y los textos pueden ser fríos. Escuchar la voz de alguien genera empatía instantánea. (Apps como Hinge usan esto y es un éxito masivo).
 
 La Solución: Añadir un botón de grabar (15 segundos máximo) en el perfil. En la tarjeta de Explorar, un pequeño reproductor para escuchar su voz diciendo: "¡Hola! Soy Álex y hago unas tortillas de patata increíbles...".
 
-3. El "Pacto de Convivencia" (Checklist Compartido)
+2. El "Pacto de Convivencia" (Checklist Compartido)
 Una vez que hacen Match y deciden vivir juntos, ¿qué normas ponen?
 
 La Solución: Una pantalla especial dentro del chat llamada "Pacto". Es una lista de checkboxes compartida en tiempo real (visitas, horas de silencio, turnos de limpieza). Ambos tienen que darle a "Aceptar".
 
-4. Calculadora de Gastos Integrada (Finanzas Claras)
+3. Calculadora de Gastos Integrada (Finanzas Claras)
 Evita las discusiones por el dinero antes de que empiecen.
 
 La Solución: Una mini-herramienta en la app donde pones el alquiler, la luz, el internet y te calcula exactamente a cuánto tocáis, permitiendo generar un mensaje automático en el chat con el desglose.
 
-👥 2. Modo "Escuadrón" (Búsqueda en Grupo)
+👥 4. Modo "Escuadrón" (Búsqueda en Grupo)
 A veces hay pisos increíbles de 3 habitaciones vacíos, pero tú estás solo.
 
 La Función: Permite a 2 o 3 usuarios que no tienen piso hacer "Match" entre ellos para formar un "Escuadrón". Una vez formado el grupo, la app os busca pisos completos que se alquilen enteros.
 
-🤖 3. "BiziBot" (El Asistente Rompehielos con IA)
+🤖 5. "BiziBot" (El Asistente Rompehielos con IA)
 El mayor problema de estas apps es que la gente hace Match y nadie dice "Hola".
 
 La Función: En la pantalla de chat, un botón brillante que diga "Que la IA rompa el hielo". La app lee la bio del otro usuario y te sugiere 3 mensajes de apertura ingeniosos (ej: "He visto que te encanta hacer tortillas, ¿eres concebollista o sincebollista?").
 
-🚨 4. Modo SOS (Urgencia)
+🚨 6. Modo SOS (Urgencia)
 Para la gente que le han echado del piso o empieza a trabajar el lunes.
 
 La Función: Un interruptor en el perfil: "Necesito piso en menos de 7 días". Tu tarjeta en la pantalla de Explorar aparece con un borde rojo neón o de fuego, y el sistema te pone el primero en la pila de tarjetas de tu ciudad.
 
-🧹 2. Gestor de Tareas Gamificado (El "Jefe" de la Casa)
+🧹 7. Gestor de Tareas Gamificado (El "Jefe" de la Casa)
 Ya viven juntos... y llega la guerra por ver quién baja la basura.
 
 La Función: Una pestaña nueva llamada "Mi Casa" (solo se desbloquea al hacer Match y confirmar mudanza). Es un panel de tareas compartidas (Limpiar baño, Comprar papel higiénico). Cada tarea da "BiziPuntos". Al final del mes, la app corona al "Compañero del Mes".
 
-📄 3. Generador de Contratos (El Trámite Legal)
+📄 8. Generador de Contratos (El Trámite Legal)
 La burocracia da pereza. BiziMatch te la soluciona con un clic.
 
 La Función: Cuando dos usuarios aceptan el "Pacto de convivencia", la app usa sus datos (Nombres, DNIs simulados, Precio) para generar automáticamente un documento PDF con un contrato de subarriendo o acuerdo habitacional. Se puede descargar y compartir.
 
-🍻 4. Modo "Comunidad" (Para los recién llegados)
+🍻 9. Modo "Comunidad" (Para los recién llegados)
 Mucha gente busca piso en una ciudad nueva donde no conoce a nadie.
 
 La Función: Un tablón de anuncios local dentro de la app. "Plan de cañas en Madrid Centro hoy a las 20:00". No es para buscar piso, es para que los usuarios de BiziMatch se conozcan y hagan amigos en su nueva ciudad.
 
-🌍 3. Traducción de Chat en Tiempo Real (Para estudiantes Erasmus)
+🌍 10. Traducción de Chat en Tiempo Real (Para estudiantes Erasmus)
 Muchas personas que buscan piso en España son extranjeros (Erasmus, nómadas digitales).
 
 La Función: Si alguien te escribe en inglés en el chat, aparece un botón pequeño de "Traducir" debajo del mensaje. Esto rompe la barrera del idioma al instante.
 
-🚇 1. "Modo Metro" (Soporte Offline)
+🚇 11. "Modo Metro" (Soporte Offline)
 ¿Qué pasa si un usuario va en el metro de Madrid o Barcelona, pierde la cobertura y abre tu app? Si sale una pantalla de error, estás suspendido.
 
 La Función: Activar la persistencia de datos local de Firebase. La app guardará los últimos perfiles y chats en la memoria caché del móvil. Podrás leer mensajes antiguos y ver perfiles aunque estés en modo avión.
 
-📊 2. "El Gran Hermano" (Analytics & Crashlytics)
+📊 12. "El Gran Hermano" (Analytics & Crashlytics)
 Un proyecto profesional tiene que medir lo que hace la gente y cazar los errores antes de que se quejen.
 
 La Función: Integrar Firebase Analytics para registrar cada vez que alguien hace "Match" o "Swipe". Y añadir Firebase Crashlytics: si la app crashea en el móvil de alguien, te llega un reporte exacto a tu consola con la línea de código que falló. (A los profesores les fascina esto).
 
-🥚 3. El "Easter Egg" (El Huevo de Pascua)
+🥚 13. El "Easter Egg" (El Huevo de Pascua)
 El toque de autor. Todas las grandes apps (Android, Google, videojuegos) tienen un secreto escondido.
 
 La Función: Si vas a la pantalla de Ajustes y tocas el logo de BiziMatch 5 veces seguidas muy rápido, la pantalla tiembla y se abre una ventana secreta con los créditos del desarrollador (Tú), una foto tuya con gafas de sol y un texto: "Desarrollado con mucha cafeína para el TFG 2026". ¡El tribunal se va a reír y te ganarás su simpatía!
 
-🌐 1. La Landing Page (La Web de Descarga)
+🌐 14. La Landing Page (La Web de Descarga)
 Nadie se descarga una app sin haber visto antes una página web bonita que explique qué hace.
 
 La Función: Una página web minimalista (puedes usar Flutter Web o un HTML simple) con el logo de BiziMatch, un mockup de un móvil mostrando la app, y dos botones gigantes: "Descargar en App Store" y "Disponible en Google Play".
 
 Impacto: Cuando el tribunal te pregunte "¿Y cómo vas a conseguir usuarios?", tú abres la web en el proyector y los dejas planchados.
 
-⚖️ 2. Cumplimiento RGPD (El Escudo Legal Europeo)
+⚖️ 15. Cumplimiento RGPD (El Escudo Legal Europeo)
 Como estás en España (y el TFG lo evalúan bajo normativas europeas), si recopilas datos de fumadores, mascotas y orientación de convivencia sin permiso explícito, te pueden suspender por falta de ética.
 
 La Función: Un Checkbox obligatorio en la pantalla de Registro que diga "Acepto la Política de Privacidad y el tratamiento de mis datos". Y una pantalla estática en Ajustes con los Términos y Condiciones.
 
-🛟 3. Centro de Soporte (El salvavidas del usuario)
+🛟 16. Centro de Soporte (El salvavidas del usuario)
 Si algo falla, ¿a quién le lloran los usuarios?
 
 La Función: Una pantalla de "Ayuda y Soporte" en Ajustes. Debe tener una sección de Preguntas Frecuentes (FAQ) desplegables (ej: ¿Cómo borro un match?, ¿Cómo denuncio un perfil falso?) y un botón para "Enviar un email al creador" que abra la app de correo del móvil automáticamente.
 
-🚀 La Última Frontera: Integración Continua (CI/CD)
+🚀 17. La Última Frontera: Integración Continua (CI/CD)
 En el mundo real, los desarrolladores no conectan su móvil por cable para instalar la app a sus jefes. Usan la automatización.
 
 La Función: Configurar GitHub Actions o Codemagic.

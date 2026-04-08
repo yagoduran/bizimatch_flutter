@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -24,6 +25,9 @@ class _MapScreenState extends State<MapScreen> {
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _markersSub;
   List<UserProfile> _usersWithPiso = [];
   UserProfile? _selectedUser;
+  List<ServicePoi> _nearbyServices = [];
+  bool _showNearbyServices = false;
+  bool _loadingNearbyServices = false;
 
   // Posición inicial (Madrid, España)
   static const LatLng _initialPosition = LatLng(40.4168, -3.7038);
@@ -85,12 +89,108 @@ class _MapScreenState extends State<MapScreen> {
     setState(() {
       _selectedUser = user;
     });
+    _loadNearbyServicesForUser(user, showAfterLoad: true);
   }
 
   void _clearSelection() {
     setState(() {
       _selectedUser = null;
+      _nearbyServices = const [];
+      _showNearbyServices = false;
+      _loadingNearbyServices = false;
     });
+  }
+
+  Future<void> _loadNearbyServicesForUser(
+    UserProfile user, {
+    bool showAfterLoad = false,
+  }) async {
+    final housePosition = _getSimulatedPosition(user.uid);
+    setState(() {
+      _loadingNearbyServices = true;
+      if (showAfterLoad) {
+        _showNearbyServices = true;
+      }
+    });
+
+    // Simulación de consulta externa (ej: Overpass) para mantenerlo gratis/offline.
+    await Future<void>.delayed(const Duration(milliseconds: 220));
+
+    final pois = _buildMockNearbyServices(housePosition);
+    if (!mounted || _selectedUser?.uid != user.uid) {
+      return;
+    }
+
+    setState(() {
+      _nearbyServices = pois;
+      _loadingNearbyServices = false;
+      if (showAfterLoad) {
+        _showNearbyServices = true;
+      }
+    });
+  }
+
+  List<ServicePoi> _buildMockNearbyServices(LatLng base) {
+    final metro = _offsetPoint(base, metersNorth: 320, metersEast: -120);
+    final bus = _offsetPoint(base, metersNorth: -180, metersEast: 250);
+    final market1 = _offsetPoint(base, metersNorth: 410, metersEast: 260);
+    final market2 = _offsetPoint(base, metersNorth: -360, metersEast: -300);
+
+    return <ServicePoi>[
+      ServicePoi(
+        id: 'metro-${base.latitude}-${base.longitude}',
+        name: 'Metro Centro',
+        type: ServicePoiType.transport,
+        position: metro,
+      ),
+      ServicePoi(
+        id: 'bus-${base.latitude}-${base.longitude}',
+        name: 'Parada de Bus Norte',
+        type: ServicePoiType.transport,
+        position: bus,
+      ),
+      ServicePoi(
+        id: 'market-a-${base.latitude}-${base.longitude}',
+        name: 'Supermercado Ahorro',
+        type: ServicePoiType.supermarket,
+        position: market1,
+      ),
+      ServicePoi(
+        id: 'market-b-${base.latitude}-${base.longitude}',
+        name: 'Market Express',
+        type: ServicePoiType.supermarket,
+        position: market2,
+      ),
+    ];
+  }
+
+  LatLng _offsetPoint(
+    LatLng center, {
+    required double metersNorth,
+    required double metersEast,
+  }) {
+    const metersPerLatDegree = 111320.0;
+    final latDelta = metersNorth / metersPerLatDegree;
+    final metersPerLngDegree =
+        metersPerLatDegree * math.cos(center.latitude * math.pi / 180);
+    final lngDelta = metersEast / metersPerLngDegree;
+
+    return LatLng(center.latitude + latDelta, center.longitude + lngDelta);
+  }
+
+  void _handleNearbyServicesPressed() {
+    final selected = _selectedUser;
+    if (selected == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecciona un piso para ver servicios cercanos.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    _loadNearbyServicesForUser(selected, showAfterLoad: true);
   }
 
   @override
@@ -177,6 +277,19 @@ class _MapScreenState extends State<MapScreen> {
                   );
                 }).toList(),
               ),
+              if (_showNearbyServices && _nearbyServices.isNotEmpty)
+                MarkerLayer(
+                  markers: _nearbyServices
+                      .map(
+                        (poi) => Marker(
+                          point: poi.position,
+                          width: 36,
+                          height: 36,
+                          child: _buildServicePin(poi),
+                        ),
+                      )
+                      .toList(growable: false),
+                ),
             ],
           ),
           // Leyenda flotante
@@ -209,6 +322,18 @@ class _MapScreenState extends State<MapScreen> {
                       color: Colors.grey.shade700,
                     ),
                   ),
+                  const SizedBox(width: 10),
+                  const Icon(
+                    Icons.directions_transit_rounded,
+                    color: Color(0xFF2563EB),
+                    size: 16,
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.shopping_cart_rounded,
+                    color: Color(0xFFEA580C),
+                    size: 16,
+                  ),
                 ],
               ),
             ),
@@ -221,16 +346,105 @@ class _MapScreenState extends State<MapScreen> {
               bottom: 100,
               child: _buildUserCard(_selectedUser!),
             ),
+          if (_loadingNearbyServices)
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: _selectedUser != null ? 230 : 120,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.72),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Buscando servicios en 1 km...',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF10B981),
-        onPressed: () {
-          _mapController.move(_initialPosition, 13.5);
-          _clearSelection();
-        },
-        elevation: 4,
-        child: const Icon(Icons.my_location, color: Colors.white),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: 'nearby-services-fab',
+            backgroundColor: const Color(0xFF0EA5E9),
+            onPressed: _loadingNearbyServices
+                ? null
+                : _handleNearbyServicesPressed,
+            icon: const Icon(Icons.travel_explore_rounded, color: Colors.white),
+            label: const Text(
+              'Ver servicios cercanos',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          FloatingActionButton(
+            heroTag: 'reset-map-fab',
+            backgroundColor: const Color(0xFF10B981),
+            onPressed: () {
+              _mapController.move(_initialPosition, 13.5);
+              _clearSelection();
+            },
+            elevation: 4,
+            child: const Icon(Icons.my_location, color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServicePin(ServicePoi poi) {
+    final isTransport = poi.type == ServicePoiType.transport;
+    return Tooltip(
+      message: poi.name,
+      child: Container(
+        decoration: BoxDecoration(
+          color: isTransport
+              ? const Color(0xFF2563EB)
+              : const Color(0xFFEA580C),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.18),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(
+          isTransport
+              ? Icons.directions_transit_rounded
+              : Icons.shopping_cart_rounded,
+          size: 16,
+          color: Colors.white,
+        ),
       ),
     );
   }
@@ -305,6 +519,15 @@ class _MapScreenState extends State<MapScreen> {
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'A 5 min del metro',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: const Color(0xFF2563EB),
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
@@ -415,6 +638,22 @@ class _MapScreenState extends State<MapScreen> {
     _mapController.dispose();
     super.dispose();
   }
+}
+
+enum ServicePoiType { transport, supermarket }
+
+class ServicePoi {
+  final String id;
+  final String name;
+  final ServicePoiType type;
+  final LatLng position;
+
+  const ServicePoi({
+    required this.id,
+    required this.name,
+    required this.type,
+    required this.position,
+  });
 }
 
 /// Widget personalizado para dibujar un pin en forma de gota de agua
