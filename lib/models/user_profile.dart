@@ -27,6 +27,7 @@ class UserProfile {
     this.biziPuntos,
     this.rachaDias,
     this.comodinRachaDisponible,
+    this.semanasPerfectas,
     this.totalResenas,
     this.medallasResumen,
   });
@@ -56,6 +57,7 @@ class UserProfile {
   final int? biziPuntos;
   final int? rachaDias;
   final bool? comodinRachaDisponible;
+  final int? semanasPerfectas;
   final int? totalResenas;
   final Map<String, int>? medallasResumen;
 
@@ -112,6 +114,9 @@ class UserProfile {
     if (comodinRachaDisponible != null) {
       map['comodinRachaDisponible'] = comodinRachaDisponible;
     }
+    if (semanasPerfectas != null) {
+      map['semanasPerfectas'] = semanasPerfectas;
+    }
     if (totalResenas != null) {
       map['totalResenas'] = totalResenas;
     }
@@ -158,6 +163,7 @@ class UserProfile {
       biziPuntos: (map['biziPuntos'] as num?)?.toInt(),
       rachaDias: (map['rachaDias'] as num?)?.toInt(),
       comodinRachaDisponible: map['comodinRachaDisponible'] as bool?,
+      semanasPerfectas: (map['semanasPerfectas'] as num?)?.toInt(),
       totalResenas: (map['totalResenas'] as num?)?.toInt(),
       medallasResumen: (map['medallasResumen'] as Map<String, dynamic>?)?.map(
         (key, value) => MapEntry(key, (value as num?)?.toInt() ?? 0),

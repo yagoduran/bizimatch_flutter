@@ -16,13 +16,17 @@ class SwipeReward {
     required this.pointsEarned,
     this.streakBonusAwarded = false,
     this.streakShieldUsed = false,
+    this.perfectWeekAwarded = false,
     this.streakDays = 0,
+    this.perfectWeeks = 0,
   });
 
   final int pointsEarned;
   final bool streakBonusAwarded;
   final bool streakShieldUsed;
+  final bool perfectWeekAwarded;
   final int streakDays;
+  final int perfectWeeks;
 }
 
 class FirestoreService {
@@ -94,7 +98,9 @@ class FirestoreService {
     int granted = amount;
     bool streakBonusAwarded = false;
     bool streakShieldUsed = false;
+    bool perfectWeekAwarded = false;
     int streakDays = 0;
+    int perfectWeeks = 0;
 
     await _firestore.runTransaction((tx) async {
       final snapshot = await tx.get(userRef);
@@ -121,10 +127,27 @@ class FirestoreService {
         final prevStreak = (data['rachaDias'] as num?)?.toInt() ?? 0;
         final prevDayKey = (data['rachaUltimoDia'] ?? '') as String;
         final prevWeekKey = (data['rachaComodinSemana'] ?? '') as String;
+        final prevPerfectWeeks =
+            (data['semanasPerfectas'] as num?)?.toInt() ?? 0;
+        perfectWeeks = prevPerfectWeeks;
         bool shieldAvailable =
             (data['comodinRachaDisponible'] as bool?) ?? true;
 
         if (prevWeekKey != weekKey) {
+          if (prevWeekKey.isNotEmpty) {
+            final activeDaysPrevWeek = _countActiveDaysForWeek(
+              daily,
+              prevWeekKey,
+            );
+            if (activeDaysPrevWeek >= 5 && shieldAvailable) {
+              const prestigeBonus = 80;
+              granted += prestigeBonus;
+              perfectWeekAwarded = true;
+              perfectWeeks = prevPerfectWeeks + 1;
+              update['semanasPerfectas'] = perfectWeeks;
+            }
+          }
+
           shieldAvailable = true;
           update['rachaComodinSemana'] = weekKey;
           update['comodinRachaDisponible'] = true;
@@ -162,7 +185,9 @@ class FirestoreService {
 
       update['biziPuntos'] = currentPoints + granted;
       update['lastPointsGain'] = granted;
-      update['lastPointsReason'] = streakShieldUsed
+      update['lastPointsReason'] = perfectWeekAwarded
+          ? 'perfect_week'
+          : streakShieldUsed
           ? 'swipe_streak_shield'
           : streakBonusAwarded
           ? 'swipe_streak'
@@ -177,8 +202,34 @@ class FirestoreService {
       pointsEarned: granted,
       streakBonusAwarded: streakBonusAwarded,
       streakShieldUsed: streakShieldUsed,
+      perfectWeekAwarded: perfectWeekAwarded,
       streakDays: streakDays,
+      perfectWeeks: perfectWeeks,
     );
+  }
+
+  int _countActiveDaysForWeek(Map<String, dynamic> daily, String weekKey) {
+    int count = 0;
+    for (final entry in daily.entries) {
+      final dayKey = entry.key;
+      final swipes = (entry.value as num?)?.toInt() ?? 0;
+      if (swipes <= 0) {
+        continue;
+      }
+      final dayWeek = _weekKeyFromDayKey(dayKey);
+      if (dayWeek == weekKey) {
+        count += 1;
+      }
+    }
+    return count;
+  }
+
+  String _weekKeyFromDayKey(String dayKey) {
+    final date = DateTime.tryParse(dayKey);
+    if (date == null) {
+      return '';
+    }
+    return _weekKeyFromDate(date);
   }
 
   int _daysBetween(String fromKey, String toKey) {

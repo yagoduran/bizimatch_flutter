@@ -978,6 +978,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final points = profile.biziPuntos ?? 0;
     final streakDays = profile.rachaDias ?? 0;
     final shieldAvailable = profile.comodinRachaDisponible ?? true;
+    final perfectWeeks = profile.semanasPerfectas ?? 0;
     const pointsPerLevel = 200;
     final level = _levelFromPoints(points);
     final levelStart = (level - 1) * pointsPerLevel;
@@ -1099,30 +1100,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     : const Color(0xFFE2E8E4),
               ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  shieldAvailable
-                      ? Icons.shield_moon_rounded
-                      : Icons.shield_outlined,
-                  size: 16,
-                  color: shieldAvailable
-                      ? const Color(0xFF2563EB)
-                      : AppTheme.textSecondary,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      shieldAvailable
+                          ? Icons.shield_moon_rounded
+                          : Icons.shield_outlined,
+                      size: 16,
+                      color: shieldAvailable
+                          ? const Color(0xFF2563EB)
+                          : AppTheme.textSecondary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      shieldAvailable
+                          ? 'Comodín semanal disponible'
+                          : 'Comodín semanal usado',
+                      style: TextStyle(
+                        color: shieldAvailable
+                            ? const Color(0xFF1D4ED8)
+                            : AppTheme.textSecondary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  shieldAvailable
-                      ? 'Comodín semanal disponible'
-                      : 'Comodín semanal usado',
-                  style: TextStyle(
-                    color: shieldAvailable
-                        ? const Color(0xFF1D4ED8)
-                        : AppTheme.textSecondary,
-                    fontWeight: FontWeight.w700,
+                if (perfectWeeks > 0) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF6DB),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: const Color(0xFFF6D98E)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 16,
+                          color: Color(0xFFB7791F),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Semanas perfectas: $perfectWeeks',
+                          style: const TextStyle(
+                            color: Color(0xFF92400E),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),

@@ -164,7 +164,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         tipo: tipo,
       );
       if (reward.pointsEarned > 0 && mounted) {
-        final text = reward.streakShieldUsed
+        final text = reward.perfectWeekAwarded
+            ? '+${reward.pointsEarned} BiziPuntos por semana perfecta #${reward.perfectWeeks} 👑'
+            : reward.streakShieldUsed
             ? '+${reward.pointsEarned} BiziPuntos y comodín semanal usado 🛡️🔥'
             : reward.streakBonusAwarded
             ? '+${reward.pointsEarned} BiziPuntos por racha de ${reward.streakDays} días 🔥'
