@@ -15,11 +15,13 @@ class SwipeReward {
   const SwipeReward({
     required this.pointsEarned,
     this.streakBonusAwarded = false,
+    this.streakShieldUsed = false,
     this.streakDays = 0,
   });
 
   final int pointsEarned;
   final bool streakBonusAwarded;
+  final bool streakShieldUsed;
   final int streakDays;
 }
 
@@ -91,6 +93,7 @@ class FirestoreService {
     final userRef = _users.doc(uid);
     int granted = amount;
     bool streakBonusAwarded = false;
+    bool streakShieldUsed = false;
     int streakDays = 0;
 
     await _firestore.runTransaction((tx) async {
@@ -104,6 +107,7 @@ class FirestoreService {
       final mm = now.month.toString().padLeft(2, '0');
       final dd = now.day.toString().padLeft(2, '0');
       final dayKey = '${now.year}-$mm-$dd';
+      final weekKey = _weekKeyFromDate(now);
 
       if (increaseDailySwipes) {
         final rawDaily = data['swipesDiarios'];
@@ -116,9 +120,34 @@ class FirestoreService {
 
         final prevStreak = (data['rachaDias'] as num?)?.toInt() ?? 0;
         final prevDayKey = (data['rachaUltimoDia'] ?? '') as String;
+        final prevWeekKey = (data['rachaComodinSemana'] ?? '') as String;
+        bool shieldAvailable =
+            (data['comodinRachaDisponible'] as bool?) ?? true;
+
+        if (prevWeekKey != weekKey) {
+          shieldAvailable = true;
+          update['rachaComodinSemana'] = weekKey;
+          update['comodinRachaDisponible'] = true;
+        }
 
         if (dayCount == 0) {
-          streakDays = _calcularSiguienteRacha(prevDayKey, dayKey, prevStreak);
+          final daysDiff = _daysBetween(prevDayKey, dayKey);
+          if (daysDiff == 2 && shieldAvailable && prevStreak > 0) {
+            streakDays = prevStreak + 1;
+            shieldAvailable = false;
+            streakShieldUsed = true;
+            update['comodinRachaDisponible'] = false;
+            update['rachaComodinSemana'] = weekKey;
+          } else {
+            streakDays = _calcularSiguienteRacha(
+              prevDayKey,
+              dayKey,
+              prevStreak,
+            );
+            update['comodinRachaDisponible'] = shieldAvailable;
+            update['rachaComodinSemana'] = weekKey;
+          }
+
           final streakBonus = 5 * streakDays.clamp(1, 7);
           granted += streakBonus;
           streakBonusAwarded = streakBonus > 0;
@@ -133,7 +162,11 @@ class FirestoreService {
 
       update['biziPuntos'] = currentPoints + granted;
       update['lastPointsGain'] = granted;
-      update['lastPointsReason'] = streakBonusAwarded ? 'swipe_streak' : reason;
+      update['lastPointsReason'] = streakShieldUsed
+          ? 'swipe_streak_shield'
+          : streakBonusAwarded
+          ? 'swipe_streak'
+          : reason;
       update['lastPointsAt'] = FieldValue.serverTimestamp();
       update['updatedAt'] = FieldValue.serverTimestamp();
 
@@ -143,8 +176,25 @@ class FirestoreService {
     return SwipeReward(
       pointsEarned: granted,
       streakBonusAwarded: streakBonusAwarded,
+      streakShieldUsed: streakShieldUsed,
       streakDays: streakDays,
     );
+  }
+
+  int _daysBetween(String fromKey, String toKey) {
+    final from = DateTime.tryParse(fromKey);
+    final to = DateTime.tryParse(toKey);
+    if (from == null || to == null) {
+      return 9999;
+    }
+    return to.difference(from).inDays;
+  }
+
+  String _weekKeyFromDate(DateTime date) {
+    final startOfYear = DateTime(date.year, 1, 1);
+    final dayOfYear = date.difference(startOfYear).inDays + 1;
+    final week = ((dayOfYear - 1) ~/ 7) + 1;
+    return '${date.year}-W$week';
   }
 
   int _calcularSiguienteRacha(

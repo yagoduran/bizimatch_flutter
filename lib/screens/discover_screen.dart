@@ -164,7 +164,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         tipo: tipo,
       );
       if (reward.pointsEarned > 0 && mounted) {
-        final text = reward.streakBonusAwarded
+        final text = reward.streakShieldUsed
+            ? '+${reward.pointsEarned} BiziPuntos y comodín semanal usado 🛡️🔥'
+            : reward.streakBonusAwarded
             ? '+${reward.pointsEarned} BiziPuntos por racha de ${reward.streakDays} días 🔥'
             : '+${reward.pointsEarned} BiziPuntos por explorar hoy 🚀';
         ScaffoldMessenger.of(context).showSnackBar(

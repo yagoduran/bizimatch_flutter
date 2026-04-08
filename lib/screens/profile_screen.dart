@@ -977,6 +977,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _biziLevelHeader(UserProfile profile) {
     final points = profile.biziPuntos ?? 0;
     final streakDays = profile.rachaDias ?? 0;
+    final shieldAvailable = profile.comodinRachaDisponible ?? true;
     const pointsPerLevel = 200;
     final level = _levelFromPoints(points);
     final levelStart = (level - 1) * pointsPerLevel;
@@ -1084,6 +1085,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
           ],
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: shieldAvailable
+                  ? const Color(0xFFEEF6FF)
+                  : const Color(0xFFF5F6F7),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: shieldAvailable
+                    ? const Color(0xFFBED8FF)
+                    : const Color(0xFFE2E8E4),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  shieldAvailable
+                      ? Icons.shield_moon_rounded
+                      : Icons.shield_outlined,
+                  size: 16,
+                  color: shieldAvailable
+                      ? const Color(0xFF2563EB)
+                      : AppTheme.textSecondary,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  shieldAvailable
+                      ? 'Comodín semanal disponible'
+                      : 'Comodín semanal usado',
+                  style: TextStyle(
+                    color: shieldAvailable
+                        ? const Color(0xFF1D4ED8)
+                        : AppTheme.textSecondary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
