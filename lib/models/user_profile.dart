@@ -24,6 +24,7 @@ class UserProfile {
     this.direccionZona = '',
     this.fotosPiso = const <String>[],
     this.karma,
+    this.biziPuntos,
     this.totalResenas,
     this.medallasResumen,
   });
@@ -50,6 +51,7 @@ class UserProfile {
   final String direccionZona;
   final List<String> fotosPiso;
   final double? karma;
+  final int? biziPuntos;
   final int? totalResenas;
   final Map<String, int>? medallasResumen;
 
@@ -97,6 +99,9 @@ class UserProfile {
     if (karma != null) {
       map['karma'] = karma;
     }
+    if (biziPuntos != null) {
+      map['biziPuntos'] = biziPuntos;
+    }
     if (totalResenas != null) {
       map['totalResenas'] = totalResenas;
     }
@@ -140,6 +145,7 @@ class UserProfile {
       direccionZona: (map['direccionZona'] ?? '') as String,
       fotosPiso: List<String>.from(map['fotosPiso'] ?? const <String>[]),
       karma: (map['karma'] as num?)?.toDouble(),
+      biziPuntos: (map['biziPuntos'] as num?)?.toInt(),
       totalResenas: (map['totalResenas'] as num?)?.toInt(),
       medallasResumen: (map['medallasResumen'] as Map<String, dynamic>?)?.map(
         (key, value) => MapEntry(key, (value as num?)?.toInt() ?? 0),

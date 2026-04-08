@@ -28,8 +28,86 @@ class FirestoreService {
   CollectionReference<Map<String, dynamic>> get _interacciones =>
       _firestore.collection('interacciones');
 
-  Future<void> saveUserProfile(UserProfile profile) async {
-    await _users.doc(profile.uid).set(profile.toMap(), SetOptions(merge: true));
+  Future<int> saveUserProfile(UserProfile profile) async {
+    final userRef = _users.doc(profile.uid);
+    final existingDoc = await userRef.get();
+    final existingData = existingDoc.data() ?? const <String, dynamic>{};
+
+    final payload = profile.toMap();
+    final currentPoints = (existingData['biziPuntos'] as num?)?.toInt() ?? 0;
+    final hasBioBonus = (existingData['bonusBioOtorgado'] ?? false) as bool;
+
+    int pointsGained = 0;
+    bool nextHasBioBonus = hasBioBonus;
+    if (!hasBioBonus && _isBioCompleta(profile.bio)) {
+      pointsGained += 50;
+      nextHasBioBonus = true;
+      payload['lastPointsReason'] = 'bio';
+      payload['lastPointsGain'] = 50;
+      payload['lastPointsAt'] = FieldValue.serverTimestamp();
+    }
+
+    payload['bonusBioOtorgado'] = nextHasBioBonus;
+    payload['biziPuntos'] = currentPoints + pointsGained;
+
+    await userRef.set(payload, SetOptions(merge: true));
+    return pointsGained;
+  }
+
+  bool _isBioCompleta(String bio) {
+    final value = bio.trim();
+    if (value.length < 20) {
+      return false;
+    }
+    const genericDefaults = <String>{
+      'Sin bio por ahora.',
+      'Buscando compañeros de piso compatibles para convivir bien.',
+    };
+    return !genericDefaults.contains(value);
+  }
+
+  Future<int> _addPoints(
+    String uid,
+    int amount, {
+    required String reason,
+    bool increaseDailySwipes = false,
+  }) async {
+    if (amount <= 0 || uid.trim().isEmpty) {
+      return 0;
+    }
+
+    final userRef = _users.doc(uid);
+    await _firestore.runTransaction((tx) async {
+      final snapshot = await tx.get(userRef);
+      final data = snapshot.data() ?? const <String, dynamic>{};
+      final currentPoints = (data['biziPuntos'] as num?)?.toInt() ?? 0;
+
+      final update = <String, dynamic>{
+        'biziPuntos': currentPoints + amount,
+        'lastPointsGain': amount,
+        'lastPointsReason': reason,
+        'lastPointsAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      if (increaseDailySwipes) {
+        final now = DateTime.now();
+        final mm = now.month.toString().padLeft(2, '0');
+        final dd = now.day.toString().padLeft(2, '0');
+        final dayKey = '${now.year}-$mm-$dd';
+        final rawDaily = data['swipesDiarios'];
+        final daily = rawDaily is Map<String, dynamic>
+            ? Map<String, dynamic>.from(rawDaily)
+            : <String, dynamic>{};
+        final dayCount = (daily[dayKey] as num?)?.toInt() ?? 0;
+        daily[dayKey] = dayCount + 1;
+        update['swipesDiarios'] = daily;
+      }
+
+      tx.set(userRef, update, SetOptions(merge: true));
+    });
+
+    return amount;
   }
 
   Stream<UserProfile?> myProfileStream() {
@@ -316,6 +394,7 @@ class FirestoreService {
     });
 
     await _recalcularKarma(targetUid);
+    await _addPoints(targetUid, 100, reason: 'karma_medal');
   }
 
   Future<void> _recalcularKarma(String targetUid) async {
@@ -368,12 +447,12 @@ class FirestoreService {
   }
 
   /// Guardar un swipe (like o dislike) en la colección de interacciones
-  Future<void> guardarSwipe({
+  Future<int> guardarSwipe({
     required String toUid,
     required String tipo, // 'like' o 'dislike'
   }) async {
     final myUid = _auth.currentUser?.uid;
-    if (myUid == null) return;
+    if (myUid == null) return 0;
 
     final interaccionId =
         '${myUid}_${toUid}_${tipo}_${DateTime.now().millisecondsSinceEpoch}';
@@ -384,10 +463,19 @@ class FirestoreService {
       'timestamp': FieldValue.serverTimestamp(),
     });
 
+    final gained = await _addPoints(
+      myUid,
+      10,
+      reason: 'swipe_explore',
+      increaseDailySwipes: true,
+    );
+
     // Si es un like, verificar si hay match
     if (tipo == 'like') {
       await _buscarYCrearMatch(myUid, toUid);
     }
+
+    return gained;
   }
 
   /// Buscar si el otro usuario ya me dio like (match mutuo)

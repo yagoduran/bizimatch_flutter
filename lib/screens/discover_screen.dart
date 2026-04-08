@@ -159,7 +159,19 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   Future<void> _guardarSwipeYDetectarMatch(String toUid, String tipo) async {
     try {
-      await _firestoreService.guardarSwipe(toUid: toUid, tipo: tipo);
+      final points = await _firestoreService.guardarSwipe(
+        toUid: toUid,
+        tipo: tipo,
+      );
+      if (points > 0 && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text('+$points BiziPuntos por explorar hoy 🚀'),
+            duration: const Duration(milliseconds: 1500),
+          ),
+        );
+      }
 
       // Si es like, verificar si hay match
       if (tipo == 'like' && mounted) {
@@ -411,6 +423,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       bio: profile.bio,
       lugarDeseado: profile.lugarDeseado,
       karma: profile.karma ?? 0,
+      biziPuntos: profile.biziPuntos ?? 0,
     );
   }
 

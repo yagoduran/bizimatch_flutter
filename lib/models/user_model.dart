@@ -21,6 +21,7 @@ class UserModel {
   final int afinidad; // % de afinidad calculado
   final String lugarDeseado;
   final double karma;
+  final int biziPuntos;
 
   UserModel({
     required this.id,
@@ -43,6 +44,7 @@ class UserModel {
     this.afinidad = 0,
     this.lugarDeseado = '',
     this.karma = 0,
+    this.biziPuntos = 0,
   });
 
   // Calcular edad automáticamente
@@ -78,6 +80,7 @@ class UserModel {
       'nivelLimpieza': nivelLimpieza,
       'bio': bio,
       'karma': karma,
+      'biziPuntos': biziPuntos,
     };
   }
 
@@ -104,6 +107,7 @@ class UserModel {
       nivelLimpieza: data['nivelLimpieza'] ?? 'Normal',
       bio: data['bio'] ?? '',
       karma: (data['karma'] as num?)?.toDouble() ?? 0,
+      biziPuntos: (data['biziPuntos'] as num?)?.toInt() ?? 0,
     );
   }
 }

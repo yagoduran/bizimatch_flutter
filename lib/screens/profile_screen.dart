@@ -22,6 +22,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final FirestoreService _firestore = FirestoreService();
   final AuthService _auth = AuthService();
   bool _uploadingProfilePhoto = false;
+  int? _lastSeenBiziPuntos;
 
   static const List<String> _medallas = <String>[
     'Limpieza',
@@ -215,6 +216,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         direccionZona: profile.direccionZona,
         fotosPiso: profile.fotosPiso,
         karma: profile.karma,
+        biziPuntos: profile.biziPuntos,
         totalResenas: profile.totalResenas,
         medallasResumen: profile.medallasResumen,
       );
@@ -635,6 +637,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 : '',
                             fotosPiso: tienePiso ? fotosPiso : const <String>[],
                             karma: profile.karma,
+                            biziPuntos: profile.biziPuntos,
                             totalResenas: profile.totalResenas,
                             medallasResumen: profile.medallasResumen,
                           );
@@ -707,6 +710,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ? 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80'
             : profile.fotoPerfil;
 
+        _maybeShowPointsToast(profile);
+
         return SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -722,6 +727,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   'Gestiona tu información y preferencias',
                   style: textTheme.bodyMedium,
                 ),
+                const SizedBox(height: 14),
+                _biziLevelHeader(profile),
                 const SizedBox(height: 20),
                 Center(
                   child: Stack(
@@ -840,6 +847,103 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Text(
             content,
             style: const TextStyle(color: AppTheme.textSecondary, height: 1.4),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _maybeShowPointsToast(UserProfile profile) {
+    final current = profile.biziPuntos ?? 0;
+    final previous = _lastSeenBiziPuntos;
+    _lastSeenBiziPuntos = current;
+    if (previous == null || current <= previous || !mounted) {
+      return;
+    }
+
+    final delta = current - previous;
+    String text;
+    if (delta >= 100) {
+      text = '+$delta BiziPuntos por conseguir una medalla Karma 🏅';
+    } else if (delta >= 50) {
+      text = '+$delta BiziPuntos por completar tu bio ✍️';
+    } else {
+      text = '+$delta BiziPuntos por explorar hoy 🚀';
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(milliseconds: 1600),
+          content: Text(text),
+        ),
+      );
+    });
+  }
+
+  Widget _biziLevelHeader(UserProfile profile) {
+    final points = profile.biziPuntos ?? 0;
+    const pointsPerLevel = 200;
+    final level = (points ~/ pointsPerLevel) + 1;
+    final levelStart = (level - 1) * pointsPerLevel;
+    final nextLevelPoints = level * pointsPerLevel;
+    final progress = ((points - levelStart) / pointsPerLevel).clamp(0.0, 1.0);
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFECFDF5), Color(0xFFDFF7EC)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFCDEEDB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.emoji_events_rounded, color: Color(0xFF0F9D74)),
+              const SizedBox(width: 8),
+              Text(
+                'Nivel de Buscador $level',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '$points pts',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F9D74),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(99),
+            child: LinearProgressIndicator(
+              minHeight: 10,
+              value: progress,
+              backgroundColor: const Color(0xFFCAEBDD),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFF10B981),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Siguiente nivel: $nextLevelPoints pts',
+            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
           ),
         ],
       ),
