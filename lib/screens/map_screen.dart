@@ -23,6 +23,7 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final Distance _distance = const Distance();
   late MapController _mapController;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _markersSub;
   List<UserProfile> _usersWithPiso = [];
@@ -260,6 +261,40 @@ out body;
         station == 'subway';
 
     return isTransport ? ServicePoiType.transport : null;
+  }
+
+  String _transportProximityText(UserProfile user) {
+    final housePosition = _getSimulatedPosition(user.uid);
+    final transportPois = _nearbyServices
+        .where((poi) => poi.type == ServicePoiType.transport)
+        .toList(growable: false);
+
+    if (transportPois.isEmpty) {
+      return 'A 5 min del metro';
+    }
+
+    double? minDistanceMeters;
+    for (final poi in transportPois) {
+      final meters = _distance.as(
+        LengthUnit.Meter,
+        housePosition,
+        poi.position,
+      );
+      if (minDistanceMeters == null || meters < minDistanceMeters) {
+        minDistanceMeters = meters;
+      }
+    }
+
+    if (minDistanceMeters == null) {
+      return 'A 5 min del metro';
+    }
+
+    // Velocidad media caminando ~= 80 m/min.
+    final minutes = math.max(1, (minDistanceMeters / 80).round());
+    if (minutes <= 1) {
+      return 'A 1 min del metro';
+    }
+    return 'A $minutes min del metro';
   }
 
   List<ServicePoi> _buildMockNearbyServices(LatLng base) {
@@ -654,7 +689,7 @@ out body;
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'A 5 min del metro',
+                        _transportProximityText(user),
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           color: const Color(0xFF2563EB),
