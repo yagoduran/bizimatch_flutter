@@ -15,17 +15,6 @@ Las fotos engañan y los textos pueden ser fríos. Escuchar la voz de alguien ge
 La Solución: Añadir un botón de grabar (15 segundos máximo) en el perfil. En la tarjeta de Explorar, un pequeño reproductor para escuchar su voz diciendo: "¡Hola! Soy Álex y hago unas tortillas de patata increíbles...".
 
 
-
-### POR HACER
-
-
-
-\--------------------------------------------------------------------
-
-
-
-
-
 2\. El "Pacto de Convivencia" (Checklist Compartido)
 
 Una vez que hacen Match y deciden vivir juntos, ¿qué normas ponen?
@@ -33,6 +22,14 @@ Una vez que hacen Match y deciden vivir juntos, ¿qué normas ponen?
 
 
 La Solución: Una pantalla especial dentro del chat llamada "Pacto". Es una lista de checkboxes compartida en tiempo real (visitas, horas de silencio, turnos de limpieza). Ambos tienen que darle a "Aceptar".
+
+
+
+### POR HACER
+
+
+
+\--------------------------------------------------------------------
 
 
 

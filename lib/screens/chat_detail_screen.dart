@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app_theme.dart';
+import '../screens/coexistence_pact_screen.dart';
 import '../services/firestore_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/app_cached_network_image.dart';
@@ -197,6 +198,22 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       appBar: AppBar(
         titleSpacing: 0,
         actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CoexistencePactScreen(
+                    chatId: widget.chatId,
+                    otherUid: widget.otherUid,
+                    otherName: widget.otherName,
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.handshake),
+            tooltip: 'Pacto de Convivencia',
+          ),
           IconButton(
             onPressed: _openSafetyActions,
             icon: const Icon(Icons.more_vert_rounded),
