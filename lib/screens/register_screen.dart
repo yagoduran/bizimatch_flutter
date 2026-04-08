@@ -313,8 +313,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
               TextFormField(
                 controller: _nombreCtrl,
                 decoration: const InputDecoration(labelText: 'Nombre completo'),
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Obligatorio' : null,
+                validator: (v) {
+                  final value = v?.trim() ?? '';
+                  if (value.isEmpty) {
+                    return 'El nombre es obligatorio';
+                  }
+                  if (value.length < 3) {
+                    return 'Mínimo 3 caracteres';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 12),
               InkWell(
@@ -430,9 +438,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     if (!_tienePiso) {
                       return null;
                     }
-                    final parsed = int.tryParse((value ?? '').trim());
-                    if (parsed == null || parsed <= 0) {
-                      return 'Introduce un precio válido mayor a 0';
+                    final text = (value ?? '').trim();
+                    if (text.isEmpty) {
+                      return 'El precio es obligatorio';
+                    }
+                    final parsed = double.tryParse(text.replaceAll(',', '.'));
+                    if (parsed == null) {
+                      return 'El precio debe ser numérico';
+                    }
+                    if (parsed <= 0) {
+                      return 'El precio debe ser mayor que 0';
                     }
                     return null;
                   },
@@ -449,7 +464,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       return null;
                     }
                     if (v == null || v.trim().isEmpty) {
-                      return 'Indica la dirección o zona del piso';
+                      return 'La dirección es obligatoria';
                     }
                     return null;
                   },
@@ -507,10 +522,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 18),
               ElevatedButton(
                 onPressed:
-                    _loading ||
-                        _uploadingProfilePhoto ||
-                        _uploadingFloorPhotos ||
-                        !_datosPisoValidos
+                    _loading || _uploadingProfilePhoto || _uploadingFloorPhotos
                     ? null
                     : _submit,
                 child: _loading

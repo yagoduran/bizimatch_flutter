@@ -73,6 +73,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _editarPerfil(UserProfile profile) async {
+    final formKey = GlobalKey<FormState>();
     final nombreCtrl = TextEditingController(text: profile.nombre);
     final origenCtrl = TextEditingController(text: profile.origen);
     final estudiosCtrl = TextEditingController(text: profile.estudios);
@@ -106,294 +107,327 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 MediaQuery.of(context).viewInsets.bottom + 20,
               ),
               child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 46,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFDDE9E3),
-                          borderRadius: BorderRadius.circular(100),
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 46,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFDDE9E3),
+                            borderRadius: BorderRadius.circular(100),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 14),
-                    const Text(
-                      'Editar perfil',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: nombreCtrl,
-                      decoration: const InputDecoration(labelText: 'Nombre'),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: origenCtrl,
-                      decoration: const InputDecoration(labelText: 'Origen'),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: estudiosCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Qué estudias',
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    DropdownButtonFormField<String>(
-                      initialValue: horario,
-                      decoration: const InputDecoration(labelText: 'Horario'),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'Manana',
-                          child: Text('Mañana'),
+                      const SizedBox(height: 14),
+                      const Text(
+                        'Editar perfil',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
                         ),
-                        DropdownMenuItem(value: 'Tarde', child: Text('Tarde')),
-                        DropdownMenuItem(value: 'Noche', child: Text('Noche')),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          setModalState(() => horario = value);
-                        }
-                      },
-                    ),
-                    SwitchListTile(
-                      value: fumador,
-                      activeThumbColor: AppTheme.primary,
-                      title: const Text('Fumador/a'),
-                      onChanged: (value) =>
-                          setModalState(() => fumador = value),
-                    ),
-                    SwitchListTile(
-                      value: mascotas,
-                      activeThumbColor: AppTheme.primary,
-                      title: const Text('Mascotas'),
-                      onChanged: (value) =>
-                          setModalState(() => mascotas = value),
-                    ),
-                    SwitchListTile(
-                      value: tienePiso,
-                      activeThumbColor: AppTheme.primary,
-                      title: const Text('Tengo piso ya'),
-                      onChanged: (value) {
-                        setModalState(() {
-                          tienePiso = value;
-                          if (!tienePiso) {
-                            precioCtrl.clear();
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: nombreCtrl,
+                        decoration: const InputDecoration(labelText: 'Nombre'),
+                        validator: (v) {
+                          final value = v?.trim() ?? '';
+                          if (value.isEmpty) {
+                            return 'El nombre es obligatorio';
                           }
-                        });
-                      },
-                    ),
-                    if (tienePiso) ...[
-                      TextField(
-                        controller: precioCtrl,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: const InputDecoration(
-                          labelText: 'Precio alquiler por persona (EUR/mes)',
-                        ),
-                        onChanged: (_) => setModalState(() {}),
+                          if (value.length < 3) {
+                            return 'Mínimo 3 caracteres';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 10),
                       TextField(
-                        controller: direccionCtrl,
+                        controller: origenCtrl,
+                        decoration: const InputDecoration(labelText: 'Origen'),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: estudiosCtrl,
                         decoration: const InputDecoration(
-                          labelText: 'Dirección o zona del piso',
+                          labelText: 'Qué estudias',
                         ),
-                        onChanged: (_) => setModalState(() {}),
+                      ),
+                      const SizedBox(height: 10),
+                      DropdownButtonFormField<String>(
+                        initialValue: horario,
+                        decoration: const InputDecoration(labelText: 'Horario'),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'Manana',
+                            child: Text('Mañana'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'Tarde',
+                            child: Text('Tarde'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'Noche',
+                            child: Text('Noche'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setModalState(() => horario = value);
+                          }
+                        },
+                      ),
+                      SwitchListTile(
+                        value: fumador,
+                        activeThumbColor: AppTheme.primary,
+                        title: const Text('Fumador/a'),
+                        onChanged: (value) =>
+                            setModalState(() => fumador = value),
+                      ),
+                      SwitchListTile(
+                        value: mascotas,
+                        activeThumbColor: AppTheme.primary,
+                        title: const Text('Mascotas'),
+                        onChanged: (value) =>
+                            setModalState(() => mascotas = value),
+                      ),
+                      SwitchListTile(
+                        value: tienePiso,
+                        activeThumbColor: AppTheme.primary,
+                        title: const Text('Tengo piso ya'),
+                        onChanged: (value) {
+                          setModalState(() {
+                            tienePiso = value;
+                            if (!tienePiso) {
+                              precioCtrl.clear();
+                            }
+                          });
+                        },
+                      ),
+                      if (tienePiso) ...[
+                        TextFormField(
+                          controller: precioCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: const InputDecoration(
+                            labelText: 'Precio alquiler por persona (EUR/mes)',
+                          ),
+                          onChanged: (_) => setModalState(() {}),
+                          validator: (value) {
+                            if (!tienePiso) {
+                              return null;
+                            }
+                            final text = (value ?? '').trim();
+                            if (text.isEmpty) {
+                              return 'El precio es obligatorio';
+                            }
+                            final parsed = double.tryParse(
+                              text.replaceAll(',', '.'),
+                            );
+                            if (parsed == null) {
+                              return 'El precio debe ser numérico';
+                            }
+                            if (parsed <= 0) {
+                              return 'El precio debe ser mayor que 0';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: direccionCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Dirección o zona del piso',
+                          ),
+                          onChanged: (_) => setModalState(() {}),
+                          validator: (value) {
+                            if (!tienePiso) {
+                              return null;
+                            }
+                            if (value == null || value.trim().isEmpty) {
+                              return 'La dirección es obligatoria';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        OutlinedButton.icon(
+                          onPressed: uploadingFloorPhotos
+                              ? null
+                              : () async {
+                                  final picker = ImagePicker();
+                                  final images = await picker.pickMultiImage(
+                                    imageQuality: 85,
+                                  );
+                                  if (images.isEmpty) {
+                                    return;
+                                  }
+
+                                  setModalState(
+                                    () => uploadingFloorPhotos = true,
+                                  );
+
+                                  try {
+                                    final uploaded = await Future.wait(
+                                      images.map(
+                                        (e) => ImgbbService.subirImagen(
+                                          File(e.path),
+                                        ),
+                                      ),
+                                    );
+
+                                    setModalState(() {
+                                      fotosPiso = uploaded;
+                                    });
+                                  } catch (_) {
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'No se pudieron subir las fotos del piso.',
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  } finally {
+                                    if (context.mounted) {
+                                      setModalState(
+                                        () => uploadingFloorPhotos = false,
+                                      );
+                                    }
+                                  }
+                                },
+                          icon: const Icon(Icons.add_photo_alternate_outlined),
+                          label: Text(
+                            uploadingFloorPhotos
+                                ? 'Subiendo fotos...'
+                                : fotosPiso.isEmpty
+                                ? 'Subir fotos del piso'
+                                : 'Fotos del piso: ${fotosPiso.length}',
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                      TextField(
+                        controller: bioCtrl,
+                        maxLines: 3,
+                        decoration: const InputDecoration(labelText: 'Bio'),
                       ),
                       const SizedBox(height: 10),
                       OutlinedButton.icon(
-                        onPressed: uploadingFloorPhotos
-                            ? null
-                            : () async {
-                                final picker = ImagePicker();
-                                final images = await picker.pickMultiImage(
-                                  imageQuality: 85,
-                                );
-                                if (images.isEmpty) {
-                                  return;
-                                }
-
-                                setModalState(
-                                  () => uploadingFloorPhotos = true,
-                                );
-
-                                try {
-                                  final uploaded = await Future.wait(
-                                    images.map(
-                                      (e) => ImgbbService.subirImagen(
-                                        File(e.path),
-                                      ),
-                                    ),
-                                  );
-
-                                  setModalState(() {
-                                    fotosPiso = uploaded;
-                                  });
-                                } catch (_) {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'No se pudieron subir las fotos del piso.',
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                } finally {
-                                  if (context.mounted) {
-                                    setModalState(
-                                      () => uploadingFloorPhotos = false,
-                                    );
-                                  }
-                                }
-                              },
-                        icon: const Icon(Icons.add_photo_alternate_outlined),
-                        label: Text(
-                          uploadingFloorPhotos
-                              ? 'Subiendo fotos...'
-                              : fotosPiso.isEmpty
-                              ? 'Subir fotos del piso'
-                              : 'Fotos del piso: ${fotosPiso.length}',
-                        ),
+                        onPressed: () {
+                          setModalState(() {
+                            bioCtrl.text = _generarBioIA(
+                              nombreCtrl.text.trim(),
+                              horario,
+                              fumador,
+                              mascotas,
+                            );
+                          });
+                        },
+                        icon: const Icon(Icons.auto_awesome_rounded),
+                        label: const Text('Generar Bio con IA'),
                       ),
-                      const SizedBox(height: 10),
-                    ],
-                    TextField(
-                      controller: bioCtrl,
-                      maxLines: 3,
-                      decoration: const InputDecoration(labelText: 'Bio'),
-                    ),
-                    const SizedBox(height: 10),
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        setModalState(() {
-                          bioCtrl.text = _generarBioIA(
-                            nombreCtrl.text.trim(),
-                            horario,
-                            fumador,
-                            mascotas,
+                      const SizedBox(height: 14),
+                      ElevatedButton(
+                        onPressed: () async {
+                          if (!formKey.currentState!.validate()) {
+                            return;
+                          }
+
+                          if (tienePiso && fotosPiso.length < 2) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Debes subir al menos 2 fotos del piso.',
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+
+                          final confirmar = await showDialog<bool>(
+                            context: context,
+                            builder: (dialogContext) {
+                              return AlertDialog(
+                                title: const Text('Confirmar cambios'),
+                                content: const Text(
+                                  '¿Estás seguro de que quieres actualizar tu perfil?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(dialogContext, false),
+                                    child: const Text('Cancelar'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () =>
+                                        Navigator.pop(dialogContext, true),
+                                    child: const Text('Aceptar'),
+                                  ),
+                                ],
+                              );
+                            },
                           );
-                        });
-                      },
-                      icon: const Icon(Icons.auto_awesome_rounded),
-                      label: const Text('Generar Bio con IA'),
-                    ),
-                    const SizedBox(height: 14),
-                    Builder(
-                      builder: (context) {
-                        final precioParse = int.tryParse(
-                          precioCtrl.text.trim().replaceAll(',', '.'),
-                        );
-                        final precioValido =
-                            precioParse != null && precioParse > 0;
-                        final canSave =
-                            !tienePiso ||
-                            (direccionCtrl.text.trim().isNotEmpty &&
-                                fotosPiso.length >= 2 &&
-                                precioValido);
-                        return ElevatedButton(
-                          onPressed: canSave
-                              ? () async {
-                                  final confirmar = await showDialog<bool>(
-                                    context: context,
-                                    builder: (dialogContext) {
-                                      return AlertDialog(
-                                        title: const Text('Confirmar cambios'),
-                                        content: const Text(
-                                          '¿Estás seguro de que quieres actualizar tu perfil?',
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () => Navigator.pop(
-                                              dialogContext,
-                                              false,
-                                            ),
-                                            child: const Text('Cancelar'),
-                                          ),
-                                          ElevatedButton(
-                                            onPressed: () => Navigator.pop(
-                                              dialogContext,
-                                              true,
-                                            ),
-                                            child: const Text('Aceptar'),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  );
-                                  if (confirmar != true) {
-                                    return;
-                                  }
+                          if (confirmar != true) {
+                            return;
+                          }
 
-                                  int? precio;
-                                  if (tienePiso) {
-                                    precio = int.tryParse(
-                                      precioCtrl.text.trim().replaceAll(
-                                        ',',
-                                        '.',
-                                      ),
-                                    );
-                                  }
+                          int? precio;
+                          if (tienePiso) {
+                            precio = double.parse(
+                              precioCtrl.text.trim().replaceAll(',', '.'),
+                            ).round();
+                          }
 
-                                  final updated = UserProfile(
-                                    uid: profile.uid,
-                                    email: profile.email,
-                                    nombre: nombreCtrl.text.trim().isEmpty
-                                        ? profile.nombre
-                                        : nombreCtrl.text.trim(),
-                                    fechaNacimiento: profile.fechaNacimiento,
-                                    genero: profile.genero,
-                                    origen: origenCtrl.text.trim().isEmpty
-                                        ? profile.origen
-                                        : origenCtrl.text.trim(),
-                                    estudios: estudiosCtrl.text.trim().isEmpty
-                                        ? profile.estudios
-                                        : estudiosCtrl.text.trim(),
-                                    fumador: fumador,
-                                    mascotas: mascotas,
-                                    tienePiso: tienePiso,
-                                    precioAlquilerPorPersona: precio,
-                                    horario: horario,
-                                    bio: bioCtrl.text.trim().isEmpty
-                                        ? profile.bio
-                                        : bioCtrl.text.trim(),
-                                    fotoPerfil: profile.fotoPerfil,
-                                    intereses: profile.intereses,
-                                    lugarDeseado: profile.lugarDeseado,
-                                    direccionZona: tienePiso
-                                        ? direccionCtrl.text.trim()
-                                        : '',
-                                    fotosPiso: tienePiso
-                                        ? fotosPiso
-                                        : const <String>[],
-                                  );
+                          final updated = UserProfile(
+                            uid: profile.uid,
+                            email: profile.email,
+                            nombre: nombreCtrl.text.trim(),
+                            fechaNacimiento: profile.fechaNacimiento,
+                            genero: profile.genero,
+                            origen: origenCtrl.text.trim().isEmpty
+                                ? profile.origen
+                                : origenCtrl.text.trim(),
+                            estudios: estudiosCtrl.text.trim().isEmpty
+                                ? profile.estudios
+                                : estudiosCtrl.text.trim(),
+                            fumador: fumador,
+                            mascotas: mascotas,
+                            tienePiso: tienePiso,
+                            precioAlquilerPorPersona: precio,
+                            horario: horario,
+                            bio: bioCtrl.text.trim().isEmpty
+                                ? profile.bio
+                                : bioCtrl.text.trim(),
+                            fotoPerfil: profile.fotoPerfil,
+                            intereses: profile.intereses,
+                            lugarDeseado: profile.lugarDeseado,
+                            direccionZona: tienePiso
+                                ? direccionCtrl.text.trim()
+                                : '',
+                            fotosPiso: tienePiso ? fotosPiso : const <String>[],
+                          );
 
-                                  await _firestore.saveUserProfile(updated);
-                                  if (!context.mounted) {
-                                    return;
-                                  }
-                                  Navigator.of(context).pop();
-                                }
-                              : null,
-                          child: Text(
-                            canSave
-                                ? 'Guardar cambios'
-                                : 'Completa piso (2 fotos + dirección + precio)',
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+                          await _firestore.saveUserProfile(updated);
+                          if (!context.mounted) {
+                            return;
+                          }
+                          Navigator.of(context).pop();
+                        },
+                        child: const Text('Guardar cambios'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
