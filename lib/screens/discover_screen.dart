@@ -27,6 +27,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   late final AnimationController _swipeOutController;
   late final AnimationController _snapBackController;
+  late final AnimationController _loadingShimmerController;
   Animation<Offset>? _swipeOutAnimation;
   Animation<Offset>? _snapBackAnimation;
 
@@ -74,6 +75,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         _filteredProfiles = _filtrar(_allProfiles);
         _loading = false;
       });
+      _scheduleNextProfilePrecache();
     });
     _discoverSub = _firestoreService.discoverProfiles().listen((profiles) {
       if (!mounted) {
@@ -88,6 +90,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           _activeIndex = 0;
         }
       });
+      _scheduleNextProfilePrecache();
     });
 
     _swipeOutController =
@@ -118,6 +121,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   _activeIndex = 0;
                 }
               });
+              _scheduleNextProfilePrecache();
             }
           });
 
@@ -128,6 +132,11 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               setState(() => _dragOffset = _snapBackAnimation!.value);
             }
           });
+
+    _loadingShimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat();
   }
 
   Future<void> _guardarSwipeYDetectarMatch(String toUid, String tipo) async {
@@ -231,7 +240,46 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     _discoverSub?.cancel();
     _swipeOutController.dispose();
     _snapBackController.dispose();
+    _loadingShimmerController.dispose();
     super.dispose();
+  }
+
+  void _scheduleNextProfilePrecache() {
+    if (_filteredProfiles.length < 2) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _filteredProfiles.length < 2) {
+        return;
+      }
+
+      final nextIndex = (_activeIndex + 1) % _filteredProfiles.length;
+      final nextProfile = _filteredProfiles[nextIndex];
+      precacheImage(_profileImageProvider(nextProfile), context);
+    });
+  }
+
+  ImageProvider<Object> _profileImageProvider(UserProfile user) {
+    if (user.fotoPerfil.startsWith('/')) {
+      return FileImage(File(user.fotoPerfil));
+    }
+
+    final fallbackImage = user.tienePiso
+        ? _unsplashRoomByContext()
+        : _unsplashPortraitByGender(user.genero);
+
+    return NetworkImage(
+      user.fotoPerfil.isEmpty ? fallbackImage : user.fotoPerfil,
+    );
+  }
+
+  Key _profileCardKey(UserProfile user, String slot) {
+    final id = user.uid.trim();
+    if (id.isEmpty) {
+      return UniqueKey();
+    }
+    return ValueKey<String>('$slot:$id');
   }
 
   void _animateOut(bool toRight) {
@@ -446,6 +494,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                           _filteredProfiles = _filtrar(_allProfiles);
                           _activeIndex = 0;
                         });
+                        _scheduleNextProfilePrecache();
                         Navigator.pop(context);
                       },
                       child: const Text('Aplicar filtros'),
@@ -579,7 +628,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     topOffset: 26,
                     scale: 0.9,
                     opacity: 0.35,
-                    key: ValueKey(third.uid),
+                    key: _profileCardKey(third, 'third'),
                   ),
                   _profileCard(
                     next,
@@ -587,7 +636,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     topOffset: 12,
                     scale: 0.95,
                     opacity: 0.56,
-                    key: ValueKey(next.uid),
+                    key: _profileCardKey(next, 'next'),
                   ),
                   GestureDetector(
                     onPanStart: (_) {
@@ -634,7 +683,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                           showApprove: _dragOffset.dx > 8,
                           showReject: _dragOffset.dx < -8,
                           overlayOpacity: dragProgress,
-                          key: ValueKey(current.uid),
+                          key: _profileCardKey(current, 'current'),
                         ),
                       ),
                     ),
@@ -728,24 +777,15 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             fit: BoxFit.cover,
             cacheHeight: 800,
             cacheWidth: 400,
+            frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+              if (wasSynchronouslyLoaded || frame != null) return child;
+              return _loadingImagePlaceholder();
+            },
             errorBuilder: (context, error, stackTrace) => Container(
-              color: Colors.white,
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.image_not_supported_outlined,
-                      size: 48,
-                      color: Colors.grey.shade400,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Imagen no disponible',
-                      style: TextStyle(color: Colors.grey.shade500),
-                    ),
-                  ],
-                ),
+              color: const Color(0xFFF1F6F4),
+              child: _loadingImagePlaceholder(
+                icon: Icons.image_not_supported_outlined,
+                label: 'Imagen no disponible',
               ),
             ),
           )
@@ -756,49 +796,24 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             cacheWidth: 400,
             loadingBuilder: (context, child, progress) {
               if (progress == null) return child;
-              return Container(
-                color: Colors.white,
-                child: Center(
-                  child: SizedBox(
-                    width: 60,
-                    height: 60,
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        value: progress.expectedTotalBytes != null
-                            ? progress.cumulativeBytesLoaded /
-                                  progress.expectedTotalBytes!
-                            : null,
-                        color: AppTheme.primary,
-                        strokeWidth: 3,
-                      ),
-                    ),
-                  ),
-                ),
-              );
+              return _loadingImagePlaceholder();
             },
             errorBuilder: (context, error, stackTrace) {
               return Image.network(
                 fallbackImage,
                 fit: BoxFit.cover,
+                cacheHeight: 800,
+                cacheWidth: 400,
+                loadingBuilder: (context, child, progress) {
+                  if (progress == null) return child;
+                  return _loadingImagePlaceholder();
+                },
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
-                    color: Colors.white,
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.image_not_supported_outlined,
-                            size: 48,
-                            color: Colors.grey.shade400,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Error al cargar imagen',
-                            style: TextStyle(color: Colors.grey.shade500),
-                          ),
-                        ],
-                      ),
+                    color: const Color(0xFFF1F6F4),
+                    child: _loadingImagePlaceholder(
+                      icon: Icons.image_not_supported_outlined,
+                      label: 'Error al cargar imagen',
                     ),
                   );
                 },
@@ -807,6 +822,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           );
 
     return AnimatedPositioned(
+      key: key,
       duration: AppTheme.motionFast,
       curve: AppTheme.motionCurve,
       top: topOffset,
@@ -818,7 +834,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         child: Transform.scale(
           scale: scale,
           child: Container(
-            key: key,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(30),
@@ -995,6 +1010,56 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           ),
         ),
       ),
+    );
+  }
+
+  Widget _loadingImagePlaceholder({
+    IconData icon = Icons.image_outlined,
+    String label = 'Cargando perfil',
+  }) {
+    return AnimatedBuilder(
+      animation: _loadingShimmerController,
+      builder: (context, child) {
+        final shimmer = _loadingShimmerController.value;
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment(-1.2 + shimmer * 2.4, -0.9),
+              end: Alignment(1.2 + shimmer * 2.4, 0.9),
+              colors: const [
+                Color(0xFFF2F6F4),
+                Color(0xFFE3ECE7),
+                Color(0xFFF7FAF8),
+              ],
+              stops: const [0.1, 0.5, 0.9],
+            ),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 76,
+                  height: 76,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.36),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: 34, color: const Color(0xFF8FA59A)),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Color(0xFF6E8179),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
