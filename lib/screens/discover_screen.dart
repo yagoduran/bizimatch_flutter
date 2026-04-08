@@ -680,7 +680,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (perfiles.isEmpty || yo == null) {
+    if (yo == null) {
       return SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -720,9 +720,111 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   style: textTheme.bodyMedium,
                 ),
               ),
-              const Spacer(),
-              const Text('No hay perfiles que coincidan con tus filtros.'),
-              const Spacer(),
+              const Expanded(child: Center(child: CircularProgressIndicator())),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (perfiles.isEmpty) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Text('Descubrir', style: textTheme.headlineMedium),
+                  const Spacer(),
+                  FilledButton.tonalIcon(
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      _abrirFiltros();
+                    },
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      backgroundColor: const Color(0x2210B981),
+                      foregroundColor: AppTheme.primary,
+                    ),
+                    icon: const Icon(Icons.tune_rounded, size: 20),
+                    label: Text(
+                      _activeFiltersCount > 0
+                          ? 'Filtros ($_activeFiltersCount)'
+                          : 'Filtros',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Perfiles recomendados según tu afinidad',
+                  style: textTheme.bodyMedium,
+                ),
+              ),
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.search_off,
+                          size: 96,
+                          color: const Color(
+                            0xFF10B981,
+                          ).withValues(alpha: 0.85),
+                        ),
+                        const SizedBox(height: 18),
+                        const Text(
+                          '¡No hay más Vínculos en tu zona!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'Intenta ampliar tus filtros o vuelve más tarde.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppTheme.textSecondary,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        FilledButton.icon(
+                          onPressed: () {
+                            HapticFeedback.selectionClick();
+                            _abrirFiltros();
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppTheme.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          icon: const Icon(Icons.tune_rounded),
+                          label: const Text('Revisar Filtros'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
