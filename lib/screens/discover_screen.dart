@@ -266,7 +266,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       barrierLabel: 'match-celebration',
       barrierColor: Colors.black.withValues(alpha: 0.54),
       transitionDuration: const Duration(milliseconds: 320),
-      pageBuilder: (dialogContext, _, __) {
+      pageBuilder: (dialogContext, _, _) {
         return _MatchCelebrationOverlay(
           onClose: () => Navigator.pop(dialogContext),
         );
@@ -393,25 +393,57 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       tienePiso: profile.tienePiso,
       precioAlquilerPorPersona: profile.precioAlquilerPorPersona?.toDouble(),
       horario: profile.horario,
+      teletrabajo: profile.teletrabajo,
+      frecuenciaFiestas: profile.frecuenciaFiestas,
+      nivelLimpieza: profile.nivelLimpieza,
       bio: profile.bio,
       lugarDeseado: profile.lugarDeseado,
+      karma: profile.karma ?? 0,
     );
   }
 
   int calcularAfinidad(UserModel miUsuario, UserModel otroUsuario) {
-    int score = 0;
+    int score = 20;
+    final horarioA = miUsuario.horario.trim().toLowerCase().replaceAll(
+      'ñ',
+      'n',
+    );
+    final horarioB = otroUsuario.horario.trim().toLowerCase().replaceAll(
+      'ñ',
+      'n',
+    );
 
     if (miUsuario.esFumador == otroUsuario.esFumador) {
-      score += 25;
+      score += 10;
     }
     if (miUsuario.tieneMascotas == otroUsuario.tieneMascotas) {
-      score += 25;
+      score += 10;
     }
-    if (miUsuario.horario == otroUsuario.horario) {
-      score += 30;
+    if (horarioA == horarioB) {
+      score += 10;
+    }
+    if (miUsuario.frecuenciaFiestas == otroUsuario.frecuenciaFiestas) {
+      score += 12;
+    }
+    if (miUsuario.nivelLimpieza == otroUsuario.nivelLimpieza) {
+      score += 13;
     }
     if ((miUsuario.edad - otroUsuario.edad).abs() < 5) {
-      score += 20;
+      score += 10;
+    }
+
+    if (miUsuario.teletrabajo == otroUsuario.teletrabajo &&
+        horarioA == horarioB) {
+      score += 35;
+    }
+
+    final choqueCritico =
+        (miUsuario.frecuenciaFiestas == 'Alta' &&
+            otroUsuario.nivelLimpieza == 'Estricto') ||
+        (otroUsuario.frecuenciaFiestas == 'Alta' &&
+            miUsuario.nivelLimpieza == 'Estricto');
+    if (choqueCritico) {
+      score -= 40;
     }
 
     return score.clamp(0, 100);
@@ -1118,7 +1150,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     double overlayOpacity = 0,
     required Key key,
   }) {
-    final affinityColor = afinidad > 50
+    final isExceptionalAffinity = afinidad > 90;
+    final affinityColor = isExceptionalAffinity
+        ? const Color(0xFFD4AF37)
+        : afinidad > 50
         ? const Color(0xFF10B981)
         : const Color(0xFFF59E0B);
 
@@ -1272,8 +1307,25 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: affinityColor.withValues(alpha: 0.15),
+                              color: affinityColor.withValues(
+                                alpha: isExceptionalAffinity ? 0.22 : 0.15,
+                              ),
                               borderRadius: BorderRadius.circular(16),
+                              border: isExceptionalAffinity
+                                  ? Border.all(
+                                      color: const Color(0xFFE2C15B),
+                                      width: 1.1,
+                                    )
+                                  : null,
+                              boxShadow: isExceptionalAffinity
+                                  ? const [
+                                      BoxShadow(
+                                        color: Color(0x80D4AF37),
+                                        blurRadius: 14,
+                                        spreadRadius: 1,
+                                      ),
+                                    ]
+                                  : null,
                             ),
                             child: Text(
                               '$afinidad% de afinidad',

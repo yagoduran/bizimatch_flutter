@@ -4,6 +4,13 @@ import 'dart:math' as math;
 
 import '../models/user_profile.dart';
 
+const List<String> kTiposMedalla = <String>[
+  'Limpieza',
+  'Respeto',
+  'Cocina',
+  'Silencio',
+];
+
 class FirestoreService {
   FirestoreService({FirebaseFirestore? firestore, FirebaseAuth? auth})
     : _firestore = firestore ?? FirebaseFirestore.instance,
@@ -212,6 +219,152 @@ class FirestoreService {
       return null;
     }
     return UserProfile.fromMap(doc.data()!);
+  }
+
+  Stream<List<UserProfile>> myMatchedUsersStream() {
+    final myUid = _auth.currentUser?.uid;
+    if (myUid == null) {
+      return const Stream<List<UserProfile>>.empty();
+    }
+
+    return _chats
+        .where('participants', arrayContains: myUid)
+        .orderBy('updatedAt', descending: true)
+        .snapshots()
+        .asyncMap((snapshot) async {
+          final otherIds = <String>{};
+          for (final doc in snapshot.docs) {
+            final participants = List<String>.from(
+              doc.data()['participants'] ?? const <String>[],
+            );
+            final otherId = participants.firstWhere(
+              (id) => id != myUid,
+              orElse: () => '',
+            );
+            if (otherId.isNotEmpty) {
+              otherIds.add(otherId);
+            }
+          }
+
+          if (otherIds.isEmpty) {
+            return const <UserProfile>[];
+          }
+
+          final users = await Future.wait(
+            otherIds.map((uid) async => getUserById(uid)),
+          );
+
+          return users.whereType<UserProfile>().toList(growable: false);
+        });
+  }
+
+  Future<bool> hasMatchWithUser(String otherUid) async {
+    final myUid = _auth.currentUser?.uid;
+    if (myUid == null || otherUid.trim().isEmpty) {
+      return false;
+    }
+
+    final chatId = chatIdFor(myUid, otherUid);
+    final chat = await _chats.doc(chatId).get();
+    return chat.exists;
+  }
+
+  Stream<List<UserReview>> reviewsForUser(String uid) {
+    if (uid.trim().isEmpty) {
+      return const Stream<List<UserReview>>.empty();
+    }
+
+    return _users
+        .doc(uid)
+        .collection('resenas')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => UserReview.fromDoc(doc.id, doc.data()))
+              .toList(growable: false),
+        );
+  }
+
+  Future<void> dejarResena({
+    required String targetUid,
+    required String texto,
+    required String tipoMedalla,
+  }) async {
+    final autorId = _auth.currentUser?.uid;
+    if (autorId == null ||
+        targetUid.trim().isEmpty ||
+        targetUid == autorId ||
+        texto.trim().isEmpty) {
+      return;
+    }
+
+    if (!kTiposMedalla.contains(tipoMedalla)) {
+      throw ArgumentError('Tipo de medalla no soportado');
+    }
+
+    final hasMatch = await hasMatchWithUser(targetUid);
+    if (!hasMatch) {
+      throw StateError('No existe match previo para dejar reseña.');
+    }
+
+    await _users.doc(targetUid).collection('resenas').add({
+      'autorId': autorId,
+      'texto': texto.trim(),
+      'tipoMedalla': tipoMedalla,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    await _recalcularKarma(targetUid);
+  }
+
+  Future<void> _recalcularKarma(String targetUid) async {
+    final reviews = await _users
+        .doc(targetUid)
+        .collection('resenas')
+        .orderBy('createdAt', descending: false)
+        .get();
+
+    final total = reviews.docs.length;
+    if (total == 0) {
+      await _users.doc(targetUid).set({
+        'karma': 0,
+        'totalResenas': 0,
+        'medallasResumen': <String, int>{},
+      }, SetOptions(merge: true));
+      return;
+    }
+
+    const medalWeights = <String, double>{
+      'Limpieza': 1.10,
+      'Respeto': 1.25,
+      'Cocina': 1.00,
+      'Silencio': 1.15,
+    };
+
+    double weightSum = 0;
+    final medallasResumen = <String, int>{};
+
+    for (final doc in reviews.docs) {
+      final tipo = (doc.data()['tipoMedalla'] ?? '') as String;
+      if (tipo.isEmpty) {
+        continue;
+      }
+      medallasResumen[tipo] = (medallasResumen[tipo] ?? 0) + 1;
+      weightSum += medalWeights[tipo] ?? 1;
+    }
+
+    final weightedAverage = weightSum / total;
+    final qualityScore = (weightedAverage / 1.25) * 70;
+    final volumeScore = (math.min(total, 20) / 20) * 30;
+    final karma = (qualityScore + volumeScore).clamp(0, 100).toDouble();
+
+    await _users.doc(targetUid).set({
+      'karma': karma,
+      'totalResenas': total,
+      'medallasResumen': medallasResumen,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   /// Guardar un swipe (like o dislike) en la colección de interacciones
@@ -432,6 +585,13 @@ class FirestoreService {
       final estudio = estudios[random.nextInt(estudios.length)];
       final bio = bios[random.nextInt(bios.length)];
       final horario = ['Manana', 'Tarde', 'Noche'][random.nextInt(3)];
+      final teletrabajo = random.nextBool();
+      final frecuenciaFiestas = ['Alta', 'Media', 'Baja'][random.nextInt(3)];
+      final nivelLimpieza = [
+        'Estricto',
+        'Normal',
+        'Relajado',
+      ][random.nextInt(3)];
       final fumador = random.nextBool();
       final mascotas = random.nextBool();
 
@@ -460,6 +620,9 @@ class FirestoreService {
         ],
         'habitos': [if (fumador) 'Fumar', if (mascotas) 'Mascotas', 'Limpiar'],
         'horario': horario,
+        'teletrabajo': teletrabajo,
+        'frecuenciaFiestas': frecuenciaFiestas,
+        'nivelLimpieza': nivelLimpieza,
         'fumador': fumador,
         'mascotas': mascotas,
         'tienePiso': tienePiso,

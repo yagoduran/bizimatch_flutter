@@ -38,6 +38,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   DateTime? _fechaNacimiento;
   String _genero = 'Mujer';
   String _horario = 'Mañana';
+  bool _teletrabajo = false;
+  String _frecuenciaFiestas = 'Media';
+  String _nivelLimpieza = 'Normal';
   bool _fumador = false;
   bool _mascotas = false;
   bool _tienePiso = false;
@@ -215,6 +218,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ? int.tryParse(_precioAlquilerCtrl.text.trim().replaceAll(',', '.'))
             : null,
         horario: _horario,
+        teletrabajo: _teletrabajo,
+        frecuenciaFiestas: _frecuenciaFiestas,
+        nivelLimpieza: _nivelLimpieza,
         bio: 'Buscando compañeros de piso compatibles para convivir bien.',
         fotoPerfil: _uploadedProfilePhotoUrl ?? '',
         intereses: const <String>[],
@@ -398,6 +404,47 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 onChanged: (value) {
                   if (value != null) {
                     setState(() => _horario = value);
+                  }
+                },
+              ),
+              const SizedBox(height: 8),
+              SwitchListTile(
+                value: _teletrabajo,
+                activeThumbColor: AppTheme.primary,
+                title: const Text('¿Teletrabajas?'),
+                onChanged: (value) => setState(() => _teletrabajo = value),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                initialValue: _frecuenciaFiestas,
+                decoration: const InputDecoration(
+                  labelText: 'Frecuencia de fiestas',
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'Alta', child: Text('Alta')),
+                  DropdownMenuItem(value: 'Media', child: Text('Media')),
+                  DropdownMenuItem(value: 'Baja', child: Text('Baja')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _frecuenciaFiestas = value);
+                  }
+                },
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                initialValue: _nivelLimpieza,
+                decoration: const InputDecoration(
+                  labelText: 'Nivel de limpieza',
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'Estricto', child: Text('Estricto')),
+                  DropdownMenuItem(value: 'Normal', child: Text('Normal')),
+                  DropdownMenuItem(value: 'Relajado', child: Text('Relajado')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _nivelLimpieza = value);
                   }
                 },
               ),

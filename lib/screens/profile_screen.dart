@@ -23,6 +23,160 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final AuthService _auth = AuthService();
   bool _uploadingProfilePhoto = false;
 
+  static const List<String> _medallas = <String>[
+    'Limpieza',
+    'Respeto',
+    'Cocina',
+    'Silencio',
+  ];
+
+  String _emojiMedalla(String tipo) {
+    switch (tipo) {
+      case 'Limpieza':
+        return '🧹';
+      case 'Respeto':
+        return '🤝';
+      case 'Cocina':
+        return '🍳';
+      case 'Silencio':
+        return '🤫';
+      default:
+        return '🏅';
+    }
+  }
+
+  Future<void> _abrirBottomSheetResena(UserProfile target) async {
+    String medallaSeleccionada = _medallas.first;
+    final comentarioCtrl = TextEditingController();
+    bool enviando = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                16,
+                20,
+                20 + MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Dejar reseña a ${target.nombre}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _medallas
+                        .map((tipo) {
+                          final selected = medallaSeleccionada == tipo;
+                          return ChoiceChip(
+                            label: Text('${_emojiMedalla(tipo)} $tipo'),
+                            selected: selected,
+                            selectedColor: AppTheme.primary.withValues(
+                              alpha: 0.14,
+                            ),
+                            side: BorderSide(
+                              color: selected
+                                  ? AppTheme.primary
+                                  : const Color(0xFFDCE7E1),
+                            ),
+                            onSelected: (_) {
+                              setModalState(() => medallaSeleccionada = tipo);
+                            },
+                          );
+                        })
+                        .toList(growable: false),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: comentarioCtrl,
+                    maxLength: 120,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: 'Comentario corto',
+                      hintText: 'Ej: siempre deja la cocina impecable.',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: enviando
+                          ? null
+                          : () async {
+                              final comentario = comentarioCtrl.text.trim();
+                              if (comentario.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Escribe un comentario antes de enviar.',
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              setModalState(() => enviando = true);
+                              try {
+                                await _firestore.dejarResena(
+                                  targetUid: target.uid,
+                                  texto: comentario,
+                                  tipoMedalla: medallaSeleccionada,
+                                );
+                                if (!mounted) {
+                                  return;
+                                }
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(this.context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Reseña enviada a ${target.nombre}.',
+                                    ),
+                                  ),
+                                );
+                              } catch (e) {
+                                if (!mounted) {
+                                  return;
+                                }
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'No se pudo enviar la reseña: $e',
+                                    ),
+                                  ),
+                                );
+                                setModalState(() => enviando = false);
+                              }
+                            },
+                      child: Text(enviando ? 'Enviando...' : 'Publicar reseña'),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    comentarioCtrl.dispose();
+  }
+
   Future<void> _pickProfilePhoto(UserProfile profile) async {
     final picker = ImagePicker();
     final image = await picker.pickImage(
@@ -51,12 +205,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         tienePiso: profile.tienePiso,
         precioAlquilerPorPersona: profile.precioAlquilerPorPersona,
         horario: profile.horario,
+        teletrabajo: profile.teletrabajo,
+        frecuenciaFiestas: profile.frecuenciaFiestas,
+        nivelLimpieza: profile.nivelLimpieza,
         bio: profile.bio,
         fotoPerfil: url,
         intereses: profile.intereses,
         lugarDeseado: profile.lugarDeseado,
         direccionZona: profile.direccionZona,
         fotosPiso: profile.fotosPiso,
+        karma: profile.karma,
+        totalResenas: profile.totalResenas,
+        medallasResumen: profile.medallasResumen,
       );
       await _firestore.saveUserProfile(updated);
     } catch (_) {
@@ -85,6 +245,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     List<String> fotosPiso = List<String>.from(profile.fotosPiso);
     bool uploadingFloorPhotos = false;
     String horario = profile.horario;
+    bool teletrabajo = profile.teletrabajo;
+    String frecuenciaFiestas = profile.frecuenciaFiestas;
+    String nivelLimpieza = profile.nivelLimpieza;
     bool fumador = profile.fumador;
     bool mascotas = profile.mascotas;
     bool tienePiso = profile.tienePiso;
@@ -180,6 +343,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         onChanged: (value) {
                           if (value != null) {
                             setModalState(() => horario = value);
+                          }
+                        },
+                      ),
+                      SwitchListTile(
+                        value: teletrabajo,
+                        activeThumbColor: AppTheme.primary,
+                        title: const Text('Teletrabajo'),
+                        onChanged: (value) =>
+                            setModalState(() => teletrabajo = value),
+                      ),
+                      DropdownButtonFormField<String>(
+                        initialValue: frecuenciaFiestas,
+                        decoration: const InputDecoration(
+                          labelText: 'Frecuencia de fiestas',
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'Alta', child: Text('Alta')),
+                          DropdownMenuItem(
+                            value: 'Media',
+                            child: Text('Media'),
+                          ),
+                          DropdownMenuItem(value: 'Baja', child: Text('Baja')),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setModalState(() => frecuenciaFiestas = value);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      DropdownButtonFormField<String>(
+                        initialValue: nivelLimpieza,
+                        decoration: const InputDecoration(
+                          labelText: 'Nivel de limpieza',
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'Estricto',
+                            child: Text('Estricto'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'Normal',
+                            child: Text('Normal'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'Relajado',
+                            child: Text('Relajado'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setModalState(() => nivelLimpieza = value);
                           }
                         },
                       ),
@@ -406,6 +621,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             tienePiso: tienePiso,
                             precioAlquilerPorPersona: precio,
                             horario: horario,
+                            teletrabajo: teletrabajo,
+                            frecuenciaFiestas: frecuenciaFiestas,
+                            nivelLimpieza: nivelLimpieza,
                             bio: bioCtrl.text.trim().isEmpty
                                 ? profile.bio
                                 : bioCtrl.text.trim(),
@@ -416,6 +634,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ? direccionCtrl.text.trim()
                                 : '',
                             fotosPiso: tienePiso ? fotosPiso : const <String>[],
+                            karma: profile.karma,
+                            totalResenas: profile.totalResenas,
+                            medallasResumen: profile.medallasResumen,
                           );
 
                           await _firestore.saveUserProfile(updated);
@@ -577,6 +798,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 18),
                 _section('Sobre mí', profile.bio),
                 const SizedBox(height: 12),
+                _reputationSection(profile),
+                const SizedBox(height: 12),
+                _reviewActionsSection(),
+                const SizedBox(height: 12),
                 _habitsSection(profile),
                 const SizedBox(height: 12),
                 _section('Estudios', profile.estudios),
@@ -621,6 +846,135 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _reputationSection(UserProfile profile) {
+    return StreamBuilder<List<UserReview>>(
+      stream: _firestore.reviewsForUser(profile.uid),
+      builder: (context, snapshot) {
+        final reviews = snapshot.data ?? const <UserReview>[];
+        final medallas = <String, int>{};
+        for (final review in reviews) {
+          final tipo = review.tipoMedalla;
+          if (tipo.isEmpty) {
+            continue;
+          }
+          medallas[tipo] = (medallas[tipo] ?? 0) + 1;
+        }
+
+        final karma = (profile.karma ?? 0).clamp(0, 100).toDouble();
+        final totalResenas = profile.totalResenas ?? reviews.length;
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE8EFEB)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Reputación',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Karma ${karma.toStringAsFixed(1)}/100 · $totalResenas reseñas',
+                style: const TextStyle(color: AppTheme.textSecondary),
+              ),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(99),
+                child: LinearProgressIndicator(
+                  minHeight: 10,
+                  value: karma / 100,
+                  backgroundColor: const Color(0xFFEAF2EE),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    AppTheme.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (medallas.isEmpty)
+                const Text(
+                  'Aún no hay medallas. Completa vínculos para recibir reseñas.',
+                  style: TextStyle(color: AppTheme.textSecondary),
+                )
+              else
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: medallas.entries
+                      .where((entry) => entry.value > 0)
+                      .map(
+                        (entry) => Chip(
+                          label: Text(
+                            '${_emojiMedalla(entry.key)} ${entry.key} x${entry.value}',
+                          ),
+                          backgroundColor: const Color(0xFFF4FAF7),
+                          side: const BorderSide(color: Color(0xFFDDE9E3)),
+                        ),
+                      )
+                      .toList(growable: false),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _reviewActionsSection() {
+    return StreamBuilder<List<UserProfile>>(
+      stream: _firestore.myMatchedUsersStream(),
+      builder: (context, snapshot) {
+        final matchedUsers = snapshot.data ?? const <UserProfile>[];
+        if (matchedUsers.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE8EFEB)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Valorar vínculos',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Si tuviste match, puedes dejar una reseña breve.',
+                style: TextStyle(color: AppTheme.textSecondary),
+              ),
+              const SizedBox(height: 10),
+              ...matchedUsers
+                  .take(4)
+                  .map(
+                    (user) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: OutlinedButton.icon(
+                        onPressed: () => _abrirBottomSheetResena(user),
+                        style: OutlinedButton.styleFrom(
+                          alignment: Alignment.centerLeft,
+                        ),
+                        icon: const Icon(Icons.rate_review_outlined, size: 18),
+                        label: Text('Dejar reseña a ${user.nombre}'),
+                      ),
+                    ),
+                  ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _habitsSection(UserProfile profile) {
     final alquiler =
         profile.tienePiso && profile.precioAlquilerPorPersona != null
@@ -646,6 +1000,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             'Horario',
             profile.horario == 'Manana' ? 'Mañana' : profile.horario,
           ),
+          const SizedBox(height: 8),
+          _habitRow('💻', 'Teletrabajo', profile.teletrabajo ? 'Sí' : 'No'),
+          const SizedBox(height: 8),
+          _habitRow('🎉', 'Fiestas', profile.frecuenciaFiestas),
+          const SizedBox(height: 8),
+          _habitRow('🧼', 'Limpieza', profile.nivelLimpieza),
           const SizedBox(height: 8),
           _habitRow(
             profile.fumador ? '🚬' : '🚭',

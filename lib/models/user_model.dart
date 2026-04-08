@@ -14,9 +14,13 @@ class UserModel {
   final bool tienePiso;
   final double? precioAlquilerPorPersona;
   final String horario; // Mañana, Tarde, Noche
+  final bool teletrabajo;
+  final String frecuenciaFiestas;
+  final String nivelLimpieza;
   final String bio;
   final int afinidad; // % de afinidad calculado
   final String lugarDeseado;
+  final double karma;
 
   UserModel({
     required this.id,
@@ -32,9 +36,13 @@ class UserModel {
     required this.tienePiso,
     this.precioAlquilerPorPersona,
     required this.horario,
+    this.teletrabajo = false,
+    this.frecuenciaFiestas = 'Media',
+    this.nivelLimpieza = 'Normal',
     required this.bio,
     this.afinidad = 0,
     this.lugarDeseado = '',
+    this.karma = 0,
   });
 
   // Calcular edad automáticamente
@@ -65,7 +73,11 @@ class UserModel {
       'tienePiso': tienePiso,
       'precioAlquilerPorPersona': precioAlquilerPorPersona,
       'horario': horario,
+      'teletrabajo': teletrabajo,
+      'frecuenciaFiestas': frecuenciaFiestas,
+      'nivelLimpieza': nivelLimpieza,
       'bio': bio,
+      'karma': karma,
     };
   }
 
@@ -87,7 +99,11 @@ class UserModel {
       precioAlquilerPorPersona: (data['precioAlquilerPorPersona'] as num?)
           ?.toDouble(),
       horario: data['horario'] ?? '',
+      teletrabajo: data['teletrabajo'] ?? false,
+      frecuenciaFiestas: data['frecuenciaFiestas'] ?? 'Media',
+      nivelLimpieza: data['nivelLimpieza'] ?? 'Normal',
       bio: data['bio'] ?? '',
+      karma: (data['karma'] as num?)?.toDouble() ?? 0,
     );
   }
 }
