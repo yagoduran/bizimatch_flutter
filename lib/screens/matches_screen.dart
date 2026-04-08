@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../app_theme.dart';
 import '../models/user_profile.dart';
 import '../services/firestore_service.dart';
+import '../widgets/app_cached_network_image.dart';
 import 'chat_detail_screen.dart';
 
 class MatchesScreen extends StatefulWidget {
@@ -182,18 +183,10 @@ class _MatchesScreenState extends State<MatchesScreen> {
                                   horizontal: 14,
                                   vertical: 8,
                                 ),
-                                leading: CircleAvatar(
+                                leading: AppCachedAvatar(
+                                  imageUrl: avatarUrl,
                                   radius: 26,
                                   backgroundColor: const Color(0xFFE7F4EE),
-                                  backgroundImage: avatarUrl.isNotEmpty
-                                      ? NetworkImage(avatarUrl)
-                                      : null,
-                                  child: avatarUrl.isEmpty
-                                      ? const Icon(
-                                          Icons.person,
-                                          color: AppTheme.primary,
-                                        )
-                                      : null,
                                 ),
                                 title: Text(
                                   name,

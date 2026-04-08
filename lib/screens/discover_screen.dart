@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/services.dart';
 import '../app_theme.dart';
 import '../models/user_profile.dart';
 import '../services/firestore_service.dart';
+import '../widgets/app_cached_network_image.dart';
 
 class DiscoverScreen extends StatefulWidget {
   const DiscoverScreen({super.key});
@@ -269,8 +271,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         ? _unsplashRoomByContext()
         : _unsplashPortraitByGender(user.genero);
 
-    return NetworkImage(
+    return CachedNetworkImageProvider(
       user.fotoPerfil.isEmpty ? fallbackImage : user.fotoPerfil,
+      maxWidth: 500,
     );
   }
 
@@ -932,36 +935,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               ),
             ),
           )
-        : Image.network(
-            user.fotoPerfil.isEmpty ? fallbackImage : user.fotoPerfil,
+        : AppCachedNetworkImage(
+            imageUrl: user.fotoPerfil.isEmpty ? fallbackImage : user.fotoPerfil,
             fit: BoxFit.cover,
-            cacheHeight: 800,
-            cacheWidth: 400,
-            loadingBuilder: (context, child, progress) {
-              if (progress == null) return child;
-              return _loadingImagePlaceholder();
-            },
-            errorBuilder: (context, error, stackTrace) {
-              return Image.network(
-                fallbackImage,
-                fit: BoxFit.cover,
-                cacheHeight: 800,
-                cacheWidth: 400,
-                loadingBuilder: (context, child, progress) {
-                  if (progress == null) return child;
-                  return _loadingImagePlaceholder();
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: const Color(0xFFF1F6F4),
-                    child: _loadingImagePlaceholder(
-                      icon: Icons.image_not_supported_outlined,
-                      label: 'Error al cargar imagen',
-                    ),
-                  );
-                },
-              );
-            },
+            width: double.infinity,
+            height: double.infinity,
+            memCacheWidth: 500,
           );
 
     return AnimatedPositioned(

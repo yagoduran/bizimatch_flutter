@@ -7,6 +7,7 @@ import '../app_theme.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import '../widgets/app_cached_network_image.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -395,13 +396,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
 
         final isLocalPath = profile.fotoPerfil.startsWith('/');
-        final ImageProvider avatarImage = profile.fotoPerfil.isEmpty
-            ? const NetworkImage(
-                'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80',
-              )
-            : isLocalPath
-            ? FileImage(File(profile.fotoPerfil))
-            : NetworkImage(profile.fotoPerfil);
+        final avatarUrl = profile.fotoPerfil.isEmpty
+            ? 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80'
+            : profile.fotoPerfil;
 
         return SafeArea(
           child: SingleChildScrollView(
@@ -426,10 +423,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       InkWell(
                         onTap: () => _pickProfilePhoto(profile),
                         borderRadius: BorderRadius.circular(58),
-                        child: CircleAvatar(
-                          radius: 56,
-                          backgroundImage: avatarImage,
-                        ),
+                        child: isLocalPath
+                            ? CircleAvatar(
+                                radius: 56,
+                                backgroundImage: FileImage(
+                                  File(profile.fotoPerfil),
+                                ),
+                              )
+                            : AppCachedAvatar(imageUrl: avatarUrl, radius: 56),
                       ),
                       Positioned(
                         right: -4,

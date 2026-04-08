@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import '../app_theme.dart';
 import '../services/firestore_service.dart';
+import '../widgets/app_cached_network_image.dart';
 
 class ChatDetailScreen extends StatefulWidget {
   const ChatDetailScreen({
@@ -73,14 +74,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         titleSpacing: 0,
         title: Row(
           children: [
-            CircleAvatar(
+            AppCachedAvatar(
+              imageUrl: widget.avatarUrl,
+              radius: 20,
               backgroundColor: const Color(0xFFE7F4EE),
-              backgroundImage: widget.avatarUrl.isNotEmpty
-                  ? NetworkImage(widget.avatarUrl)
-                  : null,
-              child: widget.avatarUrl.isEmpty
-                  ? const Icon(Icons.person, color: AppTheme.primary)
-                  : null,
             ),
             const SizedBox(width: 10),
             Column(

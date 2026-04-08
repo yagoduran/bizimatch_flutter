@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../models/user_profile.dart';
+import '../widgets/app_cached_network_image.dart';
 
 class ProfileDetailScreen extends StatefulWidget {
   final String userUid;
@@ -93,15 +94,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
               children: [
                 // Avatar
                 Center(
-                  child: CircleAvatar(
-                    radius: 60,
-                    backgroundImage: user.fotoPerfil.isNotEmpty
-                        ? NetworkImage(user.fotoPerfil)
-                        : null,
-                    child: user.fotoPerfil.isEmpty
-                        ? const Icon(Icons.person, size: 60)
-                        : null,
-                  ),
+                  child: AppCachedAvatar(imageUrl: user.fotoPerfil, radius: 60),
                 ),
                 const SizedBox(height: 20),
 

@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../models/user_profile.dart';
+import '../widgets/app_cached_network_image.dart';
 import 'profile_detail_screen.dart';
 
 class MapScreen extends StatefulWidget {
@@ -265,16 +266,7 @@ class _MapScreenState extends State<MapScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 // Foto circular
-                CircleAvatar(
-                  radius: 32,
-                  backgroundColor: Colors.grey.shade200,
-                  backgroundImage: user.fotoPerfil.isNotEmpty
-                      ? NetworkImage(user.fotoPerfil)
-                      : null,
-                  child: user.fotoPerfil.isEmpty
-                      ? const Icon(Icons.person, size: 32)
-                      : null,
-                ),
+                AppCachedAvatar(imageUrl: user.fotoPerfil, radius: 32),
                 const SizedBox(width: 12),
                 // Nombre, edad y zona
                 Expanded(
