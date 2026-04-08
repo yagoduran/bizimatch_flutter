@@ -2,11 +2,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'package:printing/printing.dart';
+import 'dart:typed_data';
 
 import '../app_theme.dart';
 import '../models/casa_model.dart';
 import '../models/tarea_model.dart';
 import '../models/user_model.dart';
+import '../screens/contract_url_preview_screen.dart';
 import '../services/home_service.dart';
 import '../widgets/app_cached_network_image.dart';
 
@@ -103,6 +107,9 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
       body: SingleChildScrollView(
         child: Column(
           children: [
+            _buildContratoVigenteCard(_idCasa!),
+            const SizedBox(height: 16),
+
             // Dashboard de Ranking
             _buildRankingDashboard(_idCasa!, myUid),
             const SizedBox(height: 24),
@@ -120,6 +127,154 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
         label: const Text('Nueva Tarea'),
       ),
     );
+  }
+
+  Widget _buildContratoVigenteCard(String idCasa) {
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: _firestore.collection('casas').doc(idCasa).snapshots(),
+      builder: (context, snapshot) {
+        final data = snapshot.data?.data();
+        final url = (data?['contrato_actual_url'] as String?)?.trim() ?? '';
+        final chatId = (data?['contrato_actual_chat_id'] as String?) ?? '';
+
+        return Container(
+          margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFDAEFE5)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF10B981).withOpacity(0.08),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE7F4EE),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.picture_as_pdf,
+                      color: Color(0xFF10B981),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Contrato vigente',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                url.isEmpty
+                    ? 'Aun no hay contrato oficial generado para esta casa.'
+                    : 'Contrato vinculado ${chatId.isEmpty ? '' : '(Chat $chatId)'}',
+                style: TextStyle(color: Colors.grey[700], fontSize: 13),
+              ),
+              if (url.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _verContrato(url),
+                        icon: const Icon(Icons.visibility_rounded),
+                        label: const Text('Ver'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _imprimirContrato(url),
+                        icon: const Icon(Icons.print_rounded),
+                        label: const Text('Imprimir'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _compartirContrato(url),
+                        icon: const Icon(Icons.share_rounded),
+                        label: const Text('Compartir'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _verContrato(String url) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            ContractUrlPreviewScreen(pdfUrl: url, title: 'Contrato Oficial'),
+      ),
+    );
+  }
+
+  Future<void> _imprimirContrato(String url) async {
+    try {
+      final bytes = await _downloadPdfBytes(url);
+      await Printing.layoutPdf(onLayout: (format) async => bytes);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('No se pudo imprimir: $e')));
+    }
+  }
+
+  Future<void> _compartirContrato(String url) async {
+    try {
+      final bytes = await _downloadPdfBytes(url);
+      await Printing.sharePdf(
+        bytes: bytes,
+        filename:
+            'contrato_bizimatch_${DateTime.now().millisecondsSinceEpoch}.pdf',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('No se pudo compartir: $e')));
+    }
+  }
+
+  Future<Uint8List> _downloadPdfBytes(String url) async {
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Error al descargar el contrato (${response.statusCode})',
+      );
+    }
+    return response.bodyBytes;
   }
 
   Widget _buildRankingDashboard(String idCasa, String myUid) {

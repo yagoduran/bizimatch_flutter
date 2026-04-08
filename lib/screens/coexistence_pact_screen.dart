@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../app_theme.dart';
 import '../models/pact_model.dart';
+import '../screens/contract_preview_screen.dart';
 import '../services/pact_service.dart';
 
 class CoexistencePactScreen extends StatefulWidget {
@@ -25,9 +26,11 @@ class CoexistencePactScreen extends StatefulWidget {
 
 class _CoexistencePactScreenState extends State<CoexistencePactScreen> {
   final PactService _pactService = PactService.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _reglaController = TextEditingController();
   late final String _myUid;
   bool _isSigning = false;
+  bool _isGeneratingContract = false;
 
   @override
   void initState() {
@@ -100,6 +103,89 @@ class _CoexistencePactScreenState extends State<CoexistencePactScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _abrirGeneradorContrato(Pact pact) async {
+    setState(() => _isGeneratingContract = true);
+    HapticFeedback.lightImpact();
+
+    try {
+      final myDoc = await _firestore.collection('usuarios').doc(_myUid).get();
+      final otherDoc = await _firestore
+          .collection('usuarios')
+          .doc(widget.otherUid)
+          .get();
+
+      final myData = myDoc.data() ?? <String, dynamic>{};
+      final otherData = otherDoc.data() ?? <String, dynamic>{};
+
+      final nombreA = (myData['nombre'] as String?)?.trim();
+      final nombreB = (otherData['nombre'] as String?)?.trim();
+
+      final dniA = (myData['dni'] as String?)?.trim();
+      final dniB = (otherData['dni'] as String?)?.trim();
+
+      final direccion =
+          ((myData['direccionZona'] as String?)?.trim().isNotEmpty == true
+                  ? myData['direccionZona']
+                  : otherData['direccionZona'])
+              as String?;
+
+      final precioRaw =
+          myData['precioAlquilerPorPersona'] ??
+          otherData['precioAlquilerPorPersona'] ??
+          0;
+      final idCasa =
+          (myData['id_casa'] as String?) ?? (otherData['id_casa'] as String?);
+
+      final precio = (precioRaw as num).toDouble();
+
+      if (!mounted) return;
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ContractPreviewScreen(
+            chatId: widget.chatId,
+            uidParteA: _myUid,
+            uidParteB: widget.otherUid,
+            nombreParteA: (nombreA != null && nombreA.isNotEmpty)
+                ? nombreA
+                : 'Usuario A',
+            dniParteA: (dniA != null && dniA.isNotEmpty)
+                ? dniA
+                : _simularDni(_myUid),
+            nombreParteB: (nombreB != null && nombreB.isNotEmpty)
+                ? nombreB
+                : widget.otherName,
+            dniParteB: (dniB != null && dniB.isNotEmpty)
+                ? dniB
+                : _simularDni(widget.otherUid),
+            direccionInmueble:
+                (direccion != null && direccion.trim().isNotEmpty)
+                ? direccion
+                : 'Direccion pendiente de confirmar',
+            rentaMensual: precio,
+            reglasPacto: pact.reglas.map((r) => r.titulo).toList(),
+            idCasa: idCasa,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo generar el contrato: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isGeneratingContract = false);
+      }
+    }
+  }
+
+  String _simularDni(String uid) {
+    final seed = uid.hashCode.abs().toString().padLeft(8, '0').substring(0, 8);
+    return '$seed-Z';
   }
 
   @override
@@ -322,7 +408,7 @@ class _CoexistencePactScreenState extends State<CoexistencePactScreen> {
                     },
                   ),
                 ),
-                // Botón Firmar Pacto
+                // Botón Firmar Pacto / Contrato Oficial
                 if (!estaCerrado)
                   Padding(
                     padding: const EdgeInsets.all(16),
@@ -392,6 +478,48 @@ class _CoexistencePactScreenState extends State<CoexistencePactScreen> {
                               ],
                             ),
                           ),
+                  ),
+                if (estaCerrado)
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _isGeneratingContract
+                            ? null
+                            : () => _abrirGeneradorContrato(pact),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                          disabledBackgroundColor: Colors.grey[300],
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: _isGeneratingContract
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
+                                ),
+                              )
+                            : const Icon(Icons.picture_as_pdf),
+                        label: Text(
+                          _isGeneratingContract
+                              ? 'Generando contrato...'
+                              : 'Generar Contrato Oficial',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
               ],
             ),

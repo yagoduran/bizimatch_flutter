@@ -13,6 +13,7 @@ import firebase_core
 import firebase_messaging
 import firebase_storage
 import flutter_local_notifications
+import printing
 import record_macos
 import shared_preferences_foundation
 import sqflite_darwin
@@ -26,6 +27,7 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   FLTFirebaseMessagingPlugin.register(with: registry.registrar(forPlugin: "FLTFirebaseMessagingPlugin"))
   FLTFirebaseStoragePlugin.register(with: registry.registrar(forPlugin: "FLTFirebaseStoragePlugin"))
   FlutterLocalNotificationsPlugin.register(with: registry.registrar(forPlugin: "FlutterLocalNotificationsPlugin"))
+  PrintingPlugin.register(with: registry.registrar(forPlugin: "PrintingPlugin"))
   RecordMacOsPlugin.register(with: registry.registrar(forPlugin: "RecordMacOsPlugin"))
   SharedPreferencesPlugin.register(with: registry.registrar(forPlugin: "SharedPreferencesPlugin"))
   SqflitePlugin.register(with: registry.registrar(forPlugin: "SqflitePlugin"))

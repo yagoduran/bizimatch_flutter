@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../app_theme.dart';
 import '../services/firestore_service.dart';
 import 'discover_screen.dart';
+import 'home_management_screen.dart';
 import 'map_screen.dart';
 import 'matches_screen.dart';
 import 'profile_screen.dart';
@@ -26,6 +27,7 @@ class _MainScaffoldState extends State<MainScaffold>
   final _screens = const [
     DiscoverScreen(),
     MatchesScreen(),
+    HomeManagementScreen(),
     ProfileScreen(),
     MapScreen(),
     SettingsScreen(),
@@ -187,6 +189,10 @@ class _MainScaffoldState extends State<MainScaffold>
           BottomNavigationBarItem(
             icon: Icon(Icons.groups_rounded),
             label: 'Vínculos',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_work_outlined),
+            label: 'Mi Casa',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline_rounded),
