@@ -232,19 +232,14 @@ class FirestoreService {
 
   /// Poblar España con 50 usuarios realistas
   Future<void> poblarEspana() async {
-    var batch = _firestore.batch();
+    final batch = _firestore.batch();
     final usuarios = _generarUsuarios50();
 
-    int count = 0;
     for (final usuario in usuarios) {
       final docRef = _users.doc();
-      batch.set(docRef, usuario);
-      count++;
-      if (count % 500 == 0) {
-        await batch.commit();
-        batch = _firestore.batch();
-      }
+      batch.set(docRef, {'uid': docRef.id, ...usuario});
     }
+
     await batch.commit();
   }
 
@@ -302,7 +297,23 @@ class FirestoreService {
       'Rodríguez',
     ];
 
-    const ciudades = ['Madrid', 'Barcelona', 'Valencia', 'Sevilla', 'Bilbao'];
+    const ciudadesBase = <Map<String, dynamic>>[
+      {'ciudad': 'Madrid', 'lat': 40.4168, 'lng': -3.7038},
+      {'ciudad': 'Barcelona', 'lat': 41.3874, 'lng': 2.1686},
+      {'ciudad': 'Valencia', 'lat': 39.4699, 'lng': -0.3763},
+      {'ciudad': 'Sevilla', 'lat': 37.3891, 'lng': -5.9845},
+      {'ciudad': 'Zaragoza', 'lat': 41.6488, 'lng': -0.8891},
+      {'ciudad': 'Malaga', 'lat': 36.7213, 'lng': -4.4214},
+      {'ciudad': 'Murcia', 'lat': 37.9922, 'lng': -1.1307},
+      {'ciudad': 'Palma', 'lat': 39.5696, 'lng': 2.6502},
+      {'ciudad': 'Las Palmas', 'lat': 28.1235, 'lng': -15.4363},
+      {'ciudad': 'Bilbao', 'lat': 43.2630, 'lng': -2.9350},
+      {'ciudad': 'Alicante', 'lat': 38.3452, 'lng': -0.4810},
+      {'ciudad': 'Cordoba', 'lat': 37.8882, 'lng': -4.7794},
+      {'ciudad': 'Valladolid', 'lat': 41.6523, 'lng': -4.7245},
+      {'ciudad': 'Vigo', 'lat': 42.2406, 'lng': -8.7207},
+      {'ciudad': 'Gijon', 'lat': 43.5322, 'lng': -5.6611},
+    ];
     const estudios = [
       'Ingeniería',
       'Medicina',
@@ -351,7 +362,12 @@ class FirestoreService {
       final apellido = apellidos[random.nextInt(apellidos.length)];
       final genero = esHombre ? 'Hombre' : 'Mujer';
       final edad = 20 + random.nextInt(25);
-      final ciudad = ciudades[random.nextInt(ciudades.length)];
+      final base = ciudadesBase[random.nextInt(ciudadesBase.length)];
+      final ciudad = base['ciudad'] as String;
+      final baseLat = base['lat'] as double;
+      final baseLng = base['lng'] as double;
+      final latitud = baseLat + (random.nextDouble() * 0.10 - 0.05);
+      final longitud = baseLng + (random.nextDouble() * 0.10 - 0.05);
       final estudio = estudios[random.nextInt(estudios.length)];
       final bio = bios[random.nextInt(bios.length)];
       final horario = ['Manana', 'Tarde', 'Noche'][random.nextInt(3)];
@@ -368,8 +384,9 @@ class FirestoreService {
         'email': '$nombre.$apellido$i@bizimatch.local',
         'edad': edad,
         'genero': genero,
-        'origen': ciudad,
-        'lugarDeseado': ciudades[random.nextInt(ciudades.length)],
+        'origen': '$ciudad, España',
+        'lugarDeseado':
+          '${(ciudadesBase[random.nextInt(ciudadesBase.length)]['ciudad'] as String)}, España',
         'fotoPerfil': fotosPortrait[random.nextInt(fotosPortrait.length)],
         'fotosPiso': tienePiso
             ? [fotosRoom[random.nextInt(fotosRoom.length)]]
@@ -387,6 +404,9 @@ class FirestoreService {
         'tienePiso': tienePiso,
         'precioAlquilerPorPersona': precio,
         'direccionZona': '$ciudad, España',
+        'latitud': latitud,
+        'longitud': longitud,
+        'coordenadas': GeoPoint(latitud, longitud),
         'verificado': false,
         'createdAt': FieldValue.serverTimestamp(),
       });
