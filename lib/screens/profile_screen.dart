@@ -7,6 +7,7 @@ import '../app_theme.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import '../services/imgbb_service.dart';
 import '../widgets/app_cached_network_image.dart';
 import 'login_screen.dart';
 
@@ -20,6 +21,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final FirestoreService _firestore = FirestoreService();
   final AuthService _auth = AuthService();
+  bool _uploadingProfilePhoto = false;
 
   Future<void> _pickProfilePhoto(UserProfile profile) async {
     final picker = ImagePicker();
@@ -31,27 +33,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    final updated = UserProfile(
-      uid: profile.uid,
-      email: profile.email,
-      nombre: profile.nombre,
-      fechaNacimiento: profile.fechaNacimiento,
-      genero: profile.genero,
-      origen: profile.origen,
-      estudios: profile.estudios,
-      fumador: profile.fumador,
-      mascotas: profile.mascotas,
-      tienePiso: profile.tienePiso,
-      precioAlquilerPorPersona: profile.precioAlquilerPorPersona,
-      horario: profile.horario,
-      bio: profile.bio,
-      fotoPerfil: image.path,
-      intereses: profile.intereses,
-      lugarDeseado: profile.lugarDeseado,
-      direccionZona: profile.direccionZona,
-      fotosPiso: profile.fotosPiso,
-    );
-    await _firestore.saveUserProfile(updated);
+    setState(() => _uploadingProfilePhoto = true);
+
+    try {
+      final url = await ImgbbService.subirImagen(File(image.path));
+
+      final updated = UserProfile(
+        uid: profile.uid,
+        email: profile.email,
+        nombre: profile.nombre,
+        fechaNacimiento: profile.fechaNacimiento,
+        genero: profile.genero,
+        origen: profile.origen,
+        estudios: profile.estudios,
+        fumador: profile.fumador,
+        mascotas: profile.mascotas,
+        tienePiso: profile.tienePiso,
+        precioAlquilerPorPersona: profile.precioAlquilerPorPersona,
+        horario: profile.horario,
+        bio: profile.bio,
+        fotoPerfil: url,
+        intereses: profile.intereses,
+        lugarDeseado: profile.lugarDeseado,
+        direccionZona: profile.direccionZona,
+        fotosPiso: profile.fotosPiso,
+      );
+      await _firestore.saveUserProfile(updated);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo subir la foto.')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _uploadingProfilePhoto = false);
+      }
+    }
   }
 
   Future<void> _editarPerfil(UserProfile profile) async {
@@ -64,6 +82,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       text: profile.precioAlquilerPorPersona?.toString() ?? '',
     );
     List<String> fotosPiso = List<String>.from(profile.fotosPiso);
+    bool uploadingFloorPhotos = false;
     String horario = profile.horario;
     bool fumador = profile.fumador;
     bool mascotas = profile.mascotas;
@@ -193,23 +212,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const SizedBox(height: 10),
                       OutlinedButton.icon(
-                        onPressed: () async {
-                          final picker = ImagePicker();
-                          final images = await picker.pickMultiImage(
-                            imageQuality: 85,
-                          );
-                          if (images.isEmpty) {
-                            return;
-                          }
-                          setModalState(() {
-                            fotosPiso = images
-                                .map((e) => e.path)
-                                .toList(growable: false);
-                          });
-                        },
+                        onPressed: uploadingFloorPhotos
+                            ? null
+                            : () async {
+                                final picker = ImagePicker();
+                                final images = await picker.pickMultiImage(
+                                  imageQuality: 85,
+                                );
+                                if (images.isEmpty) {
+                                  return;
+                                }
+
+                                setModalState(
+                                  () => uploadingFloorPhotos = true,
+                                );
+
+                                try {
+                                  final uploaded = await Future.wait(
+                                    images.map(
+                                      (e) => ImgbbService.subirImagen(
+                                        File(e.path),
+                                      ),
+                                    ),
+                                  );
+
+                                  setModalState(() {
+                                    fotosPiso = uploaded;
+                                  });
+                                } catch (_) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'No se pudieron subir las fotos del piso.',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                } finally {
+                                  if (context.mounted) {
+                                    setModalState(
+                                      () => uploadingFloorPhotos = false,
+                                    );
+                                  }
+                                }
+                              },
                         icon: const Icon(Icons.add_photo_alternate_outlined),
                         label: Text(
-                          fotosPiso.isEmpty
+                          uploadingFloorPhotos
+                              ? 'Subiendo fotos...'
+                              : fotosPiso.isEmpty
                               ? 'Subir fotos del piso'
                               : 'Fotos del piso: ${fotosPiso.length}',
                         ),
@@ -432,6 +484,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               )
                             : AppCachedAvatar(imageUrl: avatarUrl, radius: 56),
                       ),
+                      if (_uploadingProfilePhoto)
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.28),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                color: AppTheme.primary,
+                              ),
+                            ),
+                          ),
+                        ),
                       Positioned(
                         right: -4,
                         bottom: -4,
@@ -456,6 +522,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
                 ),
+                if (_uploadingProfilePhoto) ...[
+                  const SizedBox(height: 8),
+                  const Center(child: Text('Subiendo foto...')),
+                ],
                 const SizedBox(height: 14),
                 Center(
                   child: Text(

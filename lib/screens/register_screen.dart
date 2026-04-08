@@ -8,6 +8,8 @@ import '../app_theme.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import '../services/imgbb_service.dart';
+import '../widgets/app_cached_network_image.dart';
 import 'main_scaffold.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -39,8 +41,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _mascotas = false;
   bool _tienePiso = false;
   bool _loading = false;
+  bool _uploadingProfilePhoto = false;
+  bool _uploadingFloorPhotos = false;
   XFile? _pickedFile;
   List<XFile> _fotosPiso = const <XFile>[];
+  String? _uploadedProfilePhotoUrl;
+  List<String> _uploadedFloorPhotoUrls = const <String>[];
 
   bool get _datosPisoValidos {
     if (!_tienePiso) {
@@ -48,7 +54,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
     final precio = int.tryParse(_precioAlquilerCtrl.text.trim());
     return _direccionZonaCtrl.text.trim().isNotEmpty &&
-        _fotosPiso.length >= 2 &&
+        _uploadedFloorPhotoUrls.length >= 2 &&
         precio != null &&
         precio > 0;
   }
@@ -73,9 +79,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (images.isEmpty) {
       return;
     }
+
     setState(() {
       _fotosPiso = images;
+      _uploadedFloorPhotoUrls = const <String>[];
+      _uploadingFloorPhotos = true;
     });
+
+    try {
+      final uploaded = await Future.wait(
+        images.map((image) => ImgbbService.subirImagen(File(image.path))),
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _uploadedFloorPhotoUrls = uploaded;
+      });
+    } catch (_) {
+      if (mounted) {
+        _showError('No se pudieron subir las fotos del piso.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _uploadingFloorPhotos = false);
+      }
+    }
   }
 
   Future<void> _pickImage() async {
@@ -87,9 +116,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (image == null) {
       return;
     }
+
     setState(() {
       _pickedFile = image;
+      _uploadedProfilePhotoUrl = null;
+      _uploadingProfilePhoto = true;
     });
+
+    try {
+      final url = await ImgbbService.subirImagen(File(image.path));
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _uploadedProfilePhotoUrl = url;
+      });
+    } catch (_) {
+      if (mounted) {
+        _showError('No se pudo subir la foto de perfil.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _uploadingProfilePhoto = false);
+      }
+    }
   }
 
   Future<void> _pickBirthDate() async {
@@ -127,6 +177,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
     setState(() => _loading = true);
     try {
+      if (_pickedFile != null && _uploadedProfilePhotoUrl == null) {
+        setState(() => _uploadingProfilePhoto = true);
+        _uploadedProfilePhotoUrl = await ImgbbService.subirImagen(
+          File(_pickedFile!.path),
+        );
+        setState(() => _uploadingProfilePhoto = false);
+      }
+
+      if (_tienePiso &&
+          _fotosPiso.isNotEmpty &&
+          _uploadedFloorPhotoUrls.length != _fotosPiso.length) {
+        setState(() => _uploadingFloorPhotos = true);
+        _uploadedFloorPhotoUrls = await Future.wait(
+          _fotosPiso.map((e) => ImgbbService.subirImagen(File(e.path))),
+        );
+        setState(() => _uploadingFloorPhotos = false);
+      }
+
       final credential = await _authService.register(
         email: _emailCtrl.text.trim(),
         password: _passwordCtrl.text.trim(),
@@ -147,12 +215,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
             : null,
         horario: _horario,
         bio: 'Buscando compañeros de piso compatibles para convivir bien.',
-        fotoPerfil: _pickedFile?.path ?? '',
+        fotoPerfil: _uploadedProfilePhotoUrl ?? '',
         intereses: const <String>[],
         email: _emailCtrl.text.trim(),
         lugarDeseado: _lugarDeseadoCtrl.text.trim(),
         direccionZona: _direccionZonaCtrl.text.trim(),
-        fotosPiso: _fotosPiso.map((e) => e.path).toList(growable: false),
+        fotosPiso: _uploadedFloorPhotoUrls,
       );
 
       await _firestoreService.saveUserProfile(profile);
@@ -195,22 +263,52 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: InkWell(
                   onTap: _pickImage,
                   borderRadius: BorderRadius.circular(54),
-                  child: CircleAvatar(
-                    radius: 54,
-                    backgroundColor: const Color(0xFFEAF5F1),
-                    backgroundImage: _pickedFile != null
-                        ? FileImage(File(_pickedFile!.path))
-                        : null,
-                    child: _pickedFile == null
-                        ? const Icon(
-                            Icons.add_a_photo_rounded,
-                            size: 34,
-                            color: AppTheme.primary,
-                          )
-                        : null,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      if (_uploadedProfilePhotoUrl != null)
+                        AppCachedAvatar(
+                          imageUrl: _uploadedProfilePhotoUrl!,
+                          radius: 54,
+                          backgroundColor: const Color(0xFFEAF5F1),
+                        )
+                      else
+                        CircleAvatar(
+                          radius: 54,
+                          backgroundColor: const Color(0xFFEAF5F1),
+                          backgroundImage: _pickedFile != null
+                              ? FileImage(File(_pickedFile!.path))
+                              : null,
+                          child: _pickedFile == null
+                              ? const Icon(
+                                  Icons.add_a_photo_rounded,
+                                  size: 34,
+                                  color: AppTheme.primary,
+                                )
+                              : null,
+                        ),
+                      if (_uploadingProfilePhoto)
+                        Container(
+                          width: 108,
+                          height: 108,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.3),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: AppTheme.primary,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
+              if (_uploadingProfilePhoto) ...[
+                const SizedBox(height: 8),
+                const Center(child: Text('Subiendo foto...')),
+              ],
               const SizedBox(height: 16),
               TextFormField(
                 controller: _nombreCtrl,
@@ -358,19 +456,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
-                  onPressed: _pickFloorImages,
+                  onPressed: _uploadingFloorPhotos ? null : _pickFloorImages,
                   icon: const Icon(Icons.add_photo_alternate_outlined),
                   label: Text(
-                    _fotosPiso.isEmpty
+                    _uploadingFloorPhotos
+                        ? 'Subiendo fotos...'
+                        : _fotosPiso.isEmpty
                         ? 'Subir fotos del piso'
-                        : 'Fotos del piso: ${_fotosPiso.length}',
+                        : 'Fotos del piso: ${_uploadedFloorPhotoUrls.length}',
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'Debes subir al menos 2 fotos del piso.',
                   style: TextStyle(
-                    color: _fotosPiso.length >= 2
+                    color: _uploadedFloorPhotoUrls.length >= 2
                         ? AppTheme.textSecondary
                         : Colors.red.shade600,
                     fontSize: 12,
@@ -406,7 +506,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               const SizedBox(height: 18),
               ElevatedButton(
-                onPressed: _loading || !_datosPisoValidos ? null : _submit,
+                onPressed:
+                    _loading ||
+                        _uploadingProfilePhoto ||
+                        _uploadingFloorPhotos ||
+                        !_datosPisoValidos
+                    ? null
+                    : _submit,
                 child: _loading
                     ? const SizedBox(
                         width: 20,
