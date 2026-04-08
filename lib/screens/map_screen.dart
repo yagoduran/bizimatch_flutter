@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -6,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
 import '../models/user_profile.dart';
@@ -28,6 +30,8 @@ class _MapScreenState extends State<MapScreen> {
   List<ServicePoi> _nearbyServices = [];
   bool _showNearbyServices = false;
   bool _loadingNearbyServices = false;
+  static const String _overpassEndpoint =
+      'https://overpass-api.de/api/interpreter';
 
   // Posición inicial (Madrid, España)
   static const LatLng _initialPosition = LatLng(40.4168, -3.7038);
@@ -113,21 +117,149 @@ class _MapScreenState extends State<MapScreen> {
       }
     });
 
-    // Simulación de consulta externa (ej: Overpass) para mantenerlo gratis/offline.
-    await Future<void>.delayed(const Duration(milliseconds: 220));
-
-    final pois = _buildMockNearbyServices(housePosition);
+    final pois = await _fetchNearbyServicesFromOverpass(housePosition);
+    final resolvedPois = pois.isNotEmpty
+        ? pois
+        : _buildMockNearbyServices(housePosition);
     if (!mounted || _selectedUser?.uid != user.uid) {
       return;
     }
 
     setState(() {
-      _nearbyServices = pois;
+      _nearbyServices = resolvedPois;
       _loadingNearbyServices = false;
       if (showAfterLoad) {
         _showNearbyServices = true;
       }
     });
+
+    if (mounted && pois.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No hubo respuesta de mapa en vivo. Mostrando referencia local.',
+          ),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Future<List<ServicePoi>> _fetchNearbyServicesFromOverpass(
+    LatLng center,
+  ) async {
+    final query =
+        '''
+[out:json][timeout:18];
+(
+  node(around:1000,${center.latitude},${center.longitude})["highway"="bus_stop"];
+  node(around:1000,${center.latitude},${center.longitude})["public_transport"~"platform|stop_position"];
+  node(around:1000,${center.latitude},${center.longitude})["railway"~"station|halt|tram_stop|subway_entrance"];
+  node(around:1000,${center.latitude},${center.longitude})["station"="subway"];
+  node(around:1000,${center.latitude},${center.longitude})["shop"="supermarket"];
+  node(around:1000,${center.latitude},${center.longitude})["shop"="convenience"];
+);
+out body;
+''';
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse(_overpassEndpoint),
+            headers: const {
+              'Content-Type':
+                  'application/x-www-form-urlencoded; charset=UTF-8',
+            },
+            body: {'data': query},
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode != 200) {
+        debugPrint('Overpass error HTTP ${response.statusCode}');
+        return const <ServicePoi>[];
+      }
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic>) {
+        return const <ServicePoi>[];
+      }
+      final elements = decoded['elements'];
+      if (elements is! List) {
+        return const <ServicePoi>[];
+      }
+
+      final services = <ServicePoi>[];
+      for (final raw in elements) {
+        if (raw is! Map<String, dynamic>) {
+          continue;
+        }
+        final lat = raw['lat'];
+        final lon = raw['lon'];
+        if (lat is! num || lon is! num) {
+          continue;
+        }
+
+        final tagsRaw = raw['tags'];
+        final tags = tagsRaw is Map
+            ? tagsRaw.cast<String, dynamic>()
+            : const <String, dynamic>{};
+        final type = _mapOverpassType(tags);
+        if (type == null) {
+          continue;
+        }
+
+        final name = (tags['name'] as String?)?.trim();
+        final id = raw['id'];
+        services.add(
+          ServicePoi(
+            id: 'osm-${id ?? services.length}',
+            name: name?.isNotEmpty == true
+                ? name!
+                : type == ServicePoiType.transport
+                ? 'Parada de transporte'
+                : 'Supermercado',
+            type: type,
+            position: LatLng(lat.toDouble(), lon.toDouble()),
+          ),
+        );
+      }
+
+      // Limitar densidad para evitar sobrecargar el mapa en zonas con muchos nodos.
+      final transport = services
+          .where((s) => s.type == ServicePoiType.transport)
+          .take(8);
+      final markets = services
+          .where((s) => s.type == ServicePoiType.supermarket)
+          .take(6);
+      return <ServicePoi>[...transport, ...markets];
+    } catch (e) {
+      debugPrint('Overpass fetch fallido: $e');
+      return const <ServicePoi>[];
+    }
+  }
+
+  ServicePoiType? _mapOverpassType(Map<String, dynamic> tags) {
+    final shop = tags['shop']?.toString();
+    if (shop == 'supermarket' || shop == 'convenience') {
+      return ServicePoiType.supermarket;
+    }
+
+    final highway = tags['highway']?.toString();
+    final publicTransport = tags['public_transport']?.toString();
+    final railway = tags['railway']?.toString();
+    final station = tags['station']?.toString();
+
+    final isTransport =
+        highway == 'bus_stop' ||
+        publicTransport == 'platform' ||
+        publicTransport == 'stop_position' ||
+        railway == 'station' ||
+        railway == 'halt' ||
+        railway == 'tram_stop' ||
+        railway == 'subway_entrance' ||
+        station == 'subway';
+
+    return isTransport ? ServicePoiType.transport : null;
   }
 
   List<ServicePoi> _buildMockNearbyServices(LatLng base) {

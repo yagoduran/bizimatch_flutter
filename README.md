@@ -74,12 +74,6 @@ Si deseas clonar y probar este proyecto en tu entorno local:
 
 ---
 
-## 📱 Screenshots
-
-*(Añade aquí capturas de pantalla de tu aplicación funcionando en el emulador o en tu Oppo. Puedes usar rutas relativas como `![Inicio](assets/screenshots/home.png)`)*
-
----
-
 ## 🎓 Contexto Académico
 
 Este proyecto ha sido desarrollado como **Trabajo de Fin de Grado (TFG)**, con el objetivo de demostrar competencias avanzadas en el desarrollo multiplataforma, diseño de interfaces de usuario (UX/UI), integración de servicios en la nube y arquitectura de software.
