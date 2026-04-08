@@ -22,6 +22,7 @@ class UserModel {
   final String lugarDeseado;
   final double karma;
   final int biziPuntos;
+  final String? voiceBioUrl;
 
   UserModel({
     required this.id,
@@ -45,6 +46,7 @@ class UserModel {
     this.lugarDeseado = '',
     this.karma = 0,
     this.biziPuntos = 0,
+    this.voiceBioUrl,
   });
 
   // Calcular edad automáticamente
@@ -81,14 +83,21 @@ class UserModel {
       'bio': bio,
       'karma': karma,
       'biziPuntos': biziPuntos,
+      'voiceBioUrl': voiceBioUrl,
     };
   }
+
+  Map<String, dynamic> toFirestore() => toMap();
 
   // Crear desde Firebase
   factory UserModel.fromDocument(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    return UserModel.fromFirestore(data, id: doc.id);
+  }
+
+  factory UserModel.fromFirestore(Map<String, dynamic> data, {String id = ''}) {
     return UserModel(
-      id: doc.id,
+      id: id,
       nombre: data['nombre'] ?? '',
       email: data['email'] ?? '',
       fotoPerfil: data['fotoPerfil'] ?? '',
@@ -108,6 +117,7 @@ class UserModel {
       bio: data['bio'] ?? '',
       karma: (data['karma'] as num?)?.toDouble() ?? 0,
       biziPuntos: (data['biziPuntos'] as num?)?.toInt() ?? 0,
+      voiceBioUrl: data['voiceBioUrl'] as String?,
     );
   }
 }

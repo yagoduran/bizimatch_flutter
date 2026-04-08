@@ -1,13 +1,17 @@
 import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:record/record.dart';
 
 import '../app_theme.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../services/imgbb_service.dart';
+import '../services/voice_bio_storage_service.dart';
 import '../widgets/app_cached_network_image.dart';
 import 'login_screen.dart';
 
@@ -21,7 +25,16 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final FirestoreService _firestore = FirestoreService();
   final AuthService _auth = AuthService();
+  final VoiceBioStorageService _voiceBioStorage = VoiceBioStorageService();
+  final AudioRecorder _audioRecorder = AudioRecorder();
   bool _uploadingProfilePhoto = false;
+  bool _uploadingVoiceBio = false;
+  bool _isRecordingVoice = false;
+  bool _syncingLocalVoiceBio = false;
+  int _recordingSeconds = 0;
+  String? _lastRecordedPath;
+  String? _lastSyncedLocalVoicePath;
+  Timer? _recordTimer;
   int? _lastSeenBiziPuntos;
   int? _lastSeenLevel;
 
@@ -222,6 +235,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         biziPuntos: profile.biziPuntos,
         totalResenas: profile.totalResenas,
         medallasResumen: profile.medallasResumen,
+        voiceBioUrl: profile.voiceBioUrl,
       );
       await _firestore.saveUserProfile(updated);
     } catch (_) {
@@ -643,6 +657,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             biziPuntos: profile.biziPuntos,
                             totalResenas: profile.totalResenas,
                             medallasResumen: profile.medallasResumen,
+                            voiceBioUrl: profile.voiceBioUrl,
                           );
 
                           await _firestore.saveUserProfile(updated);
@@ -697,6 +712,443 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _startVoiceRecording(UserProfile profile) async {
+    if (_isRecordingVoice || _uploadingVoiceBio) {
+      return;
+    }
+
+    final permission = await Permission.microphone.request();
+    if (!permission.isGranted) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Necesitas permiso de micrófono para grabar tu bio.'),
+        ),
+      );
+      return;
+    }
+
+    final filePath =
+        '${Directory.systemTemp.path}/voice_bio_${profile.uid}_${DateTime.now().millisecondsSinceEpoch}.m4a';
+
+    try {
+      await _audioRecorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          sampleRate: 44100,
+          bitRate: 128000,
+        ),
+        path: filePath,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isRecordingVoice = true;
+        _recordingSeconds = 0;
+        _lastRecordedPath = null;
+      });
+
+      _recordTimer?.cancel();
+      _recordTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (!mounted || !_isRecordingVoice) {
+          timer.cancel();
+          return;
+        }
+        setState(() {
+          _recordingSeconds += 1;
+        });
+        if (_recordingSeconds >= 15) {
+          _stopVoiceRecording(profile, autoStopped: true);
+        }
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo iniciar la grabación.')),
+      );
+    }
+  }
+
+  Future<void> _stopVoiceRecording(
+    UserProfile profile, {
+    bool autoStopped = false,
+  }) async {
+    if (!_isRecordingVoice) {
+      return;
+    }
+
+    _recordTimer?.cancel();
+    final filePath = await _audioRecorder.stop();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isRecordingVoice = false;
+      _uploadingVoiceBio = true;
+    });
+
+    if (filePath == null || filePath.trim().isEmpty) {
+      setState(() {
+        _uploadingVoiceBio = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se detectó audio grabado.')),
+      );
+      return;
+    }
+
+    String savedVoiceUrl = filePath;
+    bool uploadedToCloud = false;
+    try {
+      savedVoiceUrl = await _voiceBioStorage.uploadVoiceBio(
+        uid: profile.uid,
+        localPath: filePath,
+      );
+      uploadedToCloud = true;
+
+      // Si la subida fue exitosa, borrar temporal local para no acumular archivos.
+      await _voiceBioStorage.deleteVoiceBioByPathOrUrl(filePath);
+
+      final previousVoice = (profile.voiceBioUrl ?? '').trim();
+      if (previousVoice.isNotEmpty && previousVoice != savedVoiceUrl) {
+        try {
+          await _voiceBioStorage.deleteVoiceBioByPathOrUrl(previousVoice);
+        } catch (_) {
+          // Si no se puede borrar el anterior, no bloquear guardado del perfil.
+        }
+      }
+    } catch (_) {
+      // Fallback local para no perder la grabación si falla la red/storage.
+      savedVoiceUrl = filePath;
+    }
+
+    final updated = UserProfile(
+      uid: profile.uid,
+      email: profile.email,
+      nombre: profile.nombre,
+      fechaNacimiento: profile.fechaNacimiento,
+      genero: profile.genero,
+      origen: profile.origen,
+      estudios: profile.estudios,
+      fumador: profile.fumador,
+      mascotas: profile.mascotas,
+      tienePiso: profile.tienePiso,
+      precioAlquilerPorPersona: profile.precioAlquilerPorPersona,
+      horario: profile.horario,
+      teletrabajo: profile.teletrabajo,
+      frecuenciaFiestas: profile.frecuenciaFiestas,
+      nivelLimpieza: profile.nivelLimpieza,
+      bio: profile.bio,
+      fotoPerfil: profile.fotoPerfil,
+      intereses: profile.intereses,
+      lugarDeseado: profile.lugarDeseado,
+      direccionZona: profile.direccionZona,
+      fotosPiso: profile.fotosPiso,
+      karma: profile.karma,
+      biziPuntos: profile.biziPuntos,
+      totalResenas: profile.totalResenas,
+      medallasResumen: profile.medallasResumen,
+      voiceBioUrl: savedVoiceUrl,
+    );
+    await _firestore.saveUserProfile(updated);
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _uploadingVoiceBio = false;
+      _lastRecordedPath = savedVoiceUrl;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          autoStopped
+              ? uploadedToCloud
+                    ? 'Grabación subida (límite de 15s alcanzado).'
+                    : 'Grabación guardada en local (sin conexión).'
+              : uploadedToCloud
+              ? 'Nota de voz subida a tu bio.'
+              : 'Nota de voz guardada en local (sin conexión).',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deleteVoiceBio(UserProfile profile) async {
+    final currentVoice = (profile.voiceBioUrl ?? '').trim();
+    if (currentVoice.isEmpty || _uploadingVoiceBio || _isRecordingVoice) {
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Eliminar nota de voz'),
+          content: const Text('¿Quieres eliminar tu nota de voz de la bio?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Eliminar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    setState(() {
+      _uploadingVoiceBio = true;
+    });
+
+    try {
+      await _voiceBioStorage.deleteVoiceBioByPathOrUrl(currentVoice);
+    } catch (_) {
+      // Aunque falle borrado físico, se limpia referencia del perfil.
+    }
+
+    final updated = UserProfile(
+      uid: profile.uid,
+      email: profile.email,
+      nombre: profile.nombre,
+      fechaNacimiento: profile.fechaNacimiento,
+      genero: profile.genero,
+      origen: profile.origen,
+      estudios: profile.estudios,
+      fumador: profile.fumador,
+      mascotas: profile.mascotas,
+      tienePiso: profile.tienePiso,
+      precioAlquilerPorPersona: profile.precioAlquilerPorPersona,
+      horario: profile.horario,
+      teletrabajo: profile.teletrabajo,
+      frecuenciaFiestas: profile.frecuenciaFiestas,
+      nivelLimpieza: profile.nivelLimpieza,
+      bio: profile.bio,
+      fotoPerfil: profile.fotoPerfil,
+      intereses: profile.intereses,
+      lugarDeseado: profile.lugarDeseado,
+      direccionZona: profile.direccionZona,
+      fotosPiso: profile.fotosPiso,
+      karma: profile.karma,
+      biziPuntos: profile.biziPuntos,
+      totalResenas: profile.totalResenas,
+      medallasResumen: profile.medallasResumen,
+      voiceBioUrl: '',
+    );
+    await _firestore.saveUserProfile(updated);
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _uploadingVoiceBio = false;
+      _lastRecordedPath = null;
+    });
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Nota de voz eliminada.')));
+  }
+
+  Future<void> _maybeSyncLocalVoiceBio(UserProfile profile) async {
+    final voicePath = (profile.voiceBioUrl ?? '').trim();
+    final isLocalPath =
+        voicePath.startsWith('/') ||
+        voicePath.contains(':/') ||
+        voicePath.startsWith('\\');
+
+    if (!isLocalPath ||
+        _syncingLocalVoiceBio ||
+        _uploadingVoiceBio ||
+        _isRecordingVoice ||
+        voicePath == _lastSyncedLocalVoicePath) {
+      return;
+    }
+
+    final file = File(voicePath);
+    if (!file.existsSync()) {
+      _lastSyncedLocalVoicePath = voicePath;
+      return;
+    }
+
+    _syncingLocalVoiceBio = true;
+    _lastSyncedLocalVoicePath = voicePath;
+    try {
+      final remoteUrl = await _voiceBioStorage.uploadVoiceBio(
+        uid: profile.uid,
+        localPath: voicePath,
+      );
+
+      await _voiceBioStorage.deleteVoiceBioByPathOrUrl(voicePath);
+
+      final updated = UserProfile(
+        uid: profile.uid,
+        email: profile.email,
+        nombre: profile.nombre,
+        fechaNacimiento: profile.fechaNacimiento,
+        genero: profile.genero,
+        origen: profile.origen,
+        estudios: profile.estudios,
+        fumador: profile.fumador,
+        mascotas: profile.mascotas,
+        tienePiso: profile.tienePiso,
+        precioAlquilerPorPersona: profile.precioAlquilerPorPersona,
+        horario: profile.horario,
+        teletrabajo: profile.teletrabajo,
+        frecuenciaFiestas: profile.frecuenciaFiestas,
+        nivelLimpieza: profile.nivelLimpieza,
+        bio: profile.bio,
+        fotoPerfil: profile.fotoPerfil,
+        intereses: profile.intereses,
+        lugarDeseado: profile.lugarDeseado,
+        direccionZona: profile.direccionZona,
+        fotosPiso: profile.fotosPiso,
+        karma: profile.karma,
+        biziPuntos: profile.biziPuntos,
+        totalResenas: profile.totalResenas,
+        medallasResumen: profile.medallasResumen,
+        voiceBioUrl: remoteUrl,
+      );
+      await _firestore.saveUserProfile(updated);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Tu nota de voz local se sincronizó en la nube.'),
+            duration: Duration(milliseconds: 1600),
+          ),
+        );
+      }
+    } catch (_) {
+      // Se mantiene local para reintento manual posterior.
+    } finally {
+      _syncingLocalVoiceBio = false;
+    }
+  }
+
+  Widget _voiceBioRecorderSection(UserProfile profile) {
+    final seconds = _recordingSeconds.clamp(0, 15);
+    final progress = seconds / 15;
+    final hasVoiceBio = (profile.voiceBioUrl ?? '').trim().isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE8EFEB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Nota de voz en bio',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _isRecordingVoice
+                ? 'Grabando... suelta para guardar (${15 - seconds}s restantes)'
+                : 'Mantén pulsado el micrófono para grabar (máx. 15s).',
+            style: const TextStyle(color: AppTheme.textSecondary),
+          ),
+          const SizedBox(height: 12),
+          Center(
+            child: GestureDetector(
+              onLongPressStart: (_) => _startVoiceRecording(profile),
+              onLongPressEnd: (_) => _stopVoiceRecording(profile),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: _isRecordingVoice ? 86 : 74,
+                height: _isRecordingVoice ? 86 : 74,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _isRecordingVoice
+                      ? const Color(0xFF059669)
+                      : AppTheme.primary,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primary.withValues(alpha: 0.33),
+                      blurRadius: _isRecordingVoice ? 24 : 16,
+                      spreadRadius: _isRecordingVoice ? 2 : 0,
+                    ),
+                  ],
+                ),
+                child: _uploadingVoiceBio
+                    ? const Padding(
+                        padding: EdgeInsets.all(20),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(
+                        Icons.mic_rounded,
+                        color: Colors.white,
+                        size: 34,
+                      ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              minHeight: 7,
+              value: _isRecordingVoice ? progress : 0,
+              backgroundColor: const Color(0xFFE8F2EE),
+              valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primary),
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (hasVoiceBio || _lastRecordedPath != null)
+            Text(
+              'Audio listo ${_lastRecordedPath != null ? '(actualizado)' : ''}',
+              style: const TextStyle(
+                color: Color(0xFF0F9D74),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          if (hasVoiceBio) ...[
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _uploadingVoiceBio
+                    ? null
+                    : () => _deleteVoiceBio(profile),
+                icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                label: const Text('Eliminar nota de voz'),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFFB42318),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -714,6 +1166,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             : profile.fotoPerfil;
 
         _maybeShowPointsToast(profile);
+        unawaited(_maybeSyncLocalVoiceBio(profile));
 
         return SafeArea(
           child: SingleChildScrollView(
@@ -807,6 +1260,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 18),
                 _section('Sobre mí', profile.bio),
+                const SizedBox(height: 12),
+                _voiceBioRecorderSection(profile),
                 const SizedBox(height: 12),
                 _reputationSection(profile),
                 const SizedBox(height: 12),
@@ -908,7 +1363,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       barrierLabel: 'level-up',
       barrierColor: Colors.black.withValues(alpha: 0.34),
       transitionDuration: const Duration(milliseconds: 280),
-      pageBuilder: (dialogContext, _, __) {
+      pageBuilder: (dialogContext, _, _) {
         return Center(
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 28),
@@ -1400,5 +1855,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ],
     );
+  }
+
+  @override
+  void dispose() {
+    _recordTimer?.cancel();
+    unawaited(_audioRecorder.dispose());
+    super.dispose();
   }
 }

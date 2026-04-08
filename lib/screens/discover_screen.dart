@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:io';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:confetti/confetti.dart';
@@ -32,8 +33,14 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   late final AnimationController _swipeOutController;
   late final AnimationController _snapBackController;
   late final AnimationController _loadingShimmerController;
+  late final AnimationController _voiceWaveController;
   Animation<Offset>? _swipeOutAnimation;
   Animation<Offset>? _snapBackAnimation;
+
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  StreamSubscription<PlayerState>? _audioStateSub;
+  StreamSubscription<Duration>? _audioPositionSub;
+  StreamSubscription<Duration>? _audioDurationSub;
 
   int _activeIndex = 0;
   Offset _dragOffset = Offset.zero;
@@ -46,6 +53,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   UserProfile? _myProfile;
   List<UserProfile> _allProfiles = const <UserProfile>[];
   List<UserProfile> _filteredProfiles = const <UserProfile>[];
+  String? _playingVoiceUid;
+  bool _isVoicePlaying = false;
+  bool _isVoiceScrubbing = false;
+  Duration _voicePosition = Duration.zero;
+  Duration _voiceDuration = Duration.zero;
+  final Map<String, Duration> _voiceDurationsByUid = <String, Duration>{};
 
   RangeValues _edadRango = const RangeValues(20, 40);
   String _filtroGenero = 'Todos';
@@ -155,6 +168,53 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1400),
     )..repeat();
+
+    _voiceWaveController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
+
+    _audioStateSub = _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (!mounted) {
+        return;
+      }
+      final playing = state == PlayerState.playing;
+      setState(() {
+        _isVoicePlaying = playing;
+      });
+    });
+
+    _audioPositionSub = _audioPlayer.onPositionChanged.listen((position) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _voicePosition = position;
+      });
+    });
+
+    _audioDurationSub = _audioPlayer.onDurationChanged.listen((duration) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _voiceDuration = duration;
+        final uid = _playingVoiceUid;
+        if (uid != null && duration > Duration.zero) {
+          _voiceDurationsByUid[uid] = duration;
+        }
+      });
+    });
+
+    _audioPlayer.onPlayerComplete.listen((_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isVoicePlaying = false;
+        _voicePosition = Duration.zero;
+      });
+    });
   }
 
   Future<void> _guardarSwipeYDetectarMatch(String toUid, String tipo) async {
@@ -334,11 +394,17 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   @override
   void dispose() {
+    unawaited(_stopVoicePlayback(clearSelection: true));
     _myProfileSub?.cancel();
     _discoverSub?.cancel();
+    _audioStateSub?.cancel();
+    _audioPositionSub?.cancel();
+    _audioDurationSub?.cancel();
+    _audioPlayer.dispose();
     _swipeOutController.dispose();
     _snapBackController.dispose();
     _loadingShimmerController.dispose();
+    _voiceWaveController.dispose();
     super.dispose();
   }
 
@@ -382,6 +448,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   }
 
   void _animateOut(bool toRight) {
+    _stopVoicePlayback(clearSelection: true);
     _swipeLike = toRight;
     final endX = toRight ? 560.0 : -560.0;
     _swipeOutAnimation =
@@ -431,6 +498,255 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       lugarDeseado: profile.lugarDeseado,
       karma: profile.karma ?? 0,
       biziPuntos: profile.biziPuntos ?? 0,
+      voiceBioUrl: profile.voiceBioUrl,
+    );
+  }
+
+  Future<void> _stopVoicePlayback({bool clearSelection = false}) async {
+    await _audioPlayer.stop();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _isVoicePlaying = false;
+      _isVoiceScrubbing = false;
+      _voicePosition = Duration.zero;
+      _voiceDuration = Duration.zero;
+      if (clearSelection) {
+        _playingVoiceUid = null;
+      }
+    });
+  }
+
+  Future<void> _toggleVoicePlayback(UserProfile user) async {
+    final voiceUrl = user.voiceBioUrl;
+    if (voiceUrl == null || voiceUrl.trim().isEmpty) {
+      return;
+    }
+
+    final sameUser = _playingVoiceUid == user.uid;
+    if (sameUser && _isVoicePlaying) {
+      await _audioPlayer.pause();
+      return;
+    }
+
+    if (sameUser && !_isVoicePlaying && _voicePosition > Duration.zero) {
+      await _audioPlayer.resume();
+      return;
+    }
+
+    if (!sameUser) {
+      await _audioPlayer.stop();
+      _voicePosition = Duration.zero;
+      _voiceDuration = _voiceDurationsByUid[user.uid] ?? Duration.zero;
+      _playingVoiceUid = user.uid;
+    }
+
+    final source = voiceUrl.startsWith('http')
+        ? UrlSource(voiceUrl)
+        : DeviceFileSource(voiceUrl);
+    await _audioPlayer.play(source);
+  }
+
+  Future<void> _seekVoiceForUser(UserProfile user, double ratio) async {
+    final isCurrent = _playingVoiceUid == user.uid;
+    final knownDuration = isCurrent
+        ? _voiceDuration
+        : (_voiceDurationsByUid[user.uid] ?? Duration.zero);
+    if (!isCurrent || knownDuration <= Duration.zero) {
+      return;
+    }
+
+    final clampedRatio = ratio.clamp(0.0, 1.0);
+    final targetMs = (knownDuration.inMilliseconds * clampedRatio).round();
+    final target = Duration(milliseconds: targetMs);
+    await _audioPlayer.seek(target);
+
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _voicePosition = target;
+    });
+  }
+
+  Widget _voiceBioMiniPlayer(UserProfile user) {
+    final isCurrent = _playingVoiceUid == user.uid;
+    final isPlaying = isCurrent && _isVoicePlaying;
+    final knownDuration = isCurrent
+        ? _voiceDuration
+        : (_voiceDurationsByUid[user.uid] ?? Duration.zero);
+    final totalMs = knownDuration.inMilliseconds;
+    final currentMs = isCurrent ? _voicePosition.inMilliseconds : 0;
+    final progress = totalMs > 0 ? (currentMs / totalMs).clamp(0.0, 1.0) : 0.0;
+    final elapsedLabel = _formatDuration(
+      isCurrent ? _voicePosition : Duration.zero,
+    );
+    final totalLabel = knownDuration > Duration.zero
+        ? _formatDuration(knownDuration)
+        : '--:--';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF2FBF7),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFD4EEE1)),
+      ),
+      child: Row(
+        children: [
+          InkWell(
+            onTap: () => _toggleVoicePlayback(user),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: const BoxDecoration(
+                color: AppTheme.primary,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'Bio de voz',
+                      style: TextStyle(
+                        color: Color(0xFF1F6F53),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    if (isPlaying)
+                      AnimatedBuilder(
+                        animation: _voiceWaveController,
+                        builder: (context, child) {
+                          final t = _voiceWaveController.value;
+                          return Row(
+                            children: [
+                              _waveBar(8 + 6 * math.sin((t * 2 * math.pi))),
+                              const SizedBox(width: 2),
+                              _waveBar(8 + 6 * math.sin((t * 2 * math.pi) + 1)),
+                              const SizedBox(width: 2),
+                              _waveBar(8 + 6 * math.sin((t * 2 * math.pi) + 2)),
+                            ],
+                          );
+                        },
+                      ),
+                  ],
+                ),
+                if (isCurrent && _isVoiceScrubbing) ...[
+                  const SizedBox(height: 3),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE6F6EF),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      _formatDuration(_voicePosition),
+                      style: const TextStyle(
+                        color: Color(0xFF0B7A57),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 4),
+                SizedBox(
+                  height: 16,
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 5,
+                      thumbShape: const RoundSliderThumbShape(
+                        enabledThumbRadius: 6,
+                      ),
+                      overlayShape: const RoundSliderOverlayShape(
+                        overlayRadius: 12,
+                      ),
+                      activeTrackColor: AppTheme.primary,
+                      inactiveTrackColor: const Color(0xFFD7EDE2),
+                      thumbColor: AppTheme.primary,
+                      overlayColor: AppTheme.primary.withValues(alpha: 0.16),
+                    ),
+                    child: Slider(
+                      value: isCurrent ? progress : 0,
+                      min: 0,
+                      max: 1,
+                      onChangeStart: (value) {
+                        if (!isCurrent || knownDuration <= Duration.zero) {
+                          return;
+                        }
+                        setState(() {
+                          _isVoiceScrubbing = true;
+                        });
+                      },
+                      onChanged: (value) {
+                        if (!isCurrent || knownDuration <= Duration.zero) {
+                          return;
+                        }
+                        setState(() {
+                          _voicePosition = Duration(
+                            milliseconds: (knownDuration.inMilliseconds * value)
+                                .round(),
+                          );
+                        });
+                      },
+                      onChangeEnd: (value) {
+                        setState(() {
+                          _isVoiceScrubbing = false;
+                        });
+                        _seekVoiceForUser(user, value);
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$elapsedLabel / $totalLabel',
+                  style: const TextStyle(
+                    color: Color(0xFF5F746A),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDuration(Duration duration) {
+    final totalSeconds = duration.inSeconds;
+    final minutes = (totalSeconds ~/ 60).toString().padLeft(2, '0');
+    final seconds = (totalSeconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  Widget _waveBar(double height) {
+    return Container(
+      width: 3,
+      height: height,
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F9D74),
+        borderRadius: BorderRadius.circular(8),
+      ),
     );
   }
 
@@ -1615,6 +1931,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                               ),
                             ),
                           ),
+                          if ((user.voiceBioUrl ?? '').trim().isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            _voiceBioMiniPlayer(user),
+                          ],
                         ],
                       ),
                     ),

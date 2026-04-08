@@ -23,6 +23,7 @@ class UserProfile {
     this.lugarDeseado = '',
     this.direccionZona = '',
     this.fotosPiso = const <String>[],
+    this.voiceBioUrl,
     this.karma,
     this.biziPuntos,
     this.rachaDias,
@@ -53,6 +54,7 @@ class UserProfile {
   final String lugarDeseado;
   final String direccionZona;
   final List<String> fotosPiso;
+  final String? voiceBioUrl;
   final double? karma;
   final int? biziPuntos;
   final int? rachaDias;
@@ -95,6 +97,7 @@ class UserProfile {
       'lugarDeseado': lugarDeseado,
       'direccionZona': direccionZona,
       'fotosPiso': fotosPiso,
+      'voiceBioUrl': voiceBioUrl,
       'updatedAt': FieldValue.serverTimestamp(),
     };
 
@@ -159,6 +162,7 @@ class UserProfile {
       lugarDeseado: (map['lugarDeseado'] ?? '') as String,
       direccionZona: (map['direccionZona'] ?? '') as String,
       fotosPiso: List<String>.from(map['fotosPiso'] ?? const <String>[]),
+      voiceBioUrl: map['voiceBioUrl'] as String?,
       karma: (map['karma'] as num?)?.toDouble(),
       biziPuntos: (map['biziPuntos'] as num?)?.toInt(),
       rachaDias: (map['rachaDias'] as num?)?.toInt(),
