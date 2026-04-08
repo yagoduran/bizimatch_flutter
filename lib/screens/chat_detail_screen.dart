@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../app_theme.dart';
 import '../screens/coexistence_pact_screen.dart';
 import '../screens/expense_calculator_screen.dart';
+import '../services/bizibot_service.dart';
 import '../services/firestore_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/app_cached_network_image.dart';
@@ -32,9 +33,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirestoreService _firestoreService = FirestoreService();
   final NotificationService _notificationService = NotificationService.instance;
+  final BiziBotService _biziBotService = BiziBotService.instance;
   final TextEditingController _controller = TextEditingController();
   late final Stream<QuerySnapshot<Map<String, dynamic>>> _messagesStream;
   bool _isSending = false;
+  bool _biziBotLoading = false;
 
   @override
   void initState() {
@@ -205,6 +208,135 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     );
   }
 
+  Future<void> _openBiziBotSuggestions() async {
+    HapticFeedback.lightImpact();
+    setState(() => _biziBotLoading = true);
+
+    try {
+      final suggestions = await _biziBotService.generarSugerencias(
+        widget.otherUid,
+      );
+      if (!mounted) return;
+
+      setState(() => _biziBotLoading = false);
+
+      await showModalBottomSheet<void>(
+        context: context,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        builder: (context) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF9F7AEA), Color(0xFF10B981)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.auto_awesome,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Sugerencias de BiziBot',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                ...List.generate(suggestions.length, (index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: GestureDetector(
+                      onTap: () {
+                        _controller.text = suggestions[index];
+                        Navigator.pop(context);
+                        HapticFeedback.mediumImpact();
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFF9F7AEA).withOpacity(0.1),
+                              const Color(0xFF10B981).withOpacity(0.1),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          border: Border.all(
+                            color: const Color(0xFF10B981).withOpacity(0.3),
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              suggestions[index],
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                height: 1.4,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Toca para enviar',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFFA1A1A1),
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+                const SizedBox(height: 12),
+                Center(
+                  child: Text(
+                    'Sugerencias generadas por BiziBot AI',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _biziBotLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final myUid = FirebaseAuth.instance.currentUser?.uid ?? '';
@@ -365,6 +497,56 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                         contentPadding: EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: AnimatedScale(
+                      scale: _biziBotLoading ? 0.94 : 1,
+                      duration: AppTheme.motionChatMessage,
+                      curve: AppTheme.motionCurve,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF9F7AEA), Color(0xFF10B981)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF9F7AEA).withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: _biziBotLoading
+                                ? null
+                                : _openBiziBotSuggestions,
+                            borderRadius: BorderRadius.circular(16),
+                            child: _biziBotLoading
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.auto_awesome,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                          ),
                         ),
                       ),
                     ),

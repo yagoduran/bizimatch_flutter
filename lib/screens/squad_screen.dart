@@ -97,7 +97,7 @@ class _SquadScreenState extends State<SquadScreen> {
                           ),
                         );
                       },
-                      icon: Icon(Icons.home_search),
+                      icon: Icon(Icons.apartment),
                       label: Text(
                         'Buscar Viviendas',
                         style: TextStyle(fontWeight: FontWeight.bold),
