@@ -5,8 +5,11 @@ import 'app_theme.dart';
 import 'services/notification_service.dart';
 import 'screens/splash_screen.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  await NotificationService.instance.initialize();
+  await NotificationService.instance.requestNotificationPermissions();
   runApp(const BiziMatchApp());
 }
 
@@ -25,48 +28,7 @@ class BiziMatchApp extends StatelessWidget {
           baseTheme.primaryTextTheme,
         ),
       ),
-      home: const _FirebaseBootstrap(),
-    );
-  }
-}
-
-class _FirebaseBootstrap extends StatelessWidget {
-  const _FirebaseBootstrap();
-
-  Future<FirebaseApp> _initializeAppServices() async {
-    final app = await Firebase.initializeApp();
-    await NotificationService.instance.initialize();
-    await NotificationService.instance.requestNotificationPermissions();
-    return app;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<FirebaseApp>(
-      future: _initializeAppServices(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        if (snapshot.hasError) {
-          return Scaffold(
-            body: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(
-                  'No se pudo inicializar Firebase.\n${snapshot.error}',
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-          );
-        }
-
-        return const SplashScreen();
-      },
+      home: const SplashScreen(),
     );
   }
 }
