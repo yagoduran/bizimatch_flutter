@@ -51,6 +51,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   String _filtroGenero = 'Todos';
   bool? _filtroFumador;
   bool? _filtroMascotas;
+  bool? _filtroTeletrabajo;
+  String _filtroFrecuenciaFiestas = 'Todos';
+  String _filtroNivelLimpieza = 'Todos';
 
   int get _activeFiltersCount {
     int count = 0;
@@ -64,6 +67,15 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       count += 1;
     }
     if (_filtroMascotas != null) {
+      count += 1;
+    }
+    if (_filtroTeletrabajo != null) {
+      count += 1;
+    }
+    if (_filtroFrecuenciaFiestas != 'Todos') {
+      count += 1;
+    }
+    if (_filtroNivelLimpieza != 'Todos') {
       count += 1;
     }
     return count;
@@ -480,7 +492,21 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               _filtroFumador == null || u.fumador == _filtroFumador;
           final mascotasOk =
               _filtroMascotas == null || u.mascotas == _filtroMascotas;
-          return ageOk && generoOk && fumadorOk && mascotasOk;
+          final teletrabajoOk =
+              _filtroTeletrabajo == null || u.teletrabajo == _filtroTeletrabajo;
+          final fiestasOk =
+              _filtroFrecuenciaFiestas == 'Todos' ||
+              u.frecuenciaFiestas == _filtroFrecuenciaFiestas;
+          final limpiezaOk =
+              _filtroNivelLimpieza == 'Todos' ||
+              u.nivelLimpieza == _filtroNivelLimpieza;
+          return ageOk &&
+              generoOk &&
+              fumadorOk &&
+              mascotasOk &&
+              teletrabajoOk &&
+              fiestasOk &&
+              limpiezaOk;
         })
         .toList(growable: false);
   }
@@ -490,6 +516,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     String tempGenero = _filtroGenero;
     bool? tempFumador = _filtroFumador;
     bool? tempMascotas = _filtroMascotas;
+    bool? tempTeletrabajo = _filtroTeletrabajo;
+    String tempFrecuenciaFiestas = _filtroFrecuenciaFiestas;
+    String tempNivelLimpieza = _filtroNivelLimpieza;
 
     await showModalBottomSheet<void>(
       context: context,
@@ -546,6 +575,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                                 tempGenero = 'Todos';
                                 tempFumador = null;
                                 tempMascotas = null;
+                                tempTeletrabajo = null;
+                                tempFrecuenciaFiestas = 'Todos';
+                                tempNivelLimpieza = 'Todos';
                               });
                             },
                             child: const Text('Reiniciar'),
@@ -726,6 +758,219 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                         onChanged: (value) =>
                             setModalState(() => tempMascotas = value),
                       ),
+                      const SizedBox(height: 18),
+                      _segmentedFilterGroup(
+                        title: 'Teletrabajo',
+                        value: tempTeletrabajo,
+                        onChanged: (value) =>
+                            setModalState(() => tempTeletrabajo = value),
+                      ),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'Frecuencia de fiestas',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          ChoiceChip(
+                            label: const Text('Todos'),
+                            selected: tempFrecuenciaFiestas == 'Todos',
+                            selectedColor: AppTheme.primary.withValues(
+                              alpha: 0.16,
+                            ),
+                            backgroundColor: const Color(0xFFF6FAF8),
+                            labelStyle: TextStyle(
+                              color: tempFrecuenciaFiestas == 'Todos'
+                                  ? AppTheme.primary
+                                  : Colors.black87,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            side: BorderSide(
+                              color: tempFrecuenciaFiestas == 'Todos'
+                                  ? AppTheme.primary
+                                  : const Color(0xFFDCE7E1),
+                            ),
+                            onSelected: (_) => setModalState(
+                              () => tempFrecuenciaFiestas = 'Todos',
+                            ),
+                          ),
+                          ChoiceChip(
+                            label: const Text('Alta'),
+                            selected: tempFrecuenciaFiestas == 'Alta',
+                            selectedColor: AppTheme.primary.withValues(
+                              alpha: 0.16,
+                            ),
+                            backgroundColor: const Color(0xFFF6FAF8),
+                            labelStyle: TextStyle(
+                              color: tempFrecuenciaFiestas == 'Alta'
+                                  ? AppTheme.primary
+                                  : Colors.black87,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            side: BorderSide(
+                              color: tempFrecuenciaFiestas == 'Alta'
+                                  ? AppTheme.primary
+                                  : const Color(0xFFDCE7E1),
+                            ),
+                            onSelected: (_) => setModalState(
+                              () => tempFrecuenciaFiestas = 'Alta',
+                            ),
+                          ),
+                          ChoiceChip(
+                            label: const Text('Media'),
+                            selected: tempFrecuenciaFiestas == 'Media',
+                            selectedColor: AppTheme.primary.withValues(
+                              alpha: 0.16,
+                            ),
+                            backgroundColor: const Color(0xFFF6FAF8),
+                            labelStyle: TextStyle(
+                              color: tempFrecuenciaFiestas == 'Media'
+                                  ? AppTheme.primary
+                                  : Colors.black87,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            side: BorderSide(
+                              color: tempFrecuenciaFiestas == 'Media'
+                                  ? AppTheme.primary
+                                  : const Color(0xFFDCE7E1),
+                            ),
+                            onSelected: (_) => setModalState(
+                              () => tempFrecuenciaFiestas = 'Media',
+                            ),
+                          ),
+                          ChoiceChip(
+                            label: const Text('Baja'),
+                            selected: tempFrecuenciaFiestas == 'Baja',
+                            selectedColor: AppTheme.primary.withValues(
+                              alpha: 0.16,
+                            ),
+                            backgroundColor: const Color(0xFFF6FAF8),
+                            labelStyle: TextStyle(
+                              color: tempFrecuenciaFiestas == 'Baja'
+                                  ? AppTheme.primary
+                                  : Colors.black87,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            side: BorderSide(
+                              color: tempFrecuenciaFiestas == 'Baja'
+                                  ? AppTheme.primary
+                                  : const Color(0xFFDCE7E1),
+                            ),
+                            onSelected: (_) => setModalState(
+                              () => tempFrecuenciaFiestas = 'Baja',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'Nivel de limpieza',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          ChoiceChip(
+                            label: const Text('Todos'),
+                            selected: tempNivelLimpieza == 'Todos',
+                            selectedColor: AppTheme.primary.withValues(
+                              alpha: 0.16,
+                            ),
+                            backgroundColor: const Color(0xFFF6FAF8),
+                            labelStyle: TextStyle(
+                              color: tempNivelLimpieza == 'Todos'
+                                  ? AppTheme.primary
+                                  : Colors.black87,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            side: BorderSide(
+                              color: tempNivelLimpieza == 'Todos'
+                                  ? AppTheme.primary
+                                  : const Color(0xFFDCE7E1),
+                            ),
+                            onSelected: (_) => setModalState(
+                              () => tempNivelLimpieza = 'Todos',
+                            ),
+                          ),
+                          ChoiceChip(
+                            label: const Text('Estricto'),
+                            selected: tempNivelLimpieza == 'Estricto',
+                            selectedColor: AppTheme.primary.withValues(
+                              alpha: 0.16,
+                            ),
+                            backgroundColor: const Color(0xFFF6FAF8),
+                            labelStyle: TextStyle(
+                              color: tempNivelLimpieza == 'Estricto'
+                                  ? AppTheme.primary
+                                  : Colors.black87,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            side: BorderSide(
+                              color: tempNivelLimpieza == 'Estricto'
+                                  ? AppTheme.primary
+                                  : const Color(0xFFDCE7E1),
+                            ),
+                            onSelected: (_) => setModalState(
+                              () => tempNivelLimpieza = 'Estricto',
+                            ),
+                          ),
+                          ChoiceChip(
+                            label: const Text('Normal'),
+                            selected: tempNivelLimpieza == 'Normal',
+                            selectedColor: AppTheme.primary.withValues(
+                              alpha: 0.16,
+                            ),
+                            backgroundColor: const Color(0xFFF6FAF8),
+                            labelStyle: TextStyle(
+                              color: tempNivelLimpieza == 'Normal'
+                                  ? AppTheme.primary
+                                  : Colors.black87,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            side: BorderSide(
+                              color: tempNivelLimpieza == 'Normal'
+                                  ? AppTheme.primary
+                                  : const Color(0xFFDCE7E1),
+                            ),
+                            onSelected: (_) => setModalState(
+                              () => tempNivelLimpieza = 'Normal',
+                            ),
+                          ),
+                          ChoiceChip(
+                            label: const Text('Relajado'),
+                            selected: tempNivelLimpieza == 'Relajado',
+                            selectedColor: AppTheme.primary.withValues(
+                              alpha: 0.16,
+                            ),
+                            backgroundColor: const Color(0xFFF6FAF8),
+                            labelStyle: TextStyle(
+                              color: tempNivelLimpieza == 'Relajado'
+                                  ? AppTheme.primary
+                                  : Colors.black87,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            side: BorderSide(
+                              color: tempNivelLimpieza == 'Relajado'
+                                  ? AppTheme.primary
+                                  : const Color(0xFFDCE7E1),
+                            ),
+                            onSelected: (_) => setModalState(
+                              () => tempNivelLimpieza = 'Relajado',
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 22),
                       SizedBox(
                         width: double.infinity,
@@ -736,6 +981,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                               _filtroGenero = tempGenero;
                               _filtroFumador = tempFumador;
                               _filtroMascotas = tempMascotas;
+                              _filtroTeletrabajo = tempTeletrabajo;
+                              _filtroFrecuenciaFiestas = tempFrecuenciaFiestas;
+                              _filtroNivelLimpieza = tempNivelLimpieza;
                               _filteredProfiles = _filtrar(_allProfiles);
                               _activeIndex = 0;
                             });
