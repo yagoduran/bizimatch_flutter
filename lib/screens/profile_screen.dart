@@ -23,6 +23,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final AuthService _auth = AuthService();
   bool _uploadingProfilePhoto = false;
   int? _lastSeenBiziPuntos;
+  int? _lastSeenLevel;
+
+  static const List<int> _milestones = <int>[100, 500, 1000, 2500];
 
   static const List<String> _medallas = <String>[
     'Limpieza',
@@ -856,7 +859,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _maybeShowPointsToast(UserProfile profile) {
     final current = profile.biziPuntos ?? 0;
     final previous = _lastSeenBiziPuntos;
+    final previousLevel = _lastSeenLevel;
+    final currentLevel = _levelFromPoints(current);
     _lastSeenBiziPuntos = current;
+    _lastSeenLevel = currentLevel;
+
+    if (previousLevel != null && currentLevel > previousLevel && mounted) {
+      _showLevelUpOverlay(currentLevel);
+    }
+
     if (previous == null || current <= previous || !mounted) {
       return;
     }
@@ -885,10 +896,88 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+  int _levelFromPoints(int points) {
+    const pointsPerLevel = 200;
+    return (points ~/ pointsPerLevel) + 1;
+  }
+
+  void _showLevelUpOverlay(int level) {
+    showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'level-up',
+      barrierColor: Colors.black.withValues(alpha: 0.34),
+      transitionDuration: const Duration(milliseconds: 280),
+      pageBuilder: (dialogContext, _, __) {
+        return Center(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 28),
+            padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: const Color(0xFFE7D48E), width: 1.4),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x332F3A2E),
+                  blurRadius: 26,
+                  offset: Offset(0, 12),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.workspace_premium_rounded,
+                  color: Color(0xFFD4AF37),
+                  size: 42,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  '¡Subiste a nivel $level!',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Tu perfil gana más visibilidad en vínculos recomendados.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppTheme.textSecondary),
+                ),
+                const SizedBox(height: 14),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Continuar'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutBack,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.92, end: 1).animate(curved),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+
   Widget _biziLevelHeader(UserProfile profile) {
     final points = profile.biziPuntos ?? 0;
     const pointsPerLevel = 200;
-    final level = (points ~/ pointsPerLevel) + 1;
+    final level = _levelFromPoints(points);
     final levelStart = (level - 1) * pointsPerLevel;
     final nextLevelPoints = level * pointsPerLevel;
     final progress = ((points - levelStart) / pointsPerLevel).clamp(0.0, 1.0);
@@ -911,19 +1000,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               const Icon(Icons.emoji_events_rounded, color: Color(0xFF0F9D74)),
               const SizedBox(width: 8),
-              Text(
-                'Nivel de Buscador $level',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.textPrimary,
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 280),
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(scale: animation, child: child),
+                ),
+                child: Text(
+                  'Nivel de Buscador $level',
+                  key: ValueKey<int>(level),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.textPrimary,
+                  ),
                 ),
               ),
               const Spacer(),
-              Text(
-                '$points pts',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F9D74),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 240),
+                child: Text(
+                  '$points pts',
+                  key: ValueKey<int>(points),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F9D74),
+                  ),
                 ),
               ),
             ],
@@ -944,6 +1045,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Text(
             'Siguiente nivel: $nextLevelPoints pts',
             style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _milestones
+                .map((target) => _milestoneChip(target: target, points: points))
+                .toList(growable: false),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _milestoneChip({required int target, required int points}) {
+    final reached = points >= target;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: reached ? const Color(0xFFEEF8F3) : const Color(0xFFF3F4F6),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: reached ? const Color(0xFFBEE8D1) : const Color(0xFFE2E8E4),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            reached ? Icons.verified_rounded : Icons.lock_outline_rounded,
+            size: 15,
+            color: reached ? const Color(0xFF0F9D74) : AppTheme.textSecondary,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '$target',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: reached ? const Color(0xFF0F9D74) : AppTheme.textSecondary,
+            ),
           ),
         ],
       ),
