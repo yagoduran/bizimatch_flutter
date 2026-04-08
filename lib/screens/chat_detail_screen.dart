@@ -1,9 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app_theme.dart';
-import '../services/firestore_service.dart';
 import '../widgets/app_cached_network_image.dart';
 
 class ChatDetailScreen extends StatefulWidget {
@@ -25,15 +25,20 @@ class ChatDetailScreen extends StatefulWidget {
 }
 
 class _ChatDetailScreenState extends State<ChatDetailScreen> {
-  final FirestoreService _firestore = FirestoreService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _controller = TextEditingController();
-  late final Stream<List<ChatMessage>> _messagesStream;
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _messagesStream;
   bool _isSending = false;
 
   @override
   void initState() {
     super.initState();
-    _messagesStream = _firestore.chatMessages(widget.chatId);
+    _messagesStream = _firestore
+        .collection('chats')
+        .doc(widget.chatId)
+        .collection('mensajes')
+        .orderBy('timestamp', descending: false)
+        .snapshots();
   }
 
   @override
@@ -48,15 +53,33 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       return;
     }
 
+    final myUid = FirebaseAuth.instance.currentUser?.uid;
+    if (myUid == null) {
+      return;
+    }
+
     HapticFeedback.lightImpact();
     setState(() => _isSending = true);
     _controller.clear();
+
     try {
-      await _firestore.sendMessage(
-        chatId: widget.chatId,
-        text: text,
-        toUid: widget.otherUid,
-      );
+      await _firestore
+          .collection('chats')
+          .doc(widget.chatId)
+          .collection('mensajes')
+          .add({
+            'texto': text,
+            'text': text,
+            'senderId': myUid,
+            'emisorId': myUid,
+            'timestamp': FieldValue.serverTimestamp(),
+          });
+
+      await _firestore.collection('chats').doc(widget.chatId).set({
+        'participants': [myUid, widget.otherUid],
+        'lastMessage': text,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
     } finally {
       if (mounted) {
         setState(() => _isSending = false);
@@ -99,14 +122,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         child: Column(
           children: [
             Expanded(
-              child: StreamBuilder<List<ChatMessage>>(
+              child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: _messagesStream,
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  final messages = snapshot.data ?? const <ChatMessage>[];
+                  final messages =
+                      snapshot.data?.docs ??
+                      const <QueryDocumentSnapshot<Map<String, dynamic>>>[];
                   if (messages.isEmpty) {
                     return const Center(
                       child: Text('Empieza la conversacion sobre el piso.'),
@@ -120,10 +145,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     ),
                     itemCount: messages.length,
                     itemBuilder: (context, index) {
-                      final message = messages[index];
-                      final isMine = message.fromUid == myUid;
+                      final data = messages[index].data();
+                      final senderId =
+                          ((data['senderId'] ?? data['emisorId']) ?? '')
+                              as String;
+                      final text =
+                          ((data['texto'] ?? data['text']) ?? '') as String;
+                      final isMine = senderId == myUid;
                       return TweenAnimationBuilder<double>(
-                        key: ValueKey<String>(message.id),
+                        key: ValueKey<String>(messages[index].id),
                         duration: AppTheme.motionChatMessage,
                         curve: AppTheme.motionCurve,
                         tween: Tween<double>(begin: 0, end: 1),
@@ -160,7 +190,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                               ),
                             ),
                             child: Text(
-                              message.text,
+                              text,
                               style: TextStyle(
                                 color: isMine
                                     ? Colors.white
