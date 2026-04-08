@@ -6,8 +6,9 @@ import '../widgets/app_cached_network_image.dart';
 
 class ProfileDetailScreen extends StatefulWidget {
   final String userUid;
+  final String? heroTag;
 
-  const ProfileDetailScreen({required this.userUid, super.key});
+  const ProfileDetailScreen({required this.userUid, this.heroTag, super.key});
 
   @override
   State<ProfileDetailScreen> createState() => _ProfileDetailScreenState();
@@ -94,7 +95,16 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
               children: [
                 // Avatar
                 Center(
-                  child: AppCachedAvatar(imageUrl: user.fotoPerfil, radius: 60),
+                  child: Hero(
+                    tag: widget.heroTag ?? 'profile-photo-${user.uid}',
+                    child: Material(
+                      color: Colors.transparent,
+                      child: AppCachedAvatar(
+                        imageUrl: user.fotoPerfil,
+                        radius: 60,
+                      ),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 20),
 

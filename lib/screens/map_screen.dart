@@ -79,6 +79,8 @@ class _MapScreenState extends State<MapScreen> {
     return LatLng(lat, lng);
   }
 
+  String _heroTagForUser(String uid) => 'profile-photo-$uid';
+
   void _selectUser(UserProfile user) {
     setState(() {
       _selectedUser = user;
@@ -266,7 +268,16 @@ class _MapScreenState extends State<MapScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 // Foto circular
-                AppCachedAvatar(imageUrl: user.fotoPerfil, radius: 32),
+                Hero(
+                  tag: _heroTagForUser(user.uid),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: AppCachedAvatar(
+                      imageUrl: user.fotoPerfil,
+                      radius: 32,
+                    ),
+                  ),
+                ),
                 const SizedBox(width: 12),
                 // Nombre, edad y zona
                 Expanded(
@@ -341,7 +352,10 @@ class _MapScreenState extends State<MapScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => ProfileDetailScreen(userUid: user.uid),
+                      builder: (_) => ProfileDetailScreen(
+                        userUid: user.uid,
+                        heroTag: _heroTagForUser(user.uid),
+                      ),
                     ),
                   );
                 },

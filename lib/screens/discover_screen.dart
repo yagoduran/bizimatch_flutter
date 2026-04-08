@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -40,6 +41,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   bool _swipeLike = false;
   String? _pendingApprovedUid;
   bool _loading = true;
+  bool _isLikePressed = false;
+  bool _isDislikePressed = false;
   UserProfile? _myProfile;
   List<UserProfile> _allProfiles = const <UserProfile>[];
   List<UserProfile> _filteredProfiles = const <UserProfile>[];
@@ -257,68 +260,45 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   }
 
   void _mostrarPopupMatch(String otroUid) {
-    showDialog(
+    showGeneralDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                const Color(0xFF10B981).withValues(alpha: 0.95),
-                const Color(0xFF10B981),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(24),
+      barrierLabel: 'match-celebration',
+      barrierColor: Colors.black.withValues(alpha: 0.54),
+      transitionDuration: const Duration(milliseconds: 320),
+      pageBuilder: (dialogContext, _, __) {
+        return _MatchCelebrationOverlay(
+          onClose: () => Navigator.pop(dialogContext),
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.96, end: 1).animate(curved),
+            child: child,
           ),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                '¡Es un Vínculo! 🎉',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Ya podéis hablar',
-                style: TextStyle(fontSize: 16, color: Colors.white70),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: const Color(0xFF10B981),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  '¡Genial!',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+        );
+      },
     );
+  }
+
+  void _setLikePressed(bool value) {
+    if (_isLikePressed == value || !mounted) {
+      return;
+    }
+    setState(() => _isLikePressed = value);
+  }
+
+  void _setDislikePressed(bool value) {
+    if (_isDislikePressed == value || !mounted) {
+      return;
+    }
+    setState(() => _isDislikePressed = value);
   }
 
   @override
@@ -1055,6 +1035,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                 _actionButton(
                   icon: Icons.close_rounded,
                   color: const Color(0xFFEA5A5A),
+                  isPressed: _isDislikePressed,
+                  onPressChanged: _setDislikePressed,
                   onTap: () {
                     HapticFeedback.selectionClick();
                     _pendingApprovedUid = null;
@@ -1067,6 +1049,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                       ? Icons.home_work_rounded
                       : Icons.check_rounded,
                   color: AppTheme.primary,
+                  isPressed: _isLikePressed,
+                  onPressChanged: _setLikePressed,
                   onTap: () {
                     if (afinidad >= 85) {
                       HapticFeedback.heavyImpact();
@@ -1088,27 +1072,37 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   Widget _actionButton({
     required IconData icon,
     required Color color,
+    required bool isPressed,
+    required ValueChanged<bool> onPressChanged,
     required VoidCallback onTap,
   }) {
     return InkWell(
+      onTapDown: (_) => onPressChanged(true),
+      onTapUp: (_) => onPressChanged(false),
+      onTapCancel: () => onPressChanged(false),
       onTap: onTap,
       borderRadius: BorderRadius.circular(100),
-      child: Container(
-        width: 72,
-        height: 72,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOutCubic,
+        width: isPressed ? 66 : 72,
+        height: isPressed ? 66 : 72,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(100),
-          border: Border.all(color: color.withValues(alpha: 0.4), width: 1.4),
-          boxShadow: const [
+          border: Border.all(
+            color: color.withValues(alpha: isPressed ? 0.62 : 0.4),
+            width: isPressed ? 1.8 : 1.4,
+          ),
+          boxShadow: [
             BoxShadow(
               color: Color(0x140E1E18),
-              blurRadius: 18,
-              offset: Offset(0, 8),
+              blurRadius: isPressed ? 10 : 18,
+              offset: Offset(0, isPressed ? 4 : 8),
             ),
           ],
         ),
-        child: Icon(icon, color: color, size: 34),
+        child: Icon(icon, color: color, size: isPressed ? 31 : 34),
       ),
     );
   }
@@ -1492,6 +1486,151 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           ),
         );
       },
+    );
+  }
+}
+
+class _MatchCelebrationOverlay extends StatefulWidget {
+  const _MatchCelebrationOverlay({required this.onClose});
+
+  final VoidCallback onClose;
+
+  @override
+  State<_MatchCelebrationOverlay> createState() =>
+      _MatchCelebrationOverlayState();
+}
+
+class _MatchCelebrationOverlayState extends State<_MatchCelebrationOverlay>
+    with SingleTickerProviderStateMixin {
+  late final ConfettiController _confettiController;
+  late final AnimationController _textController;
+
+  @override
+  void initState() {
+    super.initState();
+    _confettiController = ConfettiController(
+      duration: const Duration(milliseconds: 2400),
+    )..play();
+    _textController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    _textController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pulse = CurvedAnimation(
+      parent: _textController,
+      curve: Curves.easeInOut,
+    );
+
+    return Material(
+      color: Colors.transparent,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned.fill(
+            child: Container(color: Colors.black.withValues(alpha: 0.34)),
+          ),
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirectionality: BlastDirectionality.explosive,
+              shouldLoop: false,
+              emissionFrequency: 0.035,
+              numberOfParticles: 28,
+              gravity: 0.2,
+              colors: const [
+                Color(0xFF10B981),
+                Color(0xFFF59E0B),
+                Color(0xFF22C55E),
+                Colors.white,
+              ],
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirection: -math.pi / 2,
+              shouldLoop: false,
+              emissionFrequency: 0.025,
+              numberOfParticles: 22,
+              gravity: 0.24,
+              colors: const [
+                Color(0xFF10B981),
+                Color(0xFF34D399),
+                Color(0xFFFDE68A),
+                Colors.white,
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                FadeTransition(
+                  opacity: Tween<double>(begin: 0.72, end: 1).animate(pulse),
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 0.96, end: 1.08).animate(pulse),
+                    child: const Text(
+                      '¡Es un Vínculo!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 42,
+                        height: 1.05,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            color: Color(0x88000000),
+                            blurRadius: 12,
+                            offset: Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  'Like mutuo detectado. Ya podéis hablar.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Color(0xE6FFFFFF), fontSize: 16),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: widget.onClose,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF10B981),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 30,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text(
+                    'Seguir',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
