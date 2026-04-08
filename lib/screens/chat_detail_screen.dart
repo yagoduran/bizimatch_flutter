@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../app_theme.dart';
 import '../services/firestore_service.dart';
+import '../services/notification_service.dart';
 import '../widgets/app_cached_network_image.dart';
 
 class ChatDetailScreen extends StatefulWidget {
@@ -28,6 +29,7 @@ class ChatDetailScreen extends StatefulWidget {
 class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirestoreService _firestoreService = FirestoreService();
+  final NotificationService _notificationService = NotificationService.instance;
   final TextEditingController _controller = TextEditingController();
   late final Stream<QuerySnapshot<Map<String, dynamic>>> _messagesStream;
   bool _isSending = false;
@@ -82,6 +84,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         'lastMessage': text,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
+
+      final currentUser = FirebaseAuth.instance.currentUser;
+      final senderName = currentUser?.displayName?.trim().isNotEmpty == true
+          ? currentUser!.displayName!.trim()
+          : (currentUser?.email ?? 'Nuevo mensaje');
+
+      await _notificationService.prepareChatNotification(
+        receiverUid: widget.otherUid,
+        senderUid: myUid,
+        senderName: senderName,
+        chatId: widget.chatId,
+        messageText: text,
+      );
     } finally {
       if (mounted) {
         setState(() => _isSending = false);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_theme.dart';
+import 'services/notification_service.dart';
 import 'screens/splash_screen.dart';
 
 void main() {
@@ -32,10 +33,17 @@ class BiziMatchApp extends StatelessWidget {
 class _FirebaseBootstrap extends StatelessWidget {
   const _FirebaseBootstrap();
 
+  Future<FirebaseApp> _initializeAppServices() async {
+    final app = await Firebase.initializeApp();
+    await NotificationService.instance.initialize();
+    await NotificationService.instance.requestNotificationPermissions();
+    return app;
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<FirebaseApp>(
-      future: Firebase.initializeApp(),
+      future: _initializeAppServices(),
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return const Scaffold(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../app_theme.dart';
 import '../services/auth_service.dart';
+import '../services/notification_service.dart';
 import 'main_scaffold.dart';
 import 'register_screen.dart';
 
@@ -44,6 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       await _authService.login(email: email, password: password);
+      await NotificationService.instance.syncTokenForCurrentUser();
 
       if (!mounted) {
         return;

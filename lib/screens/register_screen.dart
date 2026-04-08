@@ -9,6 +9,7 @@ import '../models/user_profile.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../services/imgbb_service.dart';
+import '../services/notification_service.dart';
 import '../widgets/app_cached_network_image.dart';
 import 'main_scaffold.dart';
 
@@ -224,6 +225,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       await _firestoreService.saveUserProfile(profile);
+      await NotificationService.instance.syncTokenForCurrentUser();
 
       if (!mounted) {
         return;
