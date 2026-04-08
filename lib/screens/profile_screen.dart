@@ -976,6 +976,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _biziLevelHeader(UserProfile profile) {
     final points = profile.biziPuntos ?? 0;
+    final streakDays = profile.rachaDias ?? 0;
     const pointsPerLevel = 200;
     final level = _levelFromPoints(points);
     final levelStart = (level - 1) * pointsPerLevel;
@@ -1054,6 +1055,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 .map((target) => _milestoneChip(target: target, points: points))
                 .toList(growable: false),
           ),
+          if (streakDays > 0) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF4E8),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: const Color(0xFFF8D7AE)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.local_fire_department_rounded,
+                    size: 16,
+                    color: Color(0xFFF97316),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Racha diaria: $streakDays día${streakDays == 1 ? '' : 's'}',
+                    style: const TextStyle(
+                      color: Color(0xFF9A3412),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -159,15 +159,18 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   Future<void> _guardarSwipeYDetectarMatch(String toUid, String tipo) async {
     try {
-      final points = await _firestoreService.guardarSwipe(
+      final reward = await _firestoreService.guardarSwipe(
         toUid: toUid,
         tipo: tipo,
       );
-      if (points > 0 && mounted) {
+      if (reward.pointsEarned > 0 && mounted) {
+        final text = reward.streakBonusAwarded
+            ? '+${reward.pointsEarned} BiziPuntos por racha de ${reward.streakDays} días 🔥'
+            : '+${reward.pointsEarned} BiziPuntos por explorar hoy 🚀';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             behavior: SnackBarBehavior.floating,
-            content: Text('+$points BiziPuntos por explorar hoy 🚀'),
+            content: Text(text),
             duration: const Duration(milliseconds: 1500),
           ),
         );

@@ -11,6 +11,18 @@ const List<String> kTiposMedalla = <String>[
   'Silencio',
 ];
 
+class SwipeReward {
+  const SwipeReward({
+    required this.pointsEarned,
+    this.streakBonusAwarded = false,
+    this.streakDays = 0,
+  });
+
+  final int pointsEarned;
+  final bool streakBonusAwarded;
+  final int streakDays;
+}
+
 class FirestoreService {
   FirestoreService({FirebaseFirestore? firestore, FirebaseAuth? auth})
     : _firestore = firestore ?? FirebaseFirestore.instance,
@@ -66,35 +78,34 @@ class FirestoreService {
     return !genericDefaults.contains(value);
   }
 
-  Future<int> _addPoints(
+  Future<SwipeReward> _addPoints(
     String uid,
     int amount, {
     required String reason,
     bool increaseDailySwipes = false,
   }) async {
     if (amount <= 0 || uid.trim().isEmpty) {
-      return 0;
+      return const SwipeReward(pointsEarned: 0);
     }
 
     final userRef = _users.doc(uid);
+    int granted = amount;
+    bool streakBonusAwarded = false;
+    int streakDays = 0;
+
     await _firestore.runTransaction((tx) async {
       final snapshot = await tx.get(userRef);
       final data = snapshot.data() ?? const <String, dynamic>{};
       final currentPoints = (data['biziPuntos'] as num?)?.toInt() ?? 0;
 
-      final update = <String, dynamic>{
-        'biziPuntos': currentPoints + amount,
-        'lastPointsGain': amount,
-        'lastPointsReason': reason,
-        'lastPointsAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
+      final update = <String, dynamic>{};
+
+      final now = DateTime.now();
+      final mm = now.month.toString().padLeft(2, '0');
+      final dd = now.day.toString().padLeft(2, '0');
+      final dayKey = '${now.year}-$mm-$dd';
 
       if (increaseDailySwipes) {
-        final now = DateTime.now();
-        final mm = now.month.toString().padLeft(2, '0');
-        final dd = now.day.toString().padLeft(2, '0');
-        final dayKey = '${now.year}-$mm-$dd';
         final rawDaily = data['swipesDiarios'];
         final daily = rawDaily is Map<String, dynamic>
             ? Map<String, dynamic>.from(rawDaily)
@@ -102,12 +113,58 @@ class FirestoreService {
         final dayCount = (daily[dayKey] as num?)?.toInt() ?? 0;
         daily[dayKey] = dayCount + 1;
         update['swipesDiarios'] = daily;
+
+        final prevStreak = (data['rachaDias'] as num?)?.toInt() ?? 0;
+        final prevDayKey = (data['rachaUltimoDia'] ?? '') as String;
+
+        if (dayCount == 0) {
+          streakDays = _calcularSiguienteRacha(prevDayKey, dayKey, prevStreak);
+          final streakBonus = 5 * streakDays.clamp(1, 7);
+          granted += streakBonus;
+          streakBonusAwarded = streakBonus > 0;
+          update['rachaDias'] = streakDays;
+          update['rachaUltimoDia'] = dayKey;
+        } else {
+          streakDays = prevStreak;
+        }
+      } else {
+        streakDays = (data['rachaDias'] as num?)?.toInt() ?? 0;
       }
+
+      update['biziPuntos'] = currentPoints + granted;
+      update['lastPointsGain'] = granted;
+      update['lastPointsReason'] = streakBonusAwarded ? 'swipe_streak' : reason;
+      update['lastPointsAt'] = FieldValue.serverTimestamp();
+      update['updatedAt'] = FieldValue.serverTimestamp();
 
       tx.set(userRef, update, SetOptions(merge: true));
     });
 
-    return amount;
+    return SwipeReward(
+      pointsEarned: granted,
+      streakBonusAwarded: streakBonusAwarded,
+      streakDays: streakDays,
+    );
+  }
+
+  int _calcularSiguienteRacha(
+    String prevDayKey,
+    String currentDayKey,
+    int prevStreak,
+  ) {
+    final prevDate = DateTime.tryParse(prevDayKey);
+    final currentDate = DateTime.tryParse(currentDayKey);
+    if (prevDate == null || currentDate == null) {
+      return 1;
+    }
+    final daysDiff = currentDate.difference(prevDate).inDays;
+    if (daysDiff == 1) {
+      return prevStreak + 1;
+    }
+    if (daysDiff <= 0) {
+      return prevStreak == 0 ? 1 : prevStreak;
+    }
+    return 1;
   }
 
   Stream<UserProfile?> myProfileStream() {
@@ -447,12 +504,14 @@ class FirestoreService {
   }
 
   /// Guardar un swipe (like o dislike) en la colección de interacciones
-  Future<int> guardarSwipe({
+  Future<SwipeReward> guardarSwipe({
     required String toUid,
     required String tipo, // 'like' o 'dislike'
   }) async {
     final myUid = _auth.currentUser?.uid;
-    if (myUid == null) return 0;
+    if (myUid == null) {
+      return const SwipeReward(pointsEarned: 0);
+    }
 
     final interaccionId =
         '${myUid}_${toUid}_${tipo}_${DateTime.now().millisecondsSinceEpoch}';
