@@ -15,6 +15,7 @@ Las fotos engañan y los textos pueden ser fríos. Escuchar la voz de alguien ge
 La Solución: Añadir un botón de grabar (15 segundos máximo) en el perfil. En la tarjeta de Explorar, un pequeño reproductor para escuchar su voz diciendo: "¡Hola! Soy Álex y hago unas tortillas de patata increíbles...".
 
 
+
 2\. El "Pacto de Convivencia" (Checklist Compartido)
 
 Una vez que hacen Match y deciden vivir juntos, ¿qué normas ponen?
@@ -22,14 +23,6 @@ Una vez que hacen Match y deciden vivir juntos, ¿qué normas ponen?
 
 
 La Solución: Una pantalla especial dentro del chat llamada "Pacto". Es una lista de checkboxes compartida en tiempo real (visitas, horas de silencio, turnos de limpieza). Ambos tienen que darle a "Aceptar".
-
-
-
-### POR HACER
-
-
-
-\--------------------------------------------------------------------
 
 
 
@@ -63,16 +56,6 @@ La Función: En la pantalla de chat, un botón brillante que diga "Que la IA rom
 
 
 
-🚨 6. Modo SOS (Urgencia)
-
-Para la gente que le han echado del piso o empieza a trabajar el lunes.
-
-
-
-La Función: Un interruptor en el perfil: "Necesito piso en menos de 7 días". Tu tarjeta en la pantalla de Explorar aparece con un borde rojo neón o de fuego, y el sistema te pone el primero en la pila de tarjetas de tu ciudad.
-
-
-
 🧹 7. Gestor de Tareas Gamificado (El "Jefe" de la Casa)
 
 Ya viven juntos... y llega la guerra por ver quién baja la basura.
@@ -100,6 +83,20 @@ Mucha gente busca piso en una ciudad nueva donde no conoce a nadie.
 
 
 La Función: Un tablón de anuncios local dentro de la app. "Plan de cañas en Madrid Centro hoy a las 20:00". No es para buscar piso, es para que los usuarios de BiziMatch se conozcan y hagan amigos en su nueva ciudad.
+
+
+
+
+
+
+
+### POR HACER
+
+
+
+\--------------------------------------------------------------------
+
+
 
 
 

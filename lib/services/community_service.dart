@@ -1,0 +1,145 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+import '../models/community_plan_model.dart';
+
+class CommunityService {
+  CommunityService._internal();
+  static final CommunityService instance = CommunityService._internal();
+
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  CollectionReference<Map<String, dynamic>> get _planes =>
+      _firestore.collection('comunidad_planes');
+
+  String get currentUid => _auth.currentUser?.uid ?? '';
+
+  Future<String> obtenerCiudadUsuario() async {
+    final uid = currentUid;
+    if (uid.isEmpty) return 'General';
+
+    final doc = await _firestore.collection('usuarios').doc(uid).get();
+    final data = doc.data() ?? <String, dynamic>{};
+
+    final raw =
+        ((data['ciudad'] as String?)?.trim().isNotEmpty == true
+                ? data['ciudad']
+                : (data['lugarDeseado'] as String?)?.trim().isNotEmpty == true
+                ? data['lugarDeseado']
+                : (data['direccionZona'] as String?)?.trim().isNotEmpty == true
+                ? data['direccionZona']
+                : 'General')
+            as String;
+
+    final first = raw.split(',').first.trim();
+    return first.isEmpty ? 'General' : first;
+  }
+
+  Stream<List<CommunityPlan>> planesPorCiudad(String ciudad) {
+    return _planes
+        .where('ciudad', isEqualTo: ciudad)
+        .orderBy('fecha_hora')
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => CommunityPlan.fromFirestore(doc))
+              .toList(),
+        );
+  }
+
+  Stream<List<String>> ciudadesDisponibles() {
+    return _planes.snapshots().map((snapshot) {
+      final cities = <String>{'General'};
+      for (final doc in snapshot.docs) {
+        final city = ((doc.data()['ciudad'] as String?) ?? '').trim();
+        if (city.isNotEmpty) {
+          cities.add(city);
+        }
+      }
+      final list = cities.toList()..sort();
+      return list;
+    });
+  }
+
+  Future<void> crearPlan({
+    required String titulo,
+    required String descripcion,
+    required String ciudad,
+    required DateTime fechaHora,
+    required String tipoPlan,
+    required String creadorNombre,
+  }) async {
+    final uid = currentUid;
+    if (uid.isEmpty) {
+      throw Exception('Usuario no autenticado');
+    }
+
+    final doc = _planes.doc();
+    final plan = CommunityPlan(
+      id: doc.id,
+      titulo: titulo,
+      descripcion: descripcion,
+      creadorId: uid,
+      creadorNombre: creadorNombre,
+      ciudad: ciudad,
+      fechaHora: fechaHora,
+      tipoPlan: tipoPlan,
+      asistentesIds: <String>[uid],
+      chatActivo: true,
+      chatPlanId: doc.id,
+    );
+
+    await doc.set(plan.toMap());
+  }
+
+  Future<void> toggleAsistencia(CommunityPlan plan) async {
+    final uid = currentUid;
+    if (uid.isEmpty) return;
+
+    final ref = _planes.doc(plan.id);
+    final joined = plan.asistentesIds.contains(uid);
+
+    await ref.update({
+      'asistentes_ids': joined
+          ? FieldValue.arrayRemove(<String>[uid])
+          : FieldValue.arrayUnion(<String>[uid]),
+      'chat_activo': true,
+      'chat_plan_id': plan.id,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Stream<List<CommunityPlanMessage>> mensajesPlan(String planId) {
+    return _planes
+        .doc(planId)
+        .collection('mensajes')
+        .orderBy('created_at')
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => CommunityPlanMessage.fromFirestore(doc))
+              .toList(),
+        );
+  }
+
+  Future<void> enviarMensajePlan({
+    required String planId,
+    required String texto,
+    required String senderName,
+  }) async {
+    final uid = currentUid;
+    if (uid.isEmpty) return;
+
+    final value = texto.trim();
+    if (value.isEmpty) return;
+
+    await _planes.doc(planId).collection('mensajes').add({
+      'plan_id': planId,
+      'sender_id': uid,
+      'sender_name': senderName,
+      'texto': value,
+      'created_at': FieldValue.serverTimestamp(),
+    });
+  }
+}

@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function planRef(planId) {
+      return /databases/$(database)/documents/comunidad_planes/$(planId);
+    }
+
+    function isPlanMember(planId) {
+      return signedIn()
+        && exists(planRef(planId))
+        && get(planRef(planId)).data.asistentes_ids.hasAny([request.auth.uid]);
+    }
+
+    function isPlanCreator(planId) {
+      return signedIn()
+        && exists(planRef(planId))
+        && get(planRef(planId)).data.creador_id == request.auth.uid;
+    }
+
+    function canToggleAttendance(planId) {
+      return signedIn()
+        && exists(planRef(planId))
+        && request.resource.data.asistentes_ids.hasAny([request.auth.uid])
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          'asistentes_ids',
+          'chat_activo',
+          'chat_plan_id',
+          'updatedAt',
+        ]);
+    }
+
+    match /comunidad_planes/{planId} {
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.creador_id == request.auth.uid
+        && request.resource.data.asistentes_ids.hasAny([request.auth.uid])
+        && request.resource.data.keys().hasAll([
+          'titulo',
+          'descripcion',
+          'creador_id',
+          'creador_nombre',
+          'ciudad',
+          'fecha_hora',
+          'tipo_plan',
+          'asistentes_ids',
+          'chat_activo',
+          'chat_plan_id'
+        ]);
+
+      allow update: if isPlanCreator(planId) || canToggleAttendance(planId);
+
+      allow delete: if isPlanCreator(planId);
+
+      match /mensajes/{messageId} {
+        allow read: if signedIn() && (isPlanMember(planId) || isPlanCreator(planId));
+        allow create: if signedIn() && (isPlanMember(planId) || isPlanCreator(planId))
+          && request.resource.data.sender_id == request.auth.uid
+          && request.resource.data.plan_id == planId;
+        allow update, delete: if false;
+      }
+    }
+
+    // Mantener accesibles los perfiles básicos para la app.
+    match /usuarios/{userId} {
+      allow read: if signedIn();
+      allow write: if signedIn() && request.auth.uid == userId;
+    }
+  }
+}
