@@ -378,129 +378,272 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 46,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDBE7E1),
-                        borderRadius: BorderRadius.circular(100),
-                      ),
-                    ),
+            return SafeArea(
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                ),
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.only(
+                    left: 20,
+                    right: 20,
+                    top: 14,
+                    bottom: 24 + MediaQuery.of(context).viewInsets.bottom,
                   ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Filtros',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    'Edad: ${tempEdad.start.round()} - ${tempEdad.end.round()} años',
-                  ),
-                  RangeSlider(
-                    values: tempEdad,
-                    min: 18,
-                    max: 55,
-                    activeColor: AppTheme.primary,
-                    onChanged: (value) => setModalState(() => tempEdad = value),
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    initialValue: tempGenero,
-                    decoration: const InputDecoration(labelText: 'Género'),
-                    items: const [
-                      DropdownMenuItem(value: 'Todos', child: Text('Todos')),
-                      DropdownMenuItem(value: 'Mujer', child: Text('Mujer')),
-                      DropdownMenuItem(value: 'Hombre', child: Text('Hombre')),
-                      DropdownMenuItem(
-                        value: 'No binario',
-                        child: Text('No binario'),
-                      ),
-                    ],
-                    onChanged: (value) =>
-                        setModalState(() => tempGenero = value ?? 'Todos'),
-                  ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ChoiceChip(
-                        label: const Text('Fumador: Todos'),
-                        selected: tempFumador == null,
-                        onSelected: (_) =>
-                            setModalState(() => tempFumador = null),
+                      Center(
+                        child: Container(
+                          width: 46,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD8E5DE),
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                        ),
                       ),
-                      ChoiceChip(
-                        label: const Text('Fumador: Sí'),
-                        selected: tempFumador == true,
-                        onSelected: (_) =>
-                            setModalState(() => tempFumador = true),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          const Text(
+                            'Filtros',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const Spacer(),
+                          TextButton(
+                            onPressed: () {
+                              setModalState(() {
+                                tempEdad = const RangeValues(20, 40);
+                                tempGenero = 'Todos';
+                                tempFumador = null;
+                                tempMascotas = null;
+                              });
+                            },
+                            child: const Text('Reiniciar'),
+                          ),
+                        ],
                       ),
-                      ChoiceChip(
-                        label: const Text('Fumador: No'),
-                        selected: tempFumador == false,
-                        onSelected: (_) =>
-                            setModalState(() => tempFumador = false),
+                      const SizedBox(height: 18),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF7FBF9),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: const Color(0xFFE3EEE8)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Text(
+                                  'Edad',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const Spacer(),
+                                _filterPill('${tempEdad.start.round()} años'),
+                                const SizedBox(width: 8),
+                                _filterPill('${tempEdad.end.round()} años'),
+                              ],
+                            ),
+                            RangeSlider(
+                              values: tempEdad,
+                              min: 18,
+                              max: 55,
+                              labels: RangeLabels(
+                                '${tempEdad.start.round()}',
+                                '${tempEdad.end.round()}',
+                              ),
+                              activeColor: AppTheme.primary,
+                              inactiveColor: const Color(0xFFDCE7E1),
+                              onChanged: (value) =>
+                                  setModalState(() => tempEdad = value),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '18',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                Text(
+                                  '55',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'Género',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          ChoiceChip(
+                            label: const Text('Todos'),
+                            selected: tempGenero == 'Todos',
+                            selectedColor: AppTheme.primary.withValues(
+                              alpha: 0.16,
+                            ),
+                            backgroundColor: const Color(0xFFF6FAF8),
+                            labelStyle: TextStyle(
+                              color: tempGenero == 'Todos'
+                                  ? AppTheme.primary
+                                  : Colors.black87,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            side: BorderSide(
+                              color: tempGenero == 'Todos'
+                                  ? AppTheme.primary
+                                  : const Color(0xFFDCE7E1),
+                            ),
+                            onSelected: (_) =>
+                                setModalState(() => tempGenero = 'Todos'),
+                          ),
+                          ChoiceChip(
+                            label: const Text('Mujer'),
+                            selected: tempGenero == 'Mujer',
+                            selectedColor: AppTheme.primary.withValues(
+                              alpha: 0.16,
+                            ),
+                            backgroundColor: const Color(0xFFF6FAF8),
+                            labelStyle: TextStyle(
+                              color: tempGenero == 'Mujer'
+                                  ? AppTheme.primary
+                                  : Colors.black87,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            side: BorderSide(
+                              color: tempGenero == 'Mujer'
+                                  ? AppTheme.primary
+                                  : const Color(0xFFDCE7E1),
+                            ),
+                            onSelected: (_) =>
+                                setModalState(() => tempGenero = 'Mujer'),
+                          ),
+                          ChoiceChip(
+                            label: const Text('Hombre'),
+                            selected: tempGenero == 'Hombre',
+                            selectedColor: AppTheme.primary.withValues(
+                              alpha: 0.16,
+                            ),
+                            backgroundColor: const Color(0xFFF6FAF8),
+                            labelStyle: TextStyle(
+                              color: tempGenero == 'Hombre'
+                                  ? AppTheme.primary
+                                  : Colors.black87,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            side: BorderSide(
+                              color: tempGenero == 'Hombre'
+                                  ? AppTheme.primary
+                                  : const Color(0xFFDCE7E1),
+                            ),
+                            onSelected: (_) =>
+                                setModalState(() => tempGenero = 'Hombre'),
+                          ),
+                          ChoiceChip(
+                            label: const Text('No binario'),
+                            selected: tempGenero == 'No binario',
+                            selectedColor: AppTheme.primary.withValues(
+                              alpha: 0.16,
+                            ),
+                            backgroundColor: const Color(0xFFF6FAF8),
+                            labelStyle: TextStyle(
+                              color: tempGenero == 'No binario'
+                                  ? AppTheme.primary
+                                  : Colors.black87,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            side: BorderSide(
+                              color: tempGenero == 'No binario'
+                                  ? AppTheme.primary
+                                  : const Color(0xFFDCE7E1),
+                            ),
+                            onSelected: (_) =>
+                                setModalState(() => tempGenero = 'No binario'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      _segmentedFilterGroup(
+                        title: 'Fumador',
+                        value: tempFumador,
+                        onChanged: (value) =>
+                            setModalState(() => tempFumador = value),
+                      ),
+                      const SizedBox(height: 18),
+                      _segmentedFilterGroup(
+                        title: 'Mascotas',
+                        value: tempMascotas,
+                        onChanged: (value) =>
+                            setModalState(() => tempMascotas = value),
+                      ),
+                      const SizedBox(height: 22),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              _edadRango = tempEdad;
+                              _filtroGenero = tempGenero;
+                              _filtroFumador = tempFumador;
+                              _filtroMascotas = tempMascotas;
+                              _filteredProfiles = _filtrar(_allProfiles);
+                              _activeIndex = 0;
+                            });
+                            _scheduleNextProfilePrecache();
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                          ),
+                          child: const Text(
+                            'Aplicar filtros',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      ChoiceChip(
-                        label: const Text('Mascotas: Todos'),
-                        selected: tempMascotas == null,
-                        onSelected: (_) =>
-                            setModalState(() => tempMascotas = null),
-                      ),
-                      ChoiceChip(
-                        label: const Text('Mascotas: Sí'),
-                        selected: tempMascotas == true,
-                        onSelected: (_) =>
-                            setModalState(() => tempMascotas = true),
-                      ),
-                      ChoiceChip(
-                        label: const Text('Mascotas: No'),
-                        selected: tempMascotas == false,
-                        onSelected: (_) =>
-                            setModalState(() => tempMascotas = false),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _edadRango = tempEdad;
-                          _filtroGenero = tempGenero;
-                          _filtroFumador = tempFumador;
-                          _filtroMascotas = tempMascotas;
-                          _filteredProfiles = _filtrar(_allProfiles);
-                          _activeIndex = 0;
-                        });
-                        _scheduleNextProfilePrecache();
-                        Navigator.pop(context);
-                      },
-                      child: const Text('Aplicar filtros'),
-                    ),
-                  ),
-                ],
+                ),
               ),
             );
           },
@@ -1010,6 +1153,101 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           ),
         ),
       ),
+    );
+  }
+
+  Widget _filterPill(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFFDCE7E1)),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF4E645A),
+        ),
+      ),
+    );
+  }
+
+  Widget _segmentedFilterGroup({
+    required String title,
+    required bool? value,
+    required ValueChanged<bool?> onChanged,
+  }) {
+    final selectedColor = AppTheme.primary.withValues(alpha: 0.14);
+    final normalBorder = const Color(0xFFDCE7E1);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF7FBF9),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: normalBorder),
+          ),
+          child: ToggleButtons(
+            isSelected: [value == null, value == true, value == false],
+            onPressed: (index) {
+              switch (index) {
+                case 0:
+                  onChanged(null);
+                  break;
+                case 1:
+                  onChanged(true);
+                  break;
+                case 2:
+                  onChanged(false);
+                  break;
+              }
+            },
+            borderRadius: BorderRadius.circular(14),
+            fillColor: selectedColor,
+            selectedColor: AppTheme.primary,
+            color: const Color(0xFF5C6E67),
+            constraints: const BoxConstraints(minHeight: 44),
+            borderColor: Colors.transparent,
+            selectedBorderColor: Colors.transparent,
+            splashColor: AppTheme.primary.withValues(alpha: 0.08),
+            renderBorder: false,
+            children: const [
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Todos',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Sí',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'No',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
