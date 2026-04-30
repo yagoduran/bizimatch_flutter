@@ -5,10 +5,10 @@ class ExpenseCalculatorScreen extends StatefulWidget {
   final Function(String)? onSendToChat;
 
   const ExpenseCalculatorScreen({
-    Key? key,
+    super.key,
     required this.chatId,
     this.onSendToChat,
-  }) : super(key: key);
+  });
 
   @override
   State<ExpenseCalculatorScreen> createState() =>
@@ -74,8 +74,8 @@ class _ExpenseCalculatorScreenState extends State<ExpenseCalculatorScreen> {
     final formattedRent = rent > 0 ? rent.toStringAsFixed(2) : '0.00';
 
     return '''--- 📊 Desglose de Gastos BiziMatch ---
-🏠 Alquiler: ${formattedRent}€
-⚡ Suministros: ${formattedUtilities}€
+🏠 Alquiler: $formattedRent€
+⚡ Suministros: $formattedUtilities€
 👥 Total personas: $_numberOfPeople
 ✅ TOTAL POR PERSONA: ${_totalPerPerson.toStringAsFixed(2)}€''';
   }
@@ -290,7 +290,7 @@ class _ExpenseCalculatorScreenState extends State<ExpenseCalculatorScreen> {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                '${_totalPerPerson.toStringAsFixed(2)}',
+                _totalPerPerson.toStringAsFixed(2),
                 style: TextStyle(
                   fontSize: 48,
                   fontWeight: FontWeight.bold,

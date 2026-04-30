@@ -12,8 +12,7 @@ import '../widgets/app_cached_network_image.dart';
 class SquadHousingBrowserScreen extends StatefulWidget {
   final String squadId;
 
-  const SquadHousingBrowserScreen({Key? key, required this.squadId})
-    : super(key: key);
+  const SquadHousingBrowserScreen({super.key, required this.squadId});
 
   @override
   State<SquadHousingBrowserScreen> createState() =>

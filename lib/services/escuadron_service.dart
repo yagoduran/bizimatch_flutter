@@ -194,8 +194,7 @@ class EscuadronService {
 
       if (zonaPreferida != null && zonaPreferida.isNotEmpty) {
         query =
-            query.where('lugarDeseado', isEqualTo: zonaPreferida)
-                as Query<Map<String, dynamic>>;
+            query.where('lugarDeseado', isEqualTo: zonaPreferida);
       }
 
       final snap = await query.get();

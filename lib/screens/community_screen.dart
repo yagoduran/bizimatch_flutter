@@ -249,7 +249,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      value: tipo,
+                      initialValue: tipo,
                       items: const [
                         DropdownMenuItem(
                           value: 'canas',

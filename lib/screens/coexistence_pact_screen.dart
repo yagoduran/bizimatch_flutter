@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../app_theme.dart';
 import '../models/pact_model.dart';
 import '../screens/contract_preview_screen.dart';
 import '../services/pact_service.dart';

@@ -1477,7 +1477,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                 });
                 HapticFeedback.lightImpact();
               },
-              activeColor: Colors.white,
+              activeThumbColor: Colors.white,
               activeTrackColor: Color(0xFF0F9D74),
               inactiveThumbColor: Color(0xFF10B981),
             ),

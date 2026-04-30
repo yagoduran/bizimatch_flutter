@@ -15,7 +15,7 @@ import '../services/home_service.dart';
 import '../widgets/app_cached_network_image.dart';
 
 class HomeManagementScreen extends StatefulWidget {
-  const HomeManagementScreen({Key? key}) : super(key: key);
+  const HomeManagementScreen({super.key});
 
   @override
   State<HomeManagementScreen> createState() => _HomeManagementScreenState();

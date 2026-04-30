@@ -12,7 +12,7 @@ import '../widgets/app_cached_network_image.dart';
 class SquadScreen extends StatefulWidget {
   final String escuadronId;
 
-  const SquadScreen({Key? key, required this.escuadronId}) : super(key: key);
+  const SquadScreen({super.key, required this.escuadronId});
 
   @override
   State<SquadScreen> createState() => _SquadScreenState();
@@ -229,7 +229,7 @@ class _SquadScreenState extends State<SquadScreen> {
                         children: [
                           Text(
                             member.nombre.length > 12
-                                ? member.nombre.substring(0, 12) + '...'
+                                ? '${member.nombre.substring(0, 12)}...'
                                 : member.nombre,
                             style: TextStyle(
                               color: Colors.white,

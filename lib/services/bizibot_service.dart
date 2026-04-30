@@ -100,7 +100,7 @@ class BiziBotService {
         return _getRandomPhrases(_fallbackPhrases, 3);
       }
 
-      final data = doc.data() as Map<String, dynamic>?;
+      final data = doc.data();
       if (data == null) {
         return _getRandomPhrases(_fallbackPhrases, 3);
       }
