@@ -13,7 +13,6 @@ import '../app_theme.dart';
 import '../models/escuadron_model.dart';
 import '../models/user_model.dart';
 import '../models/user_profile.dart';
-import '../screens/squad_screen.dart';
 import '../services/escuadron_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/app_cached_network_image.dart';
@@ -67,7 +66,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   bool _buscarCompaeros =
       false; // true = look for roommates, false = look for housing
   final EscuadronService _escuadronService = EscuadronService.instance;
-  Escuadron? _myEscuadron;
 
   RangeValues _edadRango = const RangeValues(20, 40);
   String _filtroGenero = 'Todos';

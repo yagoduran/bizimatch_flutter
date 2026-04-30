@@ -6,7 +6,6 @@ import 'package:http/http.dart' as http;
 import 'package:printing/printing.dart';
 import 'dart:typed_data';
 
-import '../app_theme.dart';
 import '../models/casa_model.dart';
 import '../models/tarea_model.dart';
 import '../models/user_model.dart';

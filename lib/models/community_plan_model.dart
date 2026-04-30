@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'community_plan_type.dart';
+
 class CommunityPlan {
   const CommunityPlan({
     required this.id,
@@ -22,7 +24,7 @@ class CommunityPlan {
   final String creadorNombre;
   final String ciudad;
   final DateTime fechaHora;
-  final String tipoPlan;
+  final CommunityPlanType tipoPlan;
   final List<String> asistentesIds;
   final bool chatActivo;
   final String? chatPlanId;
@@ -39,7 +41,7 @@ class CommunityPlan {
       'creador_nombre': creadorNombre,
       'ciudad': ciudad,
       'fecha_hora': Timestamp.fromDate(fechaHora),
-      'tipo_plan': tipoPlan,
+      'tipo_plan': tipoPlan.value,
       'asistentes_ids': asistentesIds,
       'chat_activo': chatActivo,
       'chat_plan_id': chatPlanId,
@@ -59,7 +61,9 @@ class CommunityPlan {
       creadorNombre: (data['creador_nombre'] as String?) ?? 'Usuario',
       ciudad: (data['ciudad'] as String?) ?? 'General',
       fechaHora: (data['fecha_hora'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      tipoPlan: (data['tipo_plan'] as String?) ?? 'otro',
+      tipoPlan: communityPlanTypeFromValue(
+        (data['tipo_plan'] as String?) ?? 'otro',
+      ),
       asistentesIds: List<String>.from(
         data['asistentes_ids'] ?? const <String>[],
       ),

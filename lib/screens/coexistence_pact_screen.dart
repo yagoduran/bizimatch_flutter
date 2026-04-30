@@ -88,22 +88,6 @@ class _CoexistencePactScreenState extends State<CoexistencePactScreen> {
     }
   }
 
-  Future<void> _contactarOtroUsuario() async {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Pacto Pendiente'),
-        content: Text('${widget.otherName} aún no ha firmado el pacto.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Entendido'),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _abrirGeneradorContrato(Pact pact) async {
     setState(() => _isGeneratingContract = true);
     HapticFeedback.lightImpact();

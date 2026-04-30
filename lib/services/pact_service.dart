@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/pact_model.dart';
+import '../repositories/firestore_repository.dart';
 
 class PactService {
   static final PactService instance = PactService._internal();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirestoreRepository _repo = FirestoreRepository.instance;
+  FirebaseFirestore get _firestore => _repo.firestore;
 
   PactService._internal();
 

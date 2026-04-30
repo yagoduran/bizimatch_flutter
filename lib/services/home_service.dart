@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/casa_model.dart';
 import '../models/tarea_model.dart';
+import '../repositories/firestore_repository.dart';
 
 /// Servicio para gestionar casas, tareas y puntos gamificados
 class HomeService {
@@ -10,7 +11,8 @@ class HomeService {
   static final HomeService _instance = HomeService._privateConstructor();
   static HomeService get instance => _instance;
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirestoreRepository _repo = FirestoreRepository.instance;
+  FirebaseFirestore get _firestore => _repo.firestore;
 
   /// Crea una nueva casa (se llama al confirmar mudanza)
   Future<String> crearCasa({

@@ -2,16 +2,18 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/community_plan_model.dart';
+import '../models/community_plan_type.dart';
+import '../repositories/firestore_repository.dart';
 
 class CommunityService {
   CommunityService._internal();
   static final CommunityService instance = CommunityService._internal();
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirestoreRepository _repo = FirestoreRepository.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   CollectionReference<Map<String, dynamic>> get _planes =>
-      _firestore.collection('comunidad_planes');
+      _repo.collection('comunidad_planes');
 
   String get currentUid => _auth.currentUser?.uid ?? '';
 
@@ -19,7 +21,7 @@ class CommunityService {
     final uid = currentUid;
     if (uid.isEmpty) return 'General';
 
-    final doc = await _firestore.collection('usuarios').doc(uid).get();
+    final doc = await _repo.getDoc('usuarios', uid);
     final data = doc.data() ?? <String, dynamic>{};
 
     final raw =
@@ -67,7 +69,7 @@ class CommunityService {
     required String descripcion,
     required String ciudad,
     required DateTime fechaHora,
-    required String tipoPlan,
+    required CommunityPlanType tipoPlan,
     required String creadorNombre,
   }) async {
     final uid = currentUid;
@@ -90,7 +92,7 @@ class CommunityService {
       chatPlanId: doc.id,
     );
 
-    await doc.set(plan.toMap());
+    await _repo.setDoc('comunidad_planes', doc.id, plan.toMap());
   }
 
   Future<void> toggleAsistencia(CommunityPlan plan) async {

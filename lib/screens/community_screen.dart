@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/community_plan_model.dart';
+import '../models/community_plan_type.dart';
 import '../services/community_service.dart';
 import 'community_plan_chat_screen.dart';
 
@@ -16,6 +17,7 @@ class CommunityScreen extends StatefulWidget {
 class _CommunityScreenState extends State<CommunityScreen> {
   final CommunityService _communityService = CommunityService.instance;
   String? _selectedCity;
+  CommunityPlanType? _selectedTypeFilter;
 
   static const List<Color> _postItPalette = <Color>[
     Color(0xFFFFF2CC),
@@ -82,23 +84,87 @@ class _CommunityScreenState extends State<CommunityScreen> {
       body: StreamBuilder<List<CommunityPlan>>(
         stream: _communityService.planesPorCiudad(city),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.cloud_off_rounded, size: 48),
+                    const SizedBox(height: 12),
+                    Text(
+                      'No se pudieron cargar los planes.',
+                      style: Theme.of(context).textTheme.titleMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Revisa tu conexión o vuelve a intentarlo más tarde.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final plans = snapshot.data ?? const <CommunityPlan>[];
+          final plans = _filteredPlans(
+            snapshot.data ?? const <CommunityPlan>[],
+          );
+
           if (plans.isEmpty) {
-            return const Center(
-              child: Text('No hay planes aun. ¡Crea el primero!'),
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.event_available, size: 56),
+                    const SizedBox(height: 12),
+                    Text(
+                      _selectedTypeFilter == null
+                          ? 'No hay planes aun en $city.'
+                          : 'No hay planes de ${_selectedTypeFilter!.label.toLowerCase()} en $city.',
+                      style: Theme.of(context).textTheme.titleMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Publica uno para romper el hielo con gente de la zona.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: () => _showCreatePlanDialog(city),
+                      icon: const Icon(Icons.add_circle_outline),
+                      label: const Text('Crear plan'),
+                    ),
+                  ],
+                ),
+              ),
             );
           }
 
           return ListView.builder(
             padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
-            itemCount: plans.length,
+            itemCount: plans.length + 1,
             itemBuilder: (context, index) {
-              final plan = plans[index];
-              final bg = _postItPalette[index % _postItPalette.length];
+              if (index == 0) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildTypeFilters(),
+                );
+              }
+
+              final plan = plans[index - 1];
+              final bg = _postItPalette[(index - 1) % _postItPalette.length];
               return _buildPlanCard(plan, bg);
             },
           );
@@ -114,6 +180,52 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
+  List<CommunityPlan> _filteredPlans(List<CommunityPlan> plans) {
+    final filtered = _selectedTypeFilter == null
+        ? plans
+        : plans
+              .where((plan) => plan.tipoPlan == _selectedTypeFilter)
+              .toList(growable: false);
+
+    final sorted = filtered.toList()
+      ..sort((a, b) => a.fechaHora.compareTo(b.fechaHora));
+    return sorted;
+  }
+
+  Widget _buildTypeFilters() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          ChoiceChip(
+            label: const Text('Todos'),
+            selected: _selectedTypeFilter == null,
+            onSelected: (_) {
+              setState(() => _selectedTypeFilter = null);
+            },
+          ),
+          const SizedBox(width: 8),
+          ...CommunityPlanType.values.map((type) {
+            final selected = _selectedTypeFilter == type;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(
+                selected: selected,
+                avatar: Icon(type.icon, size: 18),
+                label: Text(type.label),
+                onSelected: (_) {
+                  setState(() {
+                    _selectedTypeFilter = selected ? null : type;
+                  });
+                },
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPlanCard(CommunityPlan plan, Color bgColor) {
     final myUid = FirebaseAuth.instance.currentUser?.uid ?? '';
     final joined = plan.isAttending(myUid);
@@ -124,10 +236,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
     final mm = plan.fechaHora.minute.toString().padLeft(2, '0');
     final past = plan.fechaHora.isBefore(now);
 
-    IconData icon = Icons.celebration;
-    if (plan.tipoPlan == 'canas') icon = Icons.local_bar;
-    if (plan.tipoPlan == 'deporte') icon = Icons.directions_run;
-    if (plan.tipoPlan == 'turismo') icon = Icons.map;
+    final icon = plan.tipoPlan.icon;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -156,6 +265,19 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ],
           ),
           const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildTag(plan.tipoPlan.label, plan.tipoPlan.icon),
+              _buildTag(plan.ciudad, Icons.location_on_outlined),
+              _buildTag(
+                past ? 'Pasado' : 'Próximo',
+                past ? Icons.history_toggle_off : Icons.schedule,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           Text(plan.descripcion, style: const TextStyle(color: Colors.black87)),
           const SizedBox(height: 8),
           Text('🕒 $day/$month $hh:$mm  •  ${plan.ciudad}'),
@@ -212,128 +334,151 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
+  Widget _buildTag(String text, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0x1A000000)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: const Color(0xFF0F9D74)),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _showCreatePlanDialog(String city) async {
     final titleController = TextEditingController();
     final descController = TextEditingController();
     final placeController = TextEditingController(text: city);
-    var tipo = 'canas';
+    var selectedType = CommunityPlanType.canas;
     var selectedDate = DateTime.now().add(const Duration(hours: 2));
 
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            return AlertDialog(
-              title: const Text('Nuevo Plan Comunitario'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: titleController,
-                      decoration: const InputDecoration(labelText: 'Titulo'),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: descController,
-                      maxLines: 2,
-                      decoration: const InputDecoration(
-                        labelText: 'Descripcion',
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: placeController,
-                      decoration: const InputDecoration(labelText: 'Ciudad'),
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      initialValue: tipo,
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'canas',
-                          child: Text('Cañas 🍻'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'deporte',
-                          child: Text('Deporte 🏃'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'turismo',
-                          child: Text('Turismo 🗺️'),
-                        ),
-                        DropdownMenuItem(value: 'otro', child: Text('Otro ✨')),
-                      ],
-                      onChanged: (v) {
-                        if (v == null) return;
-                        setStateDialog(() => tipo = v);
-                      },
-                      decoration: const InputDecoration(
-                        labelText: 'Tipo de plan',
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ListTile(
-                      title: Text(
-                        'Fecha/hora: ${selectedDate.day}/${selectedDate.month} ${selectedDate.hour.toString().padLeft(2, '0')}:${selectedDate.minute.toString().padLeft(2, '0')}',
-                      ),
-                      trailing: const Icon(Icons.schedule),
-                      onTap: () async {
-                        final date = await showDatePicker(
-                          context: context,
-                          initialDate: selectedDate,
-                          firstDate: DateTime.now().subtract(
-                            const Duration(days: 1),
-                          ),
-                          lastDate: DateTime.now().add(
-                            const Duration(days: 365),
-                          ),
-                        );
-                        if (date == null) return;
-                        final time = await showTimePicker(
-                          context: context,
-                          initialTime: TimeOfDay.fromDateTime(selectedDate),
-                        );
-                        if (time == null) return;
-                        setStateDialog(() {
-                          selectedDate = DateTime(
-                            date.year,
-                            date.month,
-                            date.day,
-                            time.hour,
-                            time.minute,
-                          );
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Cancelar'),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Publicar'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-
-    if (ok != true) return;
-
-    final uid = FirebaseAuth.instance.currentUser;
-    final creatorName = uid?.displayName?.trim().isNotEmpty == true
-        ? uid!.displayName!.trim()
-        : 'Usuario';
-
     try {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (context) {
+          return StatefulBuilder(
+            builder: (context, setStateDialog) {
+              return AlertDialog(
+                title: const Text('Nuevo Plan Comunitario'),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: titleController,
+                        decoration: const InputDecoration(labelText: 'Titulo'),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: descController,
+                        maxLines: 2,
+                        decoration: const InputDecoration(
+                          labelText: 'Descripcion',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: placeController,
+                        decoration: const InputDecoration(labelText: 'Ciudad'),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<CommunityPlanType>(
+                        initialValue: selectedType,
+                        decoration: const InputDecoration(
+                          labelText: 'Tipo de plan',
+                        ),
+                        items: CommunityPlanType.values
+                            .map(
+                              (type) => DropdownMenuItem<CommunityPlanType>(
+                                value: type,
+                                child: Text(
+                                  '${type.label} ${type.icon == Icons.local_bar
+                                      ? '🍻'
+                                      : type.icon == Icons.directions_run
+                                      ? '🏃'
+                                      : type.icon == Icons.map
+                                      ? '🗺️'
+                                      : '✨'}',
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setStateDialog(() => selectedType = value);
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      ListTile(
+                        title: Text(
+                          'Fecha/hora: ${selectedDate.day}/${selectedDate.month} ${selectedDate.hour.toString().padLeft(2, '0')}:${selectedDate.minute.toString().padLeft(2, '0')}',
+                        ),
+                        trailing: const Icon(Icons.schedule),
+                        onTap: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: selectedDate,
+                            firstDate: DateTime.now().subtract(
+                              const Duration(days: 1),
+                            ),
+                            lastDate: DateTime.now().add(
+                              const Duration(days: 365),
+                            ),
+                          );
+                          if (date == null) return;
+                          final time = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.fromDateTime(selectedDate),
+                          );
+                          if (time == null) return;
+                          setStateDialog(() {
+                            selectedDate = DateTime(
+                              date.year,
+                              date.month,
+                              date.day,
+                              time.hour,
+                              time.minute,
+                            );
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancelar'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Publicar'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+
+      if (ok != true) return;
+
+      final user = FirebaseAuth.instance.currentUser;
+      final creatorName = user?.displayName?.trim().isNotEmpty == true
+          ? user!.displayName!.trim()
+          : 'Usuario';
+
       await _communityService.crearPlan(
         titulo: titleController.text.trim(),
         descripcion: descController.text.trim(),
@@ -341,9 +486,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ? city
             : placeController.text.trim(),
         fechaHora: selectedDate,
-        tipoPlan: tipo,
+        tipoPlan: selectedType,
         creadorNombre: creatorName,
       );
+
       if (!mounted) return;
       HapticFeedback.mediumImpact();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -354,6 +500,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('No se pudo crear el plan: $e')));
+    } finally {
+      titleController.dispose();
+      descController.dispose();
+      placeController.dispose();
     }
   }
 }

@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/housing_model.dart';
 import '../models/escuadron_model.dart';
+import '../repositories/firestore_repository.dart';
 
 class HousingService {
   static final HousingService instance = HousingService._internal();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirestoreRepository _repo = FirestoreRepository.instance;
+  FirebaseFirestore get _firestore => _repo.firestore;
 
   HousingService._internal();
 
