@@ -1986,13 +1986,17 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         ? const Color(0xFF10B981)
         : const Color(0xFFF59E0B);
 
+    // Determine which image to show: piso if available, otherwise profile pic
+    final showPisoImage = user.tienePiso && user.fotosPiso.isNotEmpty;
+    final mainImageUrl = showPisoImage ? user.fotosPiso.first : user.fotoPerfil;
+
     final fallbackImage = user.tienePiso
         ? _unsplashRoomByContext()
         : _unsplashPortraitByGender(user.genero);
 
-    final image = user.fotoPerfil.startsWith('/')
+    final image = mainImageUrl.startsWith('/')
         ? Image.file(
-            File(user.fotoPerfil),
+            File(mainImageUrl),
             fit: BoxFit.cover,
             cacheHeight: 800,
             cacheWidth: 400,
@@ -2008,13 +2012,22 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               ),
             ),
           )
-        : AppCachedNetworkImage(
-            imageUrl: user.fotoPerfil.isEmpty ? fallbackImage : user.fotoPerfil,
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-            memCacheWidth: 500,
-          );
+        : mainImageUrl.startsWith('assets/')
+            ? Image.asset(
+                mainImageUrl,
+                fit: BoxFit.cover,
+                cacheHeight: 800,
+                cacheWidth: 400,
+              )
+            : AppCachedNetworkImage(
+                imageUrl: mainImageUrl.isEmpty ? fallbackImage : mainImageUrl,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+                memCacheWidth: 500,
+              );
+
+    final profileAvatarUrl = user.fotoPerfil;
 
     return AnimatedPositioned(
       key: key,
@@ -2060,6 +2073,33 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                             ),
                           ),
                         ),
+                        // Show profile avatar in corner if showing piso image
+                        if (showPisoImage)
+                          Positioned(
+                            top: 14,
+                            right: 14,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Color(0x80000000),
+                                    blurRadius: 8,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: CircleAvatar(
+                                radius: 28,
+                                backgroundColor: Colors.white,
+                                backgroundImage: profileAvatarUrl.startsWith('assets/')
+                                    ? AssetImage(profileAvatarUrl)
+                                    : (profileAvatarUrl.startsWith('/')
+                                        ? FileImage(File(profileAvatarUrl))
+                                        : NetworkImage(profileAvatarUrl)) as ImageProvider,
+                              ),
+                            ),
+                          ),
                         if (showApprove)
                           _overlayTag(
                             text: 'APROBADO',

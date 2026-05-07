@@ -9,8 +9,10 @@ import 'dart:typed_data';
 import '../models/casa_model.dart';
 import '../models/tarea_model.dart';
 import '../models/user_model.dart';
+import '../models/user_profile.dart';
 import '../screens/contract_url_preview_screen.dart';
 import '../services/home_service.dart';
+import '../services/demo_service.dart';
 import '../widgets/app_cached_network_image.dart';
 
 class HomeManagementScreen extends StatefulWidget {
@@ -36,6 +38,14 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
       duration: Duration(milliseconds: 600),
       vsync: this,
     );
+    // In demo mode with house, simulate having a house
+    if (DemoService.instance.isDemoMode.value) {
+      final demoUser = DemoService.instance.selectedDemoUser.value;
+      if (demoUser?.tienePiso == true) {
+        setState(() => _idCasa = 'demo_casa_${demoUser?.uid}');
+        return;
+      }
+    }
     _loadIdCasa();
   }
 
@@ -65,8 +75,11 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
   @override
   Widget build(BuildContext context) {
     final myUid = _auth.currentUser?.uid ?? '';
+    final isDemo = DemoService.instance.isDemoMode.value;
+    final demoUser = isDemo ? DemoService.instance.selectedDemoUser.value : null;
+    final isDemoWithHouse = isDemo && demoUser?.tienePiso == true;
 
-    if (_idCasa == null) {
+    if (_idCasa == null && !isDemoWithHouse) {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Mi Casa'),
@@ -91,6 +104,10 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
           ),
         ),
       );
+    }
+
+    if (isDemoWithHouse) {
+      return _buildDemoHouseScreen(demoUser!);
     }
 
     return Scaffold(
@@ -832,6 +849,204 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
       default:
         return Icons.assignment;
     }
+  }
+
+  Widget _buildDemoHouseScreen(UserProfile demoUser) {
+    final pisoImageUrl = demoUser.fotosPiso.isNotEmpty
+        ? demoUser.fotosPiso.first
+        : 'assets/images/demo_apartments/piso1.jpg';
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF2FBF7),
+      appBar: AppBar(
+        title: const Text(
+          'Mi Casa',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: const Color(0xFF10B981),
+        elevation: 0,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Foto del piso
+            Container(
+              width: double.infinity,
+              height: 240,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+              ),
+              child: pisoImageUrl.startsWith('assets/')
+                  ? Image.asset(
+                      pisoImageUrl,
+                      fit: BoxFit.cover,
+                    )
+                  : AppCachedNetworkImage(
+                      imageUrl: pisoImageUrl,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: 240,
+                    ),
+            ),
+            const SizedBox(height: 16),
+
+            // Información de la casa demo
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    demoUser.nombre,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${demoUser.origen} · ${demoUser.precioAlquilerPorPersona}€/mes',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Color(0xFF10B981),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    demoUser.bio,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Tareas demo
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Tareas de la casa',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ..._buildDemoTaskCards(),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildDemoTaskCards() {
+    final demoTasks = [
+      {'titulo': 'Limpiar salón', 'categoria': '🧹', 'puntos': 15, 'completada': false},
+      {'titulo': 'Comprar provisiones', 'categoria': '🛒', 'puntos': 20, 'completada': false},
+      {'titulo': 'Pagar internet', 'categoria': '💳', 'puntos': 10, 'completada': true},
+    ];
+
+    return demoTasks.map((task) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Card(
+          elevation: 0,
+          color: task['completada'] as bool
+              ? const Color(0xFF10B981).withOpacity(0.1)
+              : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: task['completada'] as bool
+                  ? const Color(0xFF10B981)
+                  : Colors.grey[200] ?? Colors.grey,
+              width: 1.5,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFF10B981),
+                      width: 2,
+                    ),
+                    color: task['completada'] as bool
+                        ? const Color(0xFF10B981)
+                        : Colors.transparent,
+                  ),
+                  child: task['completada'] as bool
+                      ? const Icon(Icons.check, color: Colors.white, size: 18)
+                      : SizedBox.shrink(),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  task['categoria'] as String,
+                  style: const TextStyle(fontSize: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    task['titulo'] as String,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      decoration: task['completada'] as bool
+                          ? TextDecoration.lineThrough
+                          : TextDecoration.none,
+                      color: task['completada'] as bool ? Colors.grey : Colors.black,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF9F7AEA), Color(0xFF10B981)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.star, color: Colors.white, size: 14),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${task['puntos']}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }).toList();
   }
 
   Future<List<UserModel>> _loadMembers(List<String> memberIds) async {

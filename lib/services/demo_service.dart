@@ -45,6 +45,7 @@ class DemoService {
         bio: 'Ingeniero de software, limpio y responsable con los gastos del piso.',
         fotoPerfil: 'assets/images/demo_people/daniel.jpg',
         intereses: ['Tecnologia', 'Gaming', 'Deporte'],
+        fotosPiso: const ['assets/images/demo_apartments/piso1.jpg'],
       ),
       UserProfile(
         uid: 'demo_2',
@@ -62,6 +63,7 @@ class DemoService {
         bio: 'Estudio un máster y busco compañeros tranquilos y organizados.',
         fotoPerfil: 'assets/images/demo_people/lucia.jpg',
         intereses: ['Lectura', 'Musica', 'Orden'],
+        fotosPiso: const ['assets/images/demo_apartments/piso2.jpg'],
       ),
       UserProfile(
         uid: 'demo_3',
