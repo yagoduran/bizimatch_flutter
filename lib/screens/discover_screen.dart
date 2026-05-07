@@ -12,7 +12,6 @@ import 'package:flutter/services.dart';
 import '../app_theme.dart';
 import '../services/demo_service.dart';
 import 'demo_chat_screen.dart';
-import '../models/escuadron_model.dart';
 import '../models/user_model.dart';
 import '../models/user_profile.dart';
 import '../services/escuadron_service.dart';
@@ -215,7 +214,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             _allProfiles = profiles;
             _filteredProfiles = _filtrar(_allProfiles);
             _loading = false;
-            if (_activeIndex >= _filteredProfiles.length && _filteredProfiles.isNotEmpty) {
+            if (_activeIndex >= _filteredProfiles.length &&
+                _filteredProfiles.isNotEmpty) {
               _activeIndex = 0;
             }
           });
@@ -223,6 +223,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         });
       }
     });
+    DemoService.instance.resetRevision.addListener(_onDemoReset);
 
     _audioStateSub = _audioPlayer.onPlayerStateChanged.listen((state) {
       if (!mounted) {
@@ -267,17 +268,43 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     });
   }
 
+  void _onDemoReset() {
+    if (!mounted || !DemoService.instance.isDemoMode.value) {
+      return;
+    }
+
+    final demoMe = DemoService.instance.selectedDemoUser.value;
+    setState(() {
+      _myProfile = demoMe;
+      _allProfiles = DemoService.instance.demoProfiles;
+      _filteredProfiles = _filtrar(_allProfiles);
+      _activeIndex = 0;
+      _dragOffset = Offset.zero;
+      _pendingApprovedUid = null;
+      _loading = false;
+    });
+    _scheduleNextProfilePrecache();
+  }
+
   Future<void> _guardarSwipeYDetectarMatch(String toUid, String tipo) async {
     try {
       // If demo mode is active, avoid any Firebase calls and use local demo logic
       if (DemoService.instance.isDemoMode.value) {
         if (tipo == 'like') {
+          HapticFeedback.lightImpact();
           // Treat demo_1 as a forced match for demo presentation
           if (toUid == 'demo_1') {
-            final target = DemoService.instance.demoProfiles.firstWhere((p) => p.uid == toUid, orElse: () => DemoService.instance.demoProfiles.first);
+            final target = DemoService.instance.demoProfiles.firstWhere(
+              (p) => p.uid == toUid,
+              orElse: () => DemoService.instance.demoProfiles.first,
+            );
             if (mounted) {
+              DemoService.instance.registerDemoChat(target);
+              HapticFeedback.lightImpact();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Has dado like — ¡es un Vínculo!')),
+                const SnackBar(
+                  content: Text('Has dado like — ¡es un Vínculo!'),
+                ),
               );
               _showDemoMatchOverlay(target);
             }
@@ -321,6 +348,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
       // Si es like, verificar si hay match
       if (tipo == 'like' && mounted) {
+        HapticFeedback.lightImpact();
         // Pequeño delay para asegurar que Firestore ha guardado el documento
         await Future.delayed(const Duration(milliseconds: 300));
 
@@ -337,6 +365,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             .get();
 
         if (snapshot.docs.isNotEmpty && mounted) {
+          HapticFeedback.lightImpact();
           // Si estamos en Squad Mode, mostrar dialog para formar escuadrón
           if (_buscarCompaeros) {
             _mostrarDialogoFormacionEscuadron(toUid);
@@ -534,13 +563,18 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             Navigator.pop(dialogContext);
             Navigator.push(
               context,
-              MaterialPageRoute<void>(builder: (_) => DemoChatScreen(otherUser: targetUser)),
+              MaterialPageRoute<void>(
+                builder: (_) => DemoChatScreen(otherUser: targetUser),
+              ),
             );
           },
         );
       },
       transitionBuilder: (context, animation, secondaryAnimation, child) {
-        return FadeTransition(opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut), child: child);
+        return FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+          child: child,
+        );
       },
     );
   }
@@ -561,6 +595,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   @override
   void dispose() {
+    DemoService.instance.resetRevision.removeListener(_onDemoReset);
     unawaited(_stopVoicePlayback(clearSelection: true));
     _myProfileSub?.cancel();
     _discoverSub?.cancel();
@@ -609,7 +644,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       maxWidth: 500,
     );
   }
-
 
   Key _profileCardKey(UserProfile user, String slot) {
     final id = user.uid.trim();
@@ -1870,8 +1904,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     },
                     child: Transform.translate(
                       offset: _dragOffset,
-                      child: Transform.rotate(
-                        angle: (_dragOffset.dx / 340) * (math.pi / 14),
+                      child: Transform.scale(
+                        scale: 1 - (dragProgress * 0.035),
                         child: _profileCard(
                           current,
                           afinidad,
@@ -1881,6 +1915,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                           showApprove: _dragOffset.dx > 8,
                           showReject: _dragOffset.dx < -8,
                           overlayOpacity: dragProgress,
+                          enableHero: true,
+                          dynamicRotation:
+                              (_dragOffset.dx / 260) * (math.pi / 18),
                           key: _profileCardKey(current, 'current'),
                         ),
                       ),
@@ -1977,6 +2014,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     bool showApprove = false,
     bool showReject = false,
     double overlayOpacity = 0,
+    bool enableHero = false,
+    double dynamicRotation = 0,
     required Key key,
   }) {
     final isExceptionalAffinity = afinidad > 90;
@@ -2013,19 +2052,19 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             ),
           )
         : mainImageUrl.startsWith('assets/')
-            ? Image.asset(
-                mainImageUrl,
-                fit: BoxFit.cover,
-                cacheHeight: 800,
-                cacheWidth: 400,
-              )
-            : AppCachedNetworkImage(
-                imageUrl: mainImageUrl.isEmpty ? fallbackImage : mainImageUrl,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-                memCacheWidth: 500,
-              );
+        ? Image.asset(
+            mainImageUrl,
+            fit: BoxFit.cover,
+            cacheHeight: 800,
+            cacheWidth: 400,
+          )
+        : AppCachedNetworkImage(
+            imageUrl: mainImageUrl.isEmpty ? fallbackImage : mainImageUrl,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            memCacheWidth: 500,
+          );
 
     final profileAvatarUrl = user.fotoPerfil;
 
@@ -2041,190 +2080,210 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         opacity: opacity,
         child: Transform.scale(
           scale: scale,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x160D1B16),
-                  blurRadius: 24,
-                  offset: Offset(0, 10),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(30),
-              child: Column(
-                children: [
-                  Expanded(
-                    flex: 8,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        image,
-                        const DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              stops: [0.55, 1.0],
-                              colors: [Color(0x00000000), Color(0xCC000000)],
-                            ),
-                          ),
-                        ),
-                        // Show profile avatar in corner if showing piso image
-                        if (showPisoImage)
-                          Positioned(
-                            top: 14,
-                            right: 14,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Color(0x80000000),
-                                    blurRadius: 8,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: CircleAvatar(
-                                radius: 28,
-                                backgroundColor: Colors.white,
-                                backgroundImage: profileAvatarUrl.startsWith('assets/')
-                                    ? AssetImage(profileAvatarUrl)
-                                    : (profileAvatarUrl.startsWith('/')
-                                        ? FileImage(File(profileAvatarUrl))
-                                        : NetworkImage(profileAvatarUrl)) as ImageProvider,
+          child: Transform.rotate(
+            angle: dynamicRotation,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: AppTheme.glassGradient,
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.58)),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primary.withValues(alpha: 0.22),
+                    blurRadius: 34,
+                    spreadRadius: -8,
+                    offset: const Offset(0, 16),
+                  ),
+                  BoxShadow(
+                    color: AppTheme.indigo.withValues(alpha: 0.12),
+                    blurRadius: 28,
+                    spreadRadius: -10,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: Column(
+                  children: [
+                    Expanded(
+                      flex: 8,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          if (enableHero)
+                            Hero(tag: 'photo_${user.uid}', child: image)
+                          else
+                            image,
+                          const DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                stops: [0.55, 1.0],
+                                colors: [Color(0x00000000), Color(0xCC000000)],
                               ),
                             ),
                           ),
-                        if (showApprove)
-                          _overlayTag(
-                            text: 'APROBADO',
-                            icon: Icons.home_work_rounded,
-                            color: AppTheme.primary,
-                            alignLeft: true,
-                            opacity: overlayOpacity,
-                          ),
-                        if (showReject)
-                          _overlayTag(
-                            text: 'DESCARTAR',
-                            icon: Icons.close_rounded,
-                            color: const Color(0xFFEA5A5A),
-                            alignLeft: false,
-                            opacity: overlayOpacity,
-                          ),
-                        Positioned(
-                          left: 18,
-                          right: 18,
-                          bottom: 18,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${user.nombre}, ${user.edad}',
-                                style: const TextStyle(
-                                  fontSize: 25,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
+                          // Show profile avatar in corner if showing piso image
+                          if (showPisoImage)
+                            Positioned(
+                              top: 14,
+                              right: 14,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Color(0x80000000),
+                                      blurRadius: 8,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: CircleAvatar(
+                                  radius: 28,
+                                  backgroundColor: Colors.white,
+                                  backgroundImage:
+                                      profileAvatarUrl.startsWith('assets/')
+                                      ? AssetImage(profileAvatarUrl)
+                                      : (profileAvatarUrl.startsWith('/')
+                                                ? FileImage(
+                                                    File(profileAvatarUrl),
+                                                  )
+                                                : NetworkImage(
+                                                    profileAvatarUrl,
+                                                  ))
+                                            as ImageProvider,
                                 ),
                               ),
-                              const SizedBox(height: 6),
-                              Text(
-                                '${user.origen} · ${user.horario == 'Manana' ? 'Mañana' : user.horario}',
-                                style: const TextStyle(color: Colors.white70),
-                              ),
-                              const SizedBox(height: 10),
-                              if (user.tienePiso &&
-                                  user.precioAlquilerPorPersona != null) ...[
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 7,
+                            ),
+                          if (showApprove)
+                            _overlayTag(
+                              text: 'APROBADO',
+                              icon: Icons.home_work_rounded,
+                              color: AppTheme.primary,
+                              alignLeft: true,
+                              opacity: overlayOpacity,
+                            ),
+                          if (showReject)
+                            _overlayTag(
+                              text: 'DESCARTAR',
+                              icon: Icons.close_rounded,
+                              color: const Color(0xFFEA5A5A),
+                              alignLeft: false,
+                              opacity: overlayOpacity,
+                            ),
+                          Positioned(
+                            left: 18,
+                            right: 18,
+                            bottom: 18,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${user.nombre}, ${user.edad}',
+                                  style: const TextStyle(
+                                    fontSize: 25,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF10B981),
-                                    borderRadius: BorderRadius.circular(18),
-                                  ),
-                                  child: Text(
-                                    '¡Tiene piso! - ${user.precioAlquilerPorPersona!.round()}€/mes',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700,
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  '${user.origen} · ${user.horario == 'Manana' ? 'Mañana' : user.horario}',
+                                  style: const TextStyle(color: Colors.white70),
+                                ),
+                                const SizedBox(height: 10),
+                                if (user.tienePiso &&
+                                    user.precioAlquilerPorPersona != null) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 7,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF10B981),
+                                      borderRadius: BorderRadius.circular(18),
+                                    ),
+                                    child: Text(
+                                      '¡Tiene piso! - ${user.precioAlquilerPorPersona!.round()}€/mes',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                     ),
                                   ),
-                                ),
+                                ],
                               ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: affinityColor.withValues(
-                                alpha: isExceptionalAffinity ? 0.22 : 0.15,
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                              border: isExceptionalAffinity
-                                  ? Border.all(
-                                      color: const Color(0xFFE2C15B),
-                                      width: 1.1,
-                                    )
-                                  : null,
-                              boxShadow: isExceptionalAffinity
-                                  ? const [
-                                      BoxShadow(
-                                        color: Color(0x80D4AF37),
-                                        blurRadius: 14,
-                                        spreadRadius: 1,
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            child: Text(
-                              '$afinidad% de afinidad',
-                              style: TextStyle(
-                                color: affinityColor,
-                                fontWeight: FontWeight.w700,
-                              ),
                             ),
                           ),
-                          const SizedBox(height: 10),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(100),
-                            child: LinearProgressIndicator(
-                              minHeight: 10,
-                              value: afinidad / 100,
-                              backgroundColor: const Color(0xFFE9F2EE),
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                AppTheme.primary,
-                              ),
-                            ),
-                          ),
-                          if ((user.voiceBioUrl ?? '').trim().isNotEmpty) ...[
-                            const SizedBox(height: 10),
-                            _voiceBioMiniPlayer(user),
-                          ],
                         ],
                       ),
                     ),
-                  ),
-                ],
+                    Expanded(
+                      flex: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: affinityColor.withValues(
+                                  alpha: isExceptionalAffinity ? 0.22 : 0.15,
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                                border: isExceptionalAffinity
+                                    ? Border.all(
+                                        color: const Color(0xFFE2C15B),
+                                        width: 1.1,
+                                      )
+                                    : null,
+                                boxShadow: isExceptionalAffinity
+                                    ? const [
+                                        BoxShadow(
+                                          color: Color(0x80D4AF37),
+                                          blurRadius: 14,
+                                          spreadRadius: 1,
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Text(
+                                '$afinidad% de afinidad',
+                                style: TextStyle(
+                                  color: affinityColor,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(100),
+                              child: LinearProgressIndicator(
+                                minHeight: 10,
+                                value: afinidad / 100,
+                                backgroundColor: const Color(0xFFE9F2EE),
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                  AppTheme.primary,
+                                ),
+                              ),
+                            ),
+                            if ((user.voiceBioUrl ?? '').trim().isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              _voiceBioMiniPlayer(user),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -2426,7 +2485,11 @@ class _MatchCelebrationOverlay extends StatefulWidget {
 }
 
 class _DemoMatchOverlay extends StatefulWidget {
-  const _DemoMatchOverlay({required this.me, required this.other, required this.onSendMessage});
+  const _DemoMatchOverlay({
+    required this.me,
+    required this.other,
+    required this.onSendMessage,
+  });
 
   final UserProfile? me;
   final UserProfile other;
@@ -2436,13 +2499,17 @@ class _DemoMatchOverlay extends StatefulWidget {
   State<_DemoMatchOverlay> createState() => _DemoMatchOverlayState();
 }
 
-class _DemoMatchOverlayState extends State<_DemoMatchOverlay> with SingleTickerProviderStateMixin {
+class _DemoMatchOverlayState extends State<_DemoMatchOverlay>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _anim;
 
   @override
   void initState() {
     super.initState();
-    _anim = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat(reverse: true);
+    _anim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
   }
 
   @override
@@ -2458,7 +2525,9 @@ class _DemoMatchOverlayState extends State<_DemoMatchOverlay> with SingleTickerP
       color: Colors.transparent,
       child: Stack(
         children: [
-          Positioned.fill(child: Container(color: Colors.black.withOpacity(0.46))),
+          Positioned.fill(
+            child: Container(color: Colors.black.withOpacity(0.46)),
+          ),
           Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -2468,9 +2537,23 @@ class _DemoMatchOverlayState extends State<_DemoMatchOverlay> with SingleTickerP
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      CircleAvatar(radius: 48, backgroundImage: me != null ? (me.fotoPerfil.startsWith('assets/') ? AssetImage(me.fotoPerfil) : NetworkImage(me.fotoPerfil)) as ImageProvider : const AssetImage('assets/images/logo.png')),
+                      CircleAvatar(
+                        radius: 48,
+                        backgroundImage: me != null
+                            ? (me.fotoPerfil.startsWith('assets/')
+                                      ? AssetImage(me.fotoPerfil)
+                                      : NetworkImage(me.fotoPerfil))
+                                  as ImageProvider
+                            : const AssetImage('assets/images/logo.png'),
+                      ),
                       const SizedBox(width: 18),
-                      CircleAvatar(radius: 48, backgroundImage: widget.other.fotoPerfil.startsWith('assets/') ? AssetImage(widget.other.fotoPerfil) : NetworkImage(widget.other.fotoPerfil)),
+                      CircleAvatar(
+                        radius: 48,
+                        backgroundImage:
+                            widget.other.fotoPerfil.startsWith('assets/')
+                            ? AssetImage(widget.other.fotoPerfil)
+                            : NetworkImage(widget.other.fotoPerfil),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 18),
@@ -2479,10 +2562,7 @@ class _DemoMatchOverlayState extends State<_DemoMatchOverlay> with SingleTickerP
                     builder: (context, child) {
                       final t = _anim.value;
                       final scale = 1.0 + 0.06 * t;
-                      return Transform.scale(
-                        scale: scale,
-                        child: child,
-                      );
+                      return Transform.scale(scale: scale, child: child);
                     },
                     child: const Text(
                       "¡IT'S A MATCH!",
@@ -2490,25 +2570,39 @@ class _DemoMatchOverlayState extends State<_DemoMatchOverlay> with SingleTickerP
                         color: Colors.white,
                         fontSize: 36,
                         fontWeight: FontWeight.w900,
-                        shadows: [Shadow(color: Colors.black45, blurRadius: 8, offset: Offset(0, 4))],
+                        shadows: [
+                          Shadow(
+                            color: Colors.black45,
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text('¡Han conectado! Ahora podéis hablar para coordinar la visita.', style: TextStyle(color: Color(0xE6FFFFFF))),
+                  const Text(
+                    '¡Han conectado! Ahora podéis hablar para coordinar la visita.',
+                    style: TextStyle(color: Color(0xE6FFFFFF)),
+                  ),
                   const SizedBox(height: 18),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       ElevatedButton(
                         onPressed: () => Navigator.pop(context),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xFF10B981)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFF10B981),
+                        ),
                         child: const Text('Cerrar'),
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton(
                         onPressed: widget.onSendMessage,
-                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                        ),
                         child: const Text('Enviar mensaje'),
                       ),
                     ],

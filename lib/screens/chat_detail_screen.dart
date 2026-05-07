@@ -10,6 +10,7 @@ import '../services/bizibot_service.dart';
 import '../services/firestore_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/app_cached_network_image.dart';
+import '../widgets/glassmorphism.dart';
 
 class ChatDetailScreen extends StatefulWidget {
   const ChatDetailScreen({
@@ -222,110 +223,109 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
       await showModalBottomSheet<void>(
         context: context,
+        backgroundColor: Colors.transparent,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         builder: (context) => SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+            child: AnimatedRainbowBorder(
+              borderRadius: 32,
+              child: GlassCard(
+                borderRadius: 30,
+                glowColor: AppTheme.indigo,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF9F7AEA), Color(0xFF10B981)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                    Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF9F7AEA), Color(0xFF10B981)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.auto_awesome,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                         ),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.auto_awesome,
-                        color: Colors.white,
-                        size: 18,
-                      ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Sugerencias de BiziBot',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'Sugerencias de BiziBot',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    const SizedBox(height: 16),
+                    ...List.generate(suggestions.length, (index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: GestureDetector(
+                          onTap: () {
+                            _controller.text = suggestions[index];
+                            Navigator.pop(context);
+                            HapticFeedback.mediumImpact();
+                          },
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: GlassCard(
+                              padding: const EdgeInsets.all(14),
+                              borderRadius: 24,
+                              glowColor: index.isEven
+                                  ? AppTheme.primary
+                                  : AppTheme.violet,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    suggestions[index],
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w500,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Toca para enviar',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFFA1A1A1),
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                    Center(
+                      child: Text(
+                        'Sugerencias generadas por BiziBot AI',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.textSecondary,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                ...List.generate(suggestions.length, (index) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: GestureDetector(
-                      onTap: () {
-                        _controller.text = suggestions[index];
-                        Navigator.pop(context);
-                        HapticFeedback.mediumImpact();
-                      },
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              const Color(0xFF9F7AEA).withOpacity(0.1),
-                              const Color(0xFF10B981).withOpacity(0.1),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          border: Border.all(
-                            color: const Color(0xFF10B981).withOpacity(0.3),
-                          ),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              suggestions[index],
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                height: 1.4,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Toca para enviar',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFFA1A1A1),
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-                const SizedBox(height: 12),
-                Center(
-                  child: Text(
-                    'Sugerencias generadas por BiziBot AI',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.textSecondary,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -343,6 +343,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         titleSpacing: 0,
         actions: [

@@ -96,7 +96,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                 // Avatar
                 Center(
                   child: Hero(
-                    tag: widget.heroTag ?? 'profile-photo-${user.uid}',
+                    tag: widget.heroTag ?? 'photo_${user.uid}',
                     child: Material(
                       color: Colors.transparent,
                       child: AppCachedAvatar(

@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../app_theme.dart';
 import '../services/firestore_service.dart';
 import '../services/demo_service.dart';
+import '../widgets/glassmorphism.dart';
 import 'login_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -120,6 +121,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         setState(() => _isBusy = false);
       }
+    }
+  }
+
+  Future<void> _resetDemoData() async {
+    HapticFeedback.mediumImpact();
+    DemoService.instance.resetDemoData();
+
+    final user = _auth.currentUser;
+    if (user != null) {
+      try {
+        await _firestore.collection('usuarios').doc(user.uid).set({
+          'biziPuntos': 0,
+          'rachaDias': 0,
+          'semanasPerfectas': 0,
+          'comodinRachaDisponible': true,
+          'swipesDiarios': 0,
+        }, SetOptions(merge: true));
+      } catch (_) {
+        // El reset demo local no debe fallar por conectividad en la presentación.
+      }
+    }
+
+    if (mounted) {
+      _showInfo('Demo reiniciada: mazo, chats y BiziPuntos a cero.');
     }
   }
 
@@ -317,7 +342,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       activeThumbColor: AppTheme.primary,
                       value: isDemo,
                       title: const Text('Activar Modo Demo'),
-                      subtitle: const Text('Usar perfiles y chats locales sin conexión.'),
+                      subtitle: const Text(
+                        'Usar perfiles y chats locales sin conexión.',
+                      ),
                       onChanged: (value) {
                         HapticFeedback.selectionClick();
                         DemoService.instance.enableDemo(value);
@@ -325,7 +352,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       },
                     ),
                     const SizedBox(height: 8),
-                    Text('Cuenta de presentación', style: TextStyle(fontWeight: FontWeight.w700)),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 46,
+                      child: OutlinedButton.icon(
+                        onPressed: _isBusy ? null : _resetDemoData,
+                        icon: const Icon(Icons.restart_alt_rounded),
+                        label: const Text('Resetear Datos de Demo'),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Cuenta de presentación',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
                     const SizedBox(height: 8),
                     SizedBox(
                       height: 82,
@@ -338,7 +378,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           return GestureDetector(
                             onTap: DemoService.instance.isDemoMode.value
                                 ? () {
-                                    DemoService.instance.selectDemoUserByUid(p.uid);
+                                    DemoService.instance.selectDemoUserByUid(
+                                      p.uid,
+                                    );
                                     setState(() {});
                                   }
                                 : null,
@@ -358,7 +400,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       fontSize: 12,
-                                      fontWeight: DemoService.instance.selectedDemoUser.value?.uid == p.uid
+                                      fontWeight:
+                                          DemoService
+                                                  .instance
+                                                  .selectedDemoUser
+                                                  .value
+                                                  ?.uid ==
+                                              p.uid
                                           ? FontWeight.w800
                                           : FontWeight.w600,
                                     ),
@@ -648,7 +696,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       : () {
                           if (DemoService.instance.isDemoMode.value) {
                             HapticFeedback.selectionClick();
-                            _showInfo('Modo Demo activo — no se puede eliminar cuenta demo.');
+                            _showInfo(
+                              'Modo Demo activo — no se puede eliminar cuenta demo.',
+                            );
                             return;
                           }
                           HapticFeedback.heavyImpact();
@@ -686,19 +736,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _section({required String title, required Widget child}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE9F0EC)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A0D1D17),
-            blurRadius: 16,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
+    return GlassCard(
+      borderRadius: 28,
+      glowColor: AppTheme.turquoise,
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

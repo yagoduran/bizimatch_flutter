@@ -9,11 +9,13 @@ class DemoService {
   static final DemoService instance = DemoService._();
 
   final ValueNotifier<bool> isDemoMode = ValueNotifier<bool>(false);
-  final ValueNotifier<UserProfile?> selectedDemoUser = ValueNotifier<UserProfile?>(null);
+  final ValueNotifier<UserProfile?> selectedDemoUser =
+      ValueNotifier<UserProfile?>(null);
+  final ValueNotifier<int> resetRevision = ValueNotifier<int>(0);
 
   late final List<UserProfile> demoProfiles = _buildDemoProfiles();
 
-  late final List<ChatThread> demoThreads = _buildDemoThreads();
+  late List<ChatThread> demoThreads = _buildDemoThreads();
 
   void enableDemo(bool enabled) {
     isDemoMode.value = enabled;
@@ -23,8 +25,75 @@ class DemoService {
   }
 
   void selectDemoUserByUid(String uid) {
-    final found = demoProfiles.firstWhere((p) => p.uid == uid, orElse: () => demoProfiles.first);
+    final found = demoProfiles.firstWhere(
+      (p) => p.uid == uid,
+      orElse: () => demoProfiles.first,
+    );
     selectedDemoUser.value = found;
+  }
+
+  void resetDemoData() {
+    demoThreads = <ChatThread>[];
+    resetRevision.value++;
+
+    final selected = selectedDemoUser.value;
+    if (selected != null) {
+      selectedDemoUser.value = _copyWithDemoPoints(selected, 0);
+    } else if (demoProfiles.isNotEmpty) {
+      selectedDemoUser.value = _copyWithDemoPoints(demoProfiles.first, 0);
+    }
+  }
+
+  void registerDemoChat(UserProfile user) {
+    final chatId = 'demo_chat_${user.uid}';
+    final exists = demoThreads.any((thread) => thread.chatId == chatId);
+    if (exists) {
+      return;
+    }
+
+    demoThreads = [
+      ChatThread(
+        chatId: chatId,
+        participants: ['demo_me', user.uid],
+        lastMessage: 'Chat iniciado desde la demo.',
+        updatedAt: DateTime.now(),
+      ),
+      ...demoThreads,
+    ];
+  }
+
+  UserProfile _copyWithDemoPoints(UserProfile profile, int points) {
+    return UserProfile(
+      uid: profile.uid,
+      email: profile.email,
+      nombre: profile.nombre,
+      fechaNacimiento: profile.fechaNacimiento,
+      genero: profile.genero,
+      origen: profile.origen,
+      estudios: profile.estudios,
+      fumador: profile.fumador,
+      mascotas: profile.mascotas,
+      tienePiso: profile.tienePiso,
+      precioAlquilerPorPersona: profile.precioAlquilerPorPersona,
+      horario: profile.horario,
+      teletrabajo: profile.teletrabajo,
+      frecuenciaFiestas: profile.frecuenciaFiestas,
+      nivelLimpieza: profile.nivelLimpieza,
+      bio: profile.bio,
+      fotoPerfil: profile.fotoPerfil,
+      intereses: profile.intereses,
+      lugarDeseado: profile.lugarDeseado,
+      direccionZona: profile.direccionZona,
+      fotosPiso: profile.fotosPiso,
+      voiceBioUrl: profile.voiceBioUrl,
+      karma: profile.karma,
+      biziPuntos: points,
+      rachaDias: 0,
+      comodinRachaDisponible: true,
+      semanasPerfectas: 0,
+      totalResenas: profile.totalResenas,
+      medallasResumen: profile.medallasResumen,
+    );
   }
 
   static List<UserProfile> _buildDemoProfiles() {
@@ -42,7 +111,8 @@ class DemoService {
         tienePiso: true,
         precioAlquilerPorPersona: 450,
         horario: 'Noche',
-        bio: 'Ingeniero de software, limpio y responsable con los gastos del piso.',
+        bio:
+            'Ingeniero de software, limpio y responsable con los gastos del piso.',
         fotoPerfil: 'assets/images/demo_people/daniel.jpg',
         intereses: ['Tecnologia', 'Gaming', 'Deporte'],
         fotosPiso: const ['assets/images/demo_apartments/piso1.jpg'],
@@ -78,7 +148,8 @@ class DemoService {
         tienePiso: false,
         precioAlquilerPorPersona: null,
         horario: 'Tarde',
-        bio: 'Profesional creativa buscando compañera/o para compartir gastos y buen rollo.',
+        bio:
+            'Profesional creativa buscando compañera/o para compartir gastos y buen rollo.',
         fotoPerfil: 'assets/images/demo_people/maria.jpg',
         intereses: ['Cocina', 'Yoga', 'Series'],
       ),

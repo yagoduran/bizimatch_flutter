@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../app_theme.dart';
+import '../services/demo_service.dart';
 import '../services/firestore_service.dart';
 import 'community_screen.dart';
 import 'discover_screen.dart';
@@ -11,6 +13,7 @@ import 'matches_screen.dart';
 import 'profile_screen.dart';
 import 'profile_detail_screen.dart';
 import 'settings_screen.dart';
+import '../widgets/glassmorphism.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -22,6 +25,7 @@ class MainScaffold extends StatefulWidget {
 class _MainScaffoldState extends State<MainScaffold>
     with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
+  int _loadingRevision = 0;
   late final TabController _tabController;
   final FirestoreService _firestoreService = FirestoreService();
 
@@ -49,7 +53,36 @@ class _MainScaffoldState extends State<MainScaffold>
     });
 
     // Verificar likes no leídos al iniciar
+    DemoService.instance.isDemoMode.addListener(_syncDemoWakelock);
+    _syncDemoWakelock();
     _verificarLikesRecibidos();
+  }
+
+  Future<void> _syncDemoWakelock() async {
+    if (DemoService.instance.isDemoMode.value) {
+      await WakelockPlus.enable();
+    } else {
+      await WakelockPlus.disable();
+    }
+  }
+
+  bool _shouldFakeLoad(int index) => index == 1 || index == 3;
+
+  Widget _buildTabBody(Widget screen, int index) {
+    if (!_shouldFakeLoad(index)) {
+      return screen;
+    }
+
+    return FutureBuilder<void>(
+      key: ValueKey<String>('fake-load-$index-$_loadingRevision'),
+      future: Future<void>.delayed(const Duration(milliseconds: 500)),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const ShimmerSkeleton(itemCount: 5);
+        }
+        return screen;
+      },
+    );
   }
 
   Future<void> _verificarLikesRecibidos() async {
@@ -156,6 +189,8 @@ class _MainScaffoldState extends State<MainScaffold>
 
   @override
   void dispose() {
+    DemoService.instance.isDemoMode.removeListener(_syncDemoWakelock);
+    WakelockPlus.disable();
     _tabController.dispose();
     super.dispose();
   }
@@ -168,7 +203,10 @@ class _MainScaffoldState extends State<MainScaffold>
         physics: _currentIndex == 0
             ? const NeverScrollableScrollPhysics()
             : const BouncingScrollPhysics(),
-        children: _screens,
+        children: [
+          for (var i = 0; i < _screens.length; i++)
+            _buildTabBody(_screens[i], i),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -176,6 +214,9 @@ class _MainScaffoldState extends State<MainScaffold>
           HapticFeedback.selectionClick();
           setState(() {
             _currentIndex = index;
+            if (_shouldFakeLoad(index)) {
+              _loadingRevision++;
+            }
           });
           _tabController.animateTo(
             index,

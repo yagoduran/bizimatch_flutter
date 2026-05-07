@@ -37,24 +37,35 @@ class _DemoChatScreenState extends State<DemoChatScreen> {
   void _send() {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
-    setState(() => _messages.add({'from': 'demo_me', 'text': text, 'time': DateTime.now()}));
+    setState(
+      () => _messages.add({
+        'from': 'demo_me',
+        'text': text,
+        'time': DateTime.now(),
+      }),
+    );
     _controller.clear();
     Future.delayed(const Duration(milliseconds: 400), () {
-      setState(() => _messages.add({
-            'from': widget.otherUser.uid,
-            'text': 'Perfecto, te comparto fotos en un momento.',
-            'time': DateTime.now(),
-          }));
+      setState(
+        () => _messages.add({
+          'from': widget.otherUser.uid,
+          'text': 'Perfecto, te comparto fotos en un momento.',
+          'time': DateTime.now(),
+        }),
+      );
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: Row(
           children: [
-            CircleAvatar(backgroundImage: AssetImage(widget.otherUser.fotoPerfil)),
+            CircleAvatar(
+              backgroundImage: AssetImage(widget.otherUser.fotoPerfil),
+            ),
             const SizedBox(width: 12),
             Text(widget.otherUser.nombre),
           ],
@@ -71,9 +82,14 @@ class _DemoChatScreenState extends State<DemoChatScreen> {
                 final fromMe = msg['from'] == 'demo_me';
                 return Container(
                   margin: const EdgeInsets.only(bottom: 10),
-                  alignment: fromMe ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment: fromMe
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: fromMe ? AppTheme.primary : Colors.white,
                       borderRadius: BorderRadius.circular(12),
@@ -81,7 +97,9 @@ class _DemoChatScreenState extends State<DemoChatScreen> {
                     ),
                     child: Text(
                       msg['text'] as String,
-                      style: TextStyle(color: fromMe ? Colors.white : AppTheme.textPrimary),
+                      style: TextStyle(
+                        color: fromMe ? Colors.white : AppTheme.textPrimary,
+                      ),
                     ),
                   ),
                 );
@@ -98,16 +116,24 @@ class _DemoChatScreenState extends State<DemoChatScreen> {
                       controller: _controller,
                       decoration: const InputDecoration(
                         hintText: 'Escribe un mensaje de presentación...',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: _send,
+                    style: ElevatedButton.styleFrom(
+                      shape: const CircleBorder(),
+                      padding: const EdgeInsets.all(12),
+                    ),
                     child: const Icon(Icons.send_rounded),
-                    style: ElevatedButton.styleFrom(shape: const CircleBorder(), padding: const EdgeInsets.all(12)),
                   ),
                 ],
               ),

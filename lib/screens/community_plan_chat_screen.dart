@@ -57,6 +57,7 @@ class _CommunityPlanChatScreenState extends State<CommunityPlanChatScreen> {
     final myUid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(title: Text('Chat: ${widget.plan.titulo}')),
       body: Column(
         children: [

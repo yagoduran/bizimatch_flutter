@@ -1,3 +1,4 @@
+import 'package:animate_do/animate_do.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,6 +7,7 @@ import '../app_theme.dart';
 import '../models/user_profile.dart';
 import '../services/firestore_service.dart';
 import '../widgets/app_cached_network_image.dart';
+import '../widgets/glassmorphism.dart';
 import 'chat_detail_screen.dart';
 import '../services/demo_service.dart';
 import 'demo_chat_screen.dart';
@@ -22,23 +24,34 @@ class _MatchesScreenState extends State<MatchesScreen> {
   final Map<String, Future<UserProfile?>> _userCache =
       <String, Future<UserProfile?>>{};
   late final Stream<List<ChatThread>> _threadsStream;
-  late final String _myUid;
+  int _demoRevision = 0;
 
   @override
   void initState() {
     super.initState();
-    if (DemoService.instance.isDemoMode.value) {
-      _threadsStream = Stream.value(DemoService.instance.demoThreads);
-      _myUid = 'demo_me';
-    } else {
-      _threadsStream = _firestore.chatThreads();
-      _myUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    _threadsStream = _firestore.chatThreads();
+    DemoService.instance.resetRevision.addListener(_onDemoReset);
+  }
+
+  void _onDemoReset() {
+    if (!mounted) {
+      return;
     }
+    setState(() => _demoRevision = DemoService.instance.resetRevision.value);
+  }
+
+  @override
+  void dispose() {
+    DemoService.instance.resetRevision.removeListener(_onDemoReset);
+    super.dispose();
   }
 
   Future<UserProfile?> _userFuture(String uid) {
     if (DemoService.instance.isDemoMode.value && uid.startsWith('demo')) {
-      final demo = DemoService.instance.demoProfiles.firstWhere((p) => p.uid == uid, orElse: () => DemoService.instance.demoProfiles.first);
+      final demo = DemoService.instance.demoProfiles.firstWhere(
+        (p) => p.uid == uid,
+        orElse: () => DemoService.instance.demoProfiles.first,
+      );
       return Future.value(demo);
     }
     return _userCache.putIfAbsent(uid, () => _firestore.getUserById(uid));
@@ -53,7 +66,16 @@ class _MatchesScreenState extends State<MatchesScreen> {
   ) async {
     HapticFeedback.selectionClick();
     if (DemoService.instance.isDemoMode.value && otherUid.startsWith('demo')) {
-      await Navigator.push(context, MaterialPageRoute(builder: (_) => DemoChatScreen(otherUser: DemoService.instance.demoProfiles.firstWhere((p) => p.uid == otherUid))));
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DemoChatScreen(
+            otherUser: DemoService.instance.demoProfiles.firstWhere(
+              (p) => p.uid == otherUid,
+            ),
+          ),
+        ),
+      );
       return;
     }
     await Navigator.push(
@@ -92,6 +114,12 @@ class _MatchesScreenState extends State<MatchesScreen> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final threadsStream = DemoService.instance.isDemoMode.value
+        ? Stream<List<ChatThread>>.value(DemoService.instance.demoThreads)
+        : _threadsStream;
+    final myUid = DemoService.instance.isDemoMode.value
+        ? 'demo_me'
+        : FirebaseAuth.instance.currentUser?.uid ?? '';
 
     return SafeArea(
       child: Padding(
@@ -118,10 +146,11 @@ class _MatchesScreenState extends State<MatchesScreen> {
             const SizedBox(height: 12),
             Expanded(
               child: StreamBuilder<List<ChatThread>>(
-                stream: _threadsStream,
+                key: ValueKey<int>(_demoRevision),
+                stream: threadsStream,
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const ShimmerSkeleton(itemCount: 5);
                   }
 
                   final threads = snapshot.data ?? const <ChatThread>[];
@@ -136,7 +165,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                     itemBuilder: (context, index) {
                       final thread = threads[index];
                       final otherUid = thread.participants.firstWhere(
-                        (id) => id != _myUid,
+                        (id) => id != myUid,
                         orElse: () => '',
                       );
 
@@ -163,29 +192,18 @@ class _MatchesScreenState extends State<MatchesScreen> {
                                     .toInt(),
                           );
 
-                          return TweenAnimationBuilder<double>(
+                          return FadeInUp(
                             key: ValueKey<String>(thread.chatId),
                             duration: itemDuration,
-                            curve: AppTheme.motionCurve,
-                            tween: Tween<double>(begin: 0, end: 1),
-                            builder: (context, value, child) {
-                              return Opacity(
-                                opacity: value,
-                                child: Transform.translate(
-                                  offset: Offset(0, (1 - value) * 10),
-                                  child: child,
-                                ),
-                              );
-                            },
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 10),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: const Color(0xFFE8EFEB),
-                                ),
-                              ),
+                            delay: Duration(milliseconds: index * 35),
+                            from: 14,
+                            child: GlassCard(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: EdgeInsets.zero,
+                              borderRadius: 28,
+                              glowColor: index.isEven
+                                  ? AppTheme.primary
+                                  : AppTheme.indigo,
                               child: ListTile(
                                 onTap: () => _openChat(
                                   context,

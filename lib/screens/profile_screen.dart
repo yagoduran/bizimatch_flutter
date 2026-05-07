@@ -1194,19 +1194,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       InkWell(
                         onTap: () => _pickProfilePhoto(profile),
                         borderRadius: BorderRadius.circular(58),
-                        child: isAssetPath
-                            ? CircleAvatar(
-                                radius: 56,
-                                backgroundImage: AssetImage(profile.fotoPerfil),
-                              )
-                            : isLocalPath
-                            ? CircleAvatar(
-                                radius: 56,
-                                backgroundImage: FileImage(
-                                  File(profile.fotoPerfil),
+                        child: Hero(
+                          tag: 'photo_${profile.uid}',
+                          child: isAssetPath
+                              ? CircleAvatar(
+                                  radius: 56,
+                                  backgroundImage: AssetImage(
+                                    profile.fotoPerfil,
+                                  ),
+                                )
+                              : isLocalPath
+                              ? CircleAvatar(
+                                  radius: 56,
+                                  backgroundImage: FileImage(
+                                    File(profile.fotoPerfil),
+                                  ),
+                                )
+                              : AppCachedAvatar(
+                                  imageUrl: avatarUrl,
+                                  radius: 56,
                                 ),
-                              )
-                            : AppCachedAvatar(imageUrl: avatarUrl, radius: 56),
+                        ),
                       ),
                       if (_uploadingProfilePhoto)
                         Positioned.fill(

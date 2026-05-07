@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../app_theme.dart';
 import '../services/auth_service.dart';
 import '../services/notification_service.dart';
+import '../widgets/glassmorphism.dart';
 import 'main_scaffold.dart';
 import 'register_screen.dart';
 
@@ -115,100 +116,122 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 430),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    width: 90,
-                    height: 90,
-                    margin: const EdgeInsets.only(bottom: 18),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(26),
-                    ),
-                    child: const Icon(
-                      Icons.apartment_rounded,
-                      color: AppTheme.primary,
-                      size: 46,
-                    ),
-                  ),
-                  const Text(
-                    'BiziMatch',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 34, fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Encuentra compañeros de piso compatibles',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: AppTheme.textSecondary),
-                  ),
-                  const SizedBox(height: 28),
-                  TextField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
-                      labelText: 'Correo electronico',
-                      prefixIcon: Icon(Icons.email_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _passwordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Contraseña',
-                      prefixIcon: Icon(Icons.lock_outline_rounded),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Iniciar sesión'),
-                  ),
-                  const SizedBox(height: 6),
-                  TextButton(
-                    onPressed: _isLoading ? null : _recuperarContrasena,
-                    child: const Text('¿Olvidaste tu contraseña?'),
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: _isLoading
-                        ? null
-                        : () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute<void>(
-                                builder: (_) => const RegisterScreen(),
+      body: AnimatedOrganicBackground(
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 430),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: GlassCard(
+                  borderRadius: 34,
+                  padding: const EdgeInsets.all(26),
+                  glowColor: AppTheme.indigo,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 94,
+                          height: 94,
+                          margin: const EdgeInsets.only(bottom: 18),
+                          decoration: BoxDecoration(
+                            gradient: AppTheme.brandGradient,
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.primary.withValues(alpha: 0.42),
+                                blurRadius: 28,
+                                spreadRadius: -5,
+                                offset: const Offset(0, 12),
                               ),
-                            );
-                          },
-                    icon: const Icon(
-                      Icons.person_add_alt_1_rounded,
-                      color: AppTheme.primary,
-                    ),
-                    label: const Text(
-                      'Crear cuenta completa',
-                      style: TextStyle(
-                        color: AppTheme.primary,
-                        fontWeight: FontWeight.w700,
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.apartment_rounded,
+                            color: Colors.white,
+                            size: 48,
+                          ),
+                        ),
                       ),
-                    ),
+                      const Text(
+                        'BiziMatch',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 38,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Encuentra compañeros de piso compatibles',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: AppTheme.textSecondary),
+                      ),
+                      const SizedBox(height: 30),
+                      TextField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: const InputDecoration(
+                          labelText: 'Correo electronico',
+                          prefixIcon: Icon(Icons.email_outlined),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Contraseña',
+                          prefixIcon: Icon(Icons.lock_outline_rounded),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: _isLoading ? null : _login,
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Iniciar sesión'),
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: _isLoading ? null : _recuperarContrasena,
+                        child: const Text('¿Olvidaste tu contraseña?'),
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: _isLoading
+                            ? null
+                            : () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => const RegisterScreen(),
+                                  ),
+                                );
+                              },
+                        icon: const Icon(
+                          Icons.person_add_alt_1_rounded,
+                          color: AppTheme.primary,
+                        ),
+                        label: const Text(
+                          'Crear cuenta completa',
+                          style: TextStyle(
+                            color: AppTheme.primary,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),

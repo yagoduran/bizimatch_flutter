@@ -23,8 +23,8 @@ class BiziMatchApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'BiziMatch',
       theme: baseTheme.copyWith(
-        textTheme: GoogleFonts.poppinsTextTheme(baseTheme.textTheme),
-        primaryTextTheme: GoogleFonts.poppinsTextTheme(
+        textTheme: GoogleFonts.outfitTextTheme(baseTheme.textTheme),
+        primaryTextTheme: GoogleFonts.outfitTextTheme(
           baseTheme.primaryTextTheme,
         ),
       ),

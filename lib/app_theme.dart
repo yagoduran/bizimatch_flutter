@@ -6,8 +6,26 @@ class AppTheme {
   static const Color background = Color(0xFFF7FAF8);
   static const Color surface = Color(0xFFFFFFFF);
   static const Color primary = Color(0xFF10B981);
+  static const Color turquoise = Color(0xFF22D3EE);
+  static const Color indigo = Color(0xFF6366F1);
+  static const Color violet = Color(0xFFA855F7);
   static const Color textPrimary = Color(0xFF1C2A25);
   static const Color textSecondary = Color(0xFF6B7A74);
+  static const List<Color> emeraldIndigo = [
+    Color(0xFF10B981),
+    Color(0xFF22D3EE),
+    Color(0xFF6366F1),
+  ];
+  static const LinearGradient brandGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: emeraldIndigo,
+  );
+  static const LinearGradient glassGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xBFFFFFFF), Color(0x66FFFFFF), Color(0x1A10B981)],
+  );
 
   // Motion tokens for a consistent native-feel across screens.
   static const Duration motionFast = Duration(milliseconds: 180);
@@ -25,14 +43,14 @@ class AppTheme {
     final base = ThemeData.light(useMaterial3: true);
     final textTheme = base.textTheme.copyWith(
       headlineMedium: const TextStyle(
-        fontSize: 30,
-        fontWeight: FontWeight.w800,
+        fontSize: 32,
+        fontWeight: FontWeight.w900,
         color: textPrimary,
-        letterSpacing: -0.3,
+        letterSpacing: 0,
       ),
       titleLarge: const TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.w700,
+        fontSize: 22,
+        fontWeight: FontWeight.w800,
         color: textPrimary,
       ),
       titleMedium: const TextStyle(
@@ -51,47 +69,48 @@ class AppTheme {
       scaffoldBackgroundColor: background,
       colorScheme: base.colorScheme.copyWith(
         primary: primary,
-        secondary: const Color(0xFF3EC79D),
+        secondary: turquoise,
+        tertiary: indigo,
         surface: surface,
         onSurface: textPrimary,
         onPrimary: Colors.white,
       ),
-      textTheme: textTheme.apply(fontFamily: 'Roboto'),
+      textTheme: textTheme,
       appBarTheme: AppBarTheme(
-        backgroundColor: background,
+        backgroundColor: Colors.white.withValues(alpha: 0.62),
         foregroundColor: textPrimary,
         centerTitle: true,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
       ),
       cardTheme: CardThemeData(
-        color: surface,
+        color: Colors.white.withValues(alpha: 0.72),
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       ),
       dividerColor: const Color(0xFFE4ECE7),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: const Color(0xFF1C2A25),
         contentTextStyle: const TextStyle(color: Colors.white),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFFF0F5F2),
+        fillColor: Colors.white.withValues(alpha: 0.72),
         hintStyle: const TextStyle(color: textSecondary),
         labelStyle: const TextStyle(color: textSecondary),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
-          borderSide: const BorderSide(color: primary, width: 1.4),
+          borderRadius: BorderRadius.circular(24),
+          borderSide: const BorderSide(color: turquoise, width: 1.5),
         ),
       ),
       chipTheme: ChipThemeData(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         side: const BorderSide(color: Color(0xFFDCEAE3)),
         backgroundColor: const Color(0xFFF4F8F6),
         selectedColor: const Color(0x1F10B981),
@@ -112,7 +131,7 @@ class AppTheme {
         }),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: surface,
+        backgroundColor: Colors.white.withValues(alpha: 0.82),
         selectedItemColor: primary,
         unselectedItemColor: textSecondary,
         type: BottomNavigationBarType.fixed,
@@ -124,9 +143,11 @@ class AppTheme {
           backgroundColor: primary,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(24),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          shadowColor: primary.withValues(alpha: 0.42),
+          elevation: 8,
         ),
       ),
     );
