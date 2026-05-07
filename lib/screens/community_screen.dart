@@ -341,6 +341,26 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 child: ElevatedButton.icon(
                   onPressed: () async {
                     HapticFeedback.mediumImpact();
+                    // If demo mode, toggle locally and update UI immediately
+                    if (DemoService.instance.isDemoMode.value) {
+                      final uid = myUid;
+                      setState(() {
+                        if (plan.asistentesIds.contains(uid)) {
+                          plan.asistentesIds.remove(uid);
+                        } else {
+                          plan.asistentesIds.add(uid);
+                        }
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(plan.asistentesIds.contains(uid)
+                              ? 'Te has apuntado al plan ✅'
+                              : 'Te has dado de baja del plan'),
+                        ),
+                      );
+                      return;
+                    }
+
                     await _communityService.toggleAsistencia(plan);
                   },
                   style: ElevatedButton.styleFrom(
