@@ -188,6 +188,17 @@ lib/widgets/glassmorphism.dart
 
 BiziMatch incluye un modo especialmente pensado para defensa ante tribunal o demos sin depender completamente de red.
 
+### Cuenta Demo Admin Offline
+
+Puedes entrar sin internet desde la pantalla de login con el botón **Entrar en Demo Admin** o usando estas credenciales locales:
+
+```text
+Email: admin@bizimatch.demo
+Password: demo2026
+```
+
+Esta cuenta no llama a Firebase Auth. Activa el Modo Demo, selecciona el perfil demo principal y guarda una sesión local para que el splash pueda entrar directamente en siguientes aperturas.
+
 ### Incluye
 
 - Perfiles locales con imágenes demo.

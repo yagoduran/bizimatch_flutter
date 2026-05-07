@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../app_theme.dart';
 import '../services/auth_service.dart';
+import '../services/demo_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/glassmorphism.dart';
 import 'main_scaffold.dart';
@@ -45,6 +46,14 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
+      if (_authService.isDemoAdminCredentials(
+        email: email,
+        password: password,
+      )) {
+        await _enterDemoAdmin();
+        return;
+      }
+
       await _authService.login(email: email, password: password);
       await NotificationService.instance.syncTokenForCurrentUser();
 
@@ -65,6 +74,21 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  Future<void> _enterDemoAdmin() async {
+    await _authService.startDemoAdminSession();
+    DemoService.instance.enableDemo(true);
+    DemoService.instance.selectDemoUserByUid('demo_1');
+
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute<void>(builder: (_) => const MainScaffold()),
+    );
   }
 
   Future<void> _recuperarContrasena() async {
@@ -199,6 +223,21 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               )
                             : const Text('Iniciar sesión'),
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: _isLoading ? null : _enterDemoAdmin,
+                        icon: const Icon(Icons.admin_panel_settings_rounded),
+                        label: const Text('Entrar en Demo Admin'),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Acceso offline: admin@bizimatch.demo / demo2026',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 12,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       TextButton(

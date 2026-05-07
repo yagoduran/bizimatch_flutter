@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../app_theme.dart';
+import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../services/demo_service.dart';
 import '../widgets/glassmorphism.dart';
@@ -28,6 +29,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final AuthService _authService = AuthService();
   final FirestoreService _firestoreService = FirestoreService();
 
   Future<void> _onNuevosMensajesChanged(bool value) async {
@@ -836,6 +838,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _cerrarSesion() async {
     setState(() => _isBusy = true);
     try {
+      DemoService.instance.enableDemo(false);
+      await _authService.clearDemoAdminSession();
       await _auth.signOut();
       if (!mounted) {
         return;

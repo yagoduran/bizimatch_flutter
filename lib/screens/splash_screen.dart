@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../services/demo_service.dart';
 import 'login_screen.dart';
 import 'main_scaffold.dart';
 
@@ -31,6 +32,21 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkSession() async {
+    final hasDemoAdminSession = await _authService.hasDemoAdminSession();
+    if (hasDemoAdminSession) {
+      DemoService.instance.enableDemo(true);
+      DemoService.instance.selectDemoUserByUid('demo_1');
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _destination = const MainScaffold();
+        _isReady = true;
+      });
+      _navigateIfReady();
+      return;
+    }
+
     final User? user = await _authService.authStateChanges().first;
 
     if (!mounted) {
