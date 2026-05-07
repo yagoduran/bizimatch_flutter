@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="eu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BiziMatch Pitch Deck</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-1: #020617;
+      --bg-2: #071328;
+      --bg-3: #030712;
+      --glass-bg: rgba(255, 255, 255, 0.05);
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --text-main: #f8fafc;
+      --text-soft: #cbd5e1;
+      --accent: #2ecc71;
+      --accent-soft: rgba(46, 204, 113, 0.24);
+      --shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+      --transition-in: 620ms;
+      --transition-out: 390ms;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+    }
+
+    body {
+      font-family: "Outfit", sans-serif;
+      color: var(--text-main);
+      background: linear-gradient(130deg, var(--bg-1), var(--bg-2), var(--bg-3));
+      background-size: 180% 180%;
+      animation: ambientShift 20s ease-in-out infinite;
+      overflow: hidden;
+      position: relative;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: absolute;
+      width: 42vw;
+      height: 42vw;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(55px);
+      z-index: 0;
+      opacity: 0.35;
+    }
+
+    body::before {
+      top: -15vw;
+      left: -8vw;
+      background: radial-gradient(circle at center, rgba(46, 204, 113, 0.35), rgba(46, 204, 113, 0));
+      animation: floatAuraA 16s ease-in-out infinite;
+    }
+
+    body::after {
+      right: -12vw;
+      bottom: -18vw;
+      background: radial-gradient(circle at center, rgba(27, 99, 177, 0.32), rgba(27, 99, 177, 0));
+      animation: floatAuraB 19s ease-in-out infinite;
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      width: 100vw;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: clamp(14px, 2vw, 28px);
+    }
+
+    .deck-shell {
+      width: min(1160px, 100%);
+      height: min(760px, calc(100vh - 36px));
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .progress-wrap {
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      width: 10%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #17c964, var(--accent));
+      box-shadow: 0 0 22px rgba(46, 204, 113, 0.6);
+      transition: width 420ms ease;
+    }
+
+    .slides {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: clamp(22px, 3vw, 40px);
+      border-radius: 28px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: clamp(16px, 2vw, 24px);
+      opacity: 0;
+      transform: translateY(30px) scale(0.985);
+      pointer-events: none;
+    }
+
+    .slide.active {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+      animation: morphInLeft var(--transition-in) cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    .slide.exiting-left {
+      animation: morphOutLeft var(--transition-out) cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    .slide.exiting-right {
+      animation: morphOutRight var(--transition-out) cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    .slide.entering-left {
+      animation: morphInLeft var(--transition-in) cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    .slide.entering-right {
+      animation: morphInRight var(--transition-in) cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    .slide .stagger {
+      opacity: 0;
+      transform: translateY(12px);
+      animation: revealItem 460ms ease forwards;
+    }
+
+    .slide.active .stagger:nth-child(1) { animation-delay: 100ms; }
+    .slide.active .stagger:nth-child(2) { animation-delay: 170ms; }
+    .slide.active .stagger:nth-child(3) { animation-delay: 240ms; }
+    .slide.active .stagger:nth-child(4) { animation-delay: 310ms; }
+    .slide.active .stagger:nth-child(5) { animation-delay: 380ms; }
+
+    .slide-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      color: var(--text-soft);
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      font-size: clamp(0.8rem, 1.4vw, 0.95rem);
+    }
+
+    .tag {
+      background: var(--accent-soft);
+      border: 1px solid rgba(46, 204, 113, 0.5);
+      color: #9ff4bf;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    h1,
+    h2,
+    h3 {
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+    }
+
+    h1 {
+      font-size: clamp(2.4rem, 7vw, 5.4rem);
+    }
+
+    h2 {
+      font-size: clamp(1.55rem, 4.6vw, 3rem);
+    }
+
+    h3 {
+      font-size: clamp(1.12rem, 2vw, 1.35rem);
+      color: #e2e8f0;
+    }
+
+    p,
+    li {
+      color: var(--text-soft);
+      font-size: clamp(1rem, 1.75vw, 1.14rem);
+      line-height: 1.62;
+    }
+
+    .accent {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .hero {
+      display: grid;
+      align-content: center;
+      gap: 18px;
+      padding: clamp(6px, 1vw, 12px) 0;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1.1rem, 2.4vw, 1.7rem);
+      color: #dbe7f3;
+      max-width: 840px;
+    }
+
+    .hero-author {
+      color: #b9cadf;
+      font-weight: 500;
+      font-size: clamp(1rem, 1.9vw, 1.24rem);
+    }
+
+    .bullet-list {
+      list-style: none;
+      display: grid;
+      gap: 14px;
+      align-content: center;
+      margin-top: 16px;
+    }
+
+    .bullet-list li {
+      position: relative;
+      padding: 15px 16px 15px 52px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #eaf2fb;
+      font-size: clamp(1rem, 1.85vw, 1.2rem);
+      line-height: 1.45;
+    }
+
+    .bullet-list li::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 18px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      transform: translateY(-50%);
+      background: radial-gradient(circle at 30% 30%, #97f0bc, var(--accent));
+      box-shadow: 0 0 15px rgba(46, 204, 113, 0.65);
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1.08fr 0.92fr;
+      gap: clamp(16px, 2.4vw, 30px);
+      align-items: stretch;
+    }
+
+    .text-block {
+      display: grid;
+      align-content: center;
+      gap: 14px;
+    }
+
+    .phone-grid {
+      display: grid;
+      gap: 14px;
+      align-content: center;
+    }
+
+    .phone-grid.two-phones {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .phone-mockup {
+      position: relative;
+      border-radius: 32px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 14px;
+      display: grid;
+      place-items: center;
+      min-height: 300px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 15px 35px rgba(0, 0, 0, 0.35);
+    }
+
+    .phone-mockup::before {
+      content: "";
+      width: 46%;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.2);
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .phone-mockup img {
+      width: 100%;
+      max-width: 250px;
+      max-height: 480px;
+      object-fit: cover;
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 14px 28px rgba(0, 0, 0, 0.45);
+    }
+
+    .chip-list {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .chip {
+      border-radius: 999px;
+      padding: 7px 12px;
+      border: 1px solid rgba(46, 204, 113, 0.4);
+      background: rgba(46, 204, 113, 0.16);
+      color: #a2f0c3;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .tech-card {
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.045);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 16px;
+      display: grid;
+      gap: 10px;
+      min-height: 210px;
+    }
+
+    .tech-card .kicker {
+      color: #99ebba;
+      font-size: 0.82rem;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .conclusion {
+      display: grid;
+      align-content: center;
+      gap: 14px;
+      max-width: 940px;
+    }
+
+    .thank-you {
+      margin-top: 6px;
+      font-weight: 700;
+      font-size: clamp(1.2rem, 3vw, 1.9rem);
+      color: #e7fff0;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+
+    .presenter-tools {
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      color: #c1d4e9;
+      font-size: 0.88rem;
+    }
+
+    .nav-btn {
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.08);
+      color: #eef6ff;
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .nav-btn:hover,
+    .nav-btn:focus-visible {
+      transform: translateY(-1px);
+      border-color: rgba(46, 204, 113, 0.55);
+      background: rgba(46, 204, 113, 0.16);
+      outline: none;
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.42;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .slide-counter {
+      color: #b4c7dd;
+      font-weight: 500;
+      min-width: 130px;
+      text-align: center;
+      font-size: 0.94rem;
+    }
+
+    .live-badge,
+    .presenter-only {
+      display: none;
+    }
+
+    .presenter-select,
+    .presenter-pill {
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.08);
+      color: #eaf4ff;
+      padding: 8px 12px;
+      font-family: inherit;
+      font-size: 0.84rem;
+      font-weight: 600;
+    }
+
+    .presenter-select {
+      min-width: 128px;
+      cursor: pointer;
+    }
+
+    .presenter-pill {
+      min-width: 132px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .pace-pill {
+      min-width: 270px;
+      transition: border-color 180ms ease, color 180ms ease, background 180ms ease;
+    }
+
+    .pace-ok {
+      border-color: rgba(46, 204, 113, 0.45);
+      color: #b7f4cf;
+      background: rgba(46, 204, 113, 0.16);
+    }
+
+    .pace-warn {
+      border-color: rgba(245, 158, 11, 0.5);
+      color: #fde7b0;
+      background: rgba(245, 158, 11, 0.16);
+    }
+
+    .pace-late {
+      border-color: rgba(248, 113, 113, 0.5);
+      color: #fecaca;
+      background: rgba(248, 113, 113, 0.14);
+    }
+
+    .live-badge {
+      font-size: 0.8rem;
+      color: #b5f2cd;
+      border: 1px solid rgba(46, 204, 113, 0.42);
+      background: rgba(46, 204, 113, 0.17);
+      border-radius: 999px;
+      padding: 4px 9px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .hotzone {
+      position: absolute;
+      top: 0;
+      bottom: 74px;
+      width: 10%;
+      min-width: 60px;
+      z-index: 3;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      opacity: 0;
+      transition: opacity 180ms ease;
+    }
+
+    .hotzone:hover,
+    .hotzone:focus-visible {
+      opacity: 1;
+      outline: none;
+    }
+
+    .hotzone.left { left: 0; }
+    .hotzone.right { right: 0; }
+
+    .hotzone::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 34px;
+      height: 34px;
+      border-top: 2px solid rgba(255, 255, 255, 0.48);
+      border-right: 2px solid rgba(255, 255, 255, 0.48);
+      transform-origin: center;
+    }
+
+    .hotzone.left::after {
+      left: 14px;
+      transform: translateY(-50%) rotate(-135deg);
+    }
+
+    .hotzone.right::after {
+      right: 14px;
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    .deck-shell.presenter-mode {
+      --transition-in: 700ms;
+      --transition-out: 430ms;
+    }
+
+    .deck-shell.presenter-mode .live-badge {
+      display: inline-block;
+    }
+
+    .deck-shell.presenter-mode .presenter-only {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .deck-shell.presenter-mode .progress-bar {
+      transition-duration: 620ms;
+    }
+
+    @keyframes ambientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes floatAuraA {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(3vw, 2vw); }
+    }
+
+    @keyframes floatAuraB {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(-2vw, -2vw); }
+    }
+
+    @keyframes revealItem {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes morphInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(54px) scale(0.96);
+        filter: blur(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+        filter: blur(0);
+      }
+    }
+
+    @keyframes morphInRight {
+      from {
+        opacity: 0;
+        transform: translateX(-54px) scale(0.96);
+        filter: blur(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+        filter: blur(0);
+      }
+    }
+
+    @keyframes morphOutLeft {
+      from {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+        filter: blur(0);
+      }
+      to {
+        opacity: 0;
+        transform: translateX(-56px) scale(0.97);
+        filter: blur(8px);
+      }
+    }
+
+    @keyframes morphOutRight {
+      from {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+        filter: blur(0);
+      }
+      to {
+        opacity: 0;
+        transform: translateX(56px) scale(0.97);
+        filter: blur(8px);
+      }
+    }
+
+    @media (max-width: 980px) {
+      .deck-shell {
+        height: calc(100vh - 24px);
+      }
+
+      .slide {
+        overflow-y: auto;
+      }
+
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+
+      .phone-grid.two-phones {
+        grid-template-columns: 1fr;
+      }
+
+      .tech-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 580px) {
+      body {
+        overflow-y: auto;
+      }
+
+      .app {
+        min-height: auto;
+      }
+
+      .deck-shell {
+        height: auto;
+      }
+
+      .slides {
+        min-height: 79vh;
+      }
+
+      .controls {
+        position: sticky;
+        bottom: 8px;
+        padding: 8px;
+        border-radius: 14px;
+        background: rgba(2, 8, 23, 0.35);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .nav-btn {
+        flex: 1;
+      }
+
+      .presenter-select,
+      .presenter-pill {
+        min-width: auto;
+      }
+
+      .hotzone {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="deck-shell" aria-live="polite">
+      <div class="progress-wrap" aria-hidden="true">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+
+      <div class="slides" id="slides">
+        <section class="slide active" data-slide="1">
+          <header class="slide-header">
+            <span>Amaierako Graduko Proiektua</span>
+            <span class="tag">Pitch Deck</span>
+          </header>
+          <div class="hero">
+            <h1 class="stagger">Bizi<span class="accent">Match</span></h1>
+            <p class="hero-subtitle stagger">Ikasleen elkarbizitza digitalizatzen eta humanizatzen</p>
+            <p class="hero-author stagger">Egilea: Yago Durán</p>
+          </div>
+          <footer class="slide-header">
+            <span>Gazteentzako pisu partekatuen plataforma adimenduna</span>
+            <span class="accent">Eragin soziala + teknologia</span>
+          </footer>
+        </section>
+
+        <section class="slide" data-slide="2" aria-hidden="true">
+          <header class="slide-header">
+            <span>01 · Testuingurua</span>
+            <span class="tag">Arazoaren Azterketa</span>
+          </header>
+          <div>
+            <h2 class="stagger">Zergatik proiektu hau?</h2>
+            <ul class="bullet-list" style="margin-top: 18px;">
+              <li class="stagger"><strong>Pisua bilatzeko prozesu hotza eta zaila:</strong> erabakiak askotan informazio azalekoan oinarritzen dira.</li>
+              <li class="stagger"><strong>Elkarbizitzako gatazkak:</strong> garbiketa eta gastuen banaketan desadostasunak maiz sortzen dira.</li>
+              <li class="stagger"><strong>Segurtasun juridikoaren gabezia:</strong> gazte askok ez dute tresna argirik akordio formalak modu seguruan kudeatzeko.</li>
+            </ul>
+          </div>
+          <footer class="slide-header">
+            <span>Beharrizan erreal bati erantzuteko abiapuntua</span>
+            <span class="accent">Erabiltzailearen mina erdigunean</span>
+          </footer>
+        </section>
+
+        <section class="slide" data-slide="3" aria-hidden="true">
+          <header class="slide-header">
+            <span>02 · Ikuspegia</span>
+            <span class="tag">Helburu Orokorra</span>
+          </header>
+          <div class="conclusion">
+            <h2 class="stagger">BiziMatch: bilaketatik egunerokora</h2>
+            <p class="stagger">Arazo horiei erantzunez, <span class="accent">BiziMatch</span> ez da soilik pisuak bilatzeko app bat; elkarbizitzaren ziklo osoa kudeatzeko plataforma integrala da.</p>
+            <p class="stagger">Bilaketa, kontratuaren antolaketa eta etxeko eguneroko dinamika aplikazio bakarrean bateratzen dira, erabiltzailearen esperientzia sinplifikatuz.</p>
+            <div class="chip-list stagger">
+              <span class="chip">Bilaketa</span>
+              <span class="chip">Kontratua</span>
+              <span class="chip">Etxeko egunerokoa</span>
+              <span class="chip">Plataforma bakarra</span>
+            </div>
+          </div>
+          <footer class="slide-header">
+            <span>End-to-end ikuspegia elkarbizitzarako</span>
+            <span class="accent">Kudeaketa integrala</span>
+          </footer>
+        </section>
+
+        <section class="slide" data-slide="4" aria-hidden="true">
+          <header class="slide-header">
+            <span>03 · Produktua</span>
+            <span class="tag">Bilaketa Adimentsua</span>
+          </header>
+          <div class="two-col">
+            <div class="text-block">
+              <h2 class="stagger">Swipe bidezko topaketa adimenduna</h2>
+              <p class="stagger">Bilaketa fluxua <span class="accent">Swipe</span> sisteman oinarritzen da, eta erabiltzaileen arteko afinitatea <span class="accent">% Match</span> bidez bistaratzen da.</p>
+              <p class="stagger">Argazkietan eta datu garrantzitsuetan zentratutako interfaze garbiak erabaki arinagoak ahalbidetzen ditu.</p>
+              <p class="stagger">Gainera, match animazioak (overlay) interakzioa indartu eta esperientzia dinamikoagoa eskaintzen du.</p>
+            </div>
+            <div class="phone-grid two-phones">
+              <div class="phone-mockup stagger">
+                <img src="descubrir.jpg" alt="Bilaketa adimentsuaren pantaila">
+              </div>
+              <div class="phone-mockup stagger">
+                <img src="match.jpg" alt="Match animazioaren pantaila">
+              </div>
+            </div>
+          </div>
+          <footer class="slide-header">
+            <span>Erabaki azkarrak, bateragarritasun handiagoa</span>
+            <span class="accent">UI bisuala + afinitate datuak</span>
+          </footer>
+        </section>
+
+        <section class="slide" data-slide="5" aria-hidden="true">
+          <header class="slide-header">
+            <span>04 · Elkarreragina</span>
+            <span class="tag">Komunikazio Zuzena</span>
+          </header>
+          <div class="two-col">
+            <div class="text-block">
+              <h2 class="stagger">Denbora errealeko komunikazio sendoa</h2>
+              <p class="stagger">Firebase bidezko txatak mezuen sinkronizazio azkarra eta fidagarria eskaintzen du uneoro.</p>
+              <p class="stagger"><span class="accent">Vínculos</span> atalak elkarrizketen antolaketa eta jarraipena errazten ditu erabiltzaile bakoitzarentzat.</p>
+              <p class="stagger"><span class="accent">BiziBot</span> integrazioak elkarrizketa hasteko laguntza ematen du, izotza modu naturalean hautsiz.</p>
+            </div>
+            <div class="phone-grid two-phones">
+              <div class="phone-mockup stagger">
+                <img src="vinculos.jpg" alt="Vínculos atalaren pantaila">
+              </div>
+              <div class="phone-mockup stagger">
+                <img src="chat.jpg" alt="Txat pantaila">
+              </div>
+            </div>
+          </div>
+          <footer class="slide-header">
+            <span>Harremanaren kalitatea lehenetsiz</span>
+            <span class="accent">Realtime txata + laguntza adimenduna</span>
+          </footer>
+        </section>
+
+        <section class="slide" data-slide="6" aria-hidden="true">
+          <header class="slide-header">
+            <span>05 · Bateragarritasuna</span>
+            <span class="tag">Profil Gamifikatuak</span>
+          </header>
+          <div class="two-col">
+            <div class="text-block">
+              <h2 class="stagger">Profil sakonak, erabaki hobeak</h2>
+              <p class="stagger">Erabiltzaileen biografia zehatzak norbanakoaren estiloa eta lehentasunak hobeto ulertzeko aukera ematen du.</p>
+              <p class="stagger">Ahots-oharren bidez profilak gizatiartu egiten dira, testu hutsetik harago doan komunikazioa sortuz.</p>
+              <p class="stagger">Ohituren panel bisualak (ordutegia, garbiketa, maskotak) bateragarritasuna modu azkarrean ebaluatzeko balio du.</p>
+            </div>
+            <div class="phone-grid two-phones">
+              <div class="phone-mockup stagger">
+                <img src="perfil.jpg" alt="Profil gamifikatuaren pantaila">
+              </div>
+              <div class="phone-mockup stagger">
+                <img src="habitos.jpg" alt="Ohituren panelaren pantaila">
+              </div>
+            </div>
+          </div>
+          <footer class="slide-header">
+            <span>Komunitate egonkorragoak eraikitzeko oinarria</span>
+            <span class="accent">Datua + dimentsio pertsonala</span>
+          </footer>
+        </section>
+
+        <section class="slide" data-slide="7" aria-hidden="true">
+          <header class="slide-header">
+            <span>06 · Eguneroko Erabilera</span>
+            <span class="tag">Etxearen Kudeaketa</span>
+          </header>
+          <div class="two-col">
+            <div class="text-block">
+              <h2 class="stagger">Pisuan sartzean, antolaketa argia</h2>
+              <p class="stagger"><span class="accent">Empty States</span> diseinuak pantaila hutsak ulertzeko eta lehen pausoak emateko gida bisuala eskaintzen du.</p>
+              <p class="stagger">Pisua osatuta dagoenean, gastuen banaketa eta zereginen kudeaketa panel bakarrean zentralizatzen dira.</p>
+              <p class="stagger">Garbiketa edo etxeko ekintzak osatzean <span class="accent">BiziPuntuak</span> irabazteak motibazioa eta inplikazioa handitzen ditu.</p>
+            </div>
+            <div class="phone-grid two-phones">
+              <div class="phone-mockup stagger">
+                <img src="micasa_vacia.jpg" alt="Mi Casa atal hutsa">
+              </div>
+              <div class="phone-mockup stagger">
+                <img src="micasa_llena.jpg" alt="Mi Casa atal betea">
+              </div>
+            </div>
+          </div>
+          <footer class="slide-header">
+            <span>Elkarbizitza egituratua eta gardena</span>
+            <span class="accent">Gamifikazioa erabilgarritasunaren zerbitzura</span>
+          </footer>
+        </section>
+
+        <section class="slide" data-slide="8" aria-hidden="true">
+          <header class="slide-header">
+            <span>07 · Ingeniaritza</span>
+            <span class="tag">Arkitektura Teknikoa</span>
+          </header>
+          <div>
+            <h2 class="stagger">Errendimendua, eskalagarritasuna eta mantentzea</h2>
+            <div class="tech-grid">
+              <article class="tech-card stagger">
+                <span class="kicker">Frontend-a</span>
+                <h3>Flutter + Dart</h3>
+                <p>Errendimendu altuko aplikazio gurutzatua, UI koherentea eta Glassmorphism estilo bisuala modu leunean exekutatzeko prestatua.</p>
+              </article>
+              <article class="tech-card stagger">
+                <span class="kicker">Backend-a</span>
+                <h3>Firebase Serverless</h3>
+                <p>Firestore, Auth eta Storage zerbitzuekin, azpiegitura kudeatu beharrik gabe eta hazkunde progresiborako oinarri sendoarekin.</p>
+              </article>
+            </div>
+          </div>
+          <footer class="slide-header">
+            <span>Garapen azkarra, produkziorako prest</span>
+            <span class="accent">Stack modernoa eta modularra</span>
+          </footer>
+        </section>
+
+        <section class="slide" data-slide="9" aria-hidden="true">
+          <header class="slide-header">
+            <span>08 · Defentsa</span>
+            <span class="tag">Demo Modua</span>
+          </header>
+          <div class="two-col">
+            <div class="text-block">
+              <h2 class="stagger">Aurkezpenerako fluxu bermatua</h2>
+              <p class="stagger">Defentsa egoeretarako, sistemak <span class="accent">Demo Modua</span> eskaintzen du, esperientzia etenik gabe erakutsi ahal izateko.</p>
+              <p class="stagger">Datu lokalak (offline) kargatzeko aukerari esker, internet menpekotasuna saihestu eta funtzionalitate nagusiak modu fidagarrian erakusten dira.</p>
+              <p class="stagger">Konfigurazio eta pribatutasun pantailak ere demoaren barruan txertatuta daude, produktuaren heldutasuna adierazteko.</p>
+            </div>
+            <div class="phone-grid two-phones">
+              <div class="phone-mockup stagger">
+                <img src="ajustes_demo.jpg" alt="Demo moduko ezarpenak">
+              </div>
+              <div class="phone-mockup stagger">
+                <img src="privacidad.jpg" alt="Pribatutasun pantaila">
+              </div>
+            </div>
+          </div>
+          <footer class="slide-header">
+            <span>Defentsan fidagarritasuna lehenetsita</span>
+            <span class="accent">Offline prestaketa + demo koherentea</span>
+          </footer>
+        </section>
+
+        <section class="slide" data-slide="10" aria-hidden="true">
+          <header class="slide-header">
+            <span>09 · Itxiera</span>
+            <span class="tag">Ondorioak eta Etorkizuna</span>
+          </header>
+          <div class="conclusion">
+            <h2 class="stagger">Eskalagarria, erabilgarria eta errealitateari lotua</h2>
+            <p class="stagger">BiziMatch proiektu eskalagarria da, merkatu errealeko beharrak eta erabiltzaile gazteen elkarbizitza-dinamikak kontuan hartuta eraikia.</p>
+            <p class="stagger">Etorkizuneko hobekuntza nagusiak: ordainketa-pasarela integratzea eta kontratu legalen sinadura digital aurreratua.</p>
+            <p class="thank-you stagger">Eskerrik asko.</p>
+          </div>
+          <footer class="slide-header">
+            <span>BiziMatch · Elkarbizitza hobe baterako teknologia</span>
+            <span class="accent">Hazteko prest dagoen soluzioa</span>
+          </footer>
+        </section>
+      </div>
+
+      <button class="hotzone left" id="leftZone" type="button" aria-label="Aurreko diapositibara"></button>
+      <button class="hotzone right" id="rightZone" type="button" aria-label="Hurrengo diapositibara"></button>
+
+      <div class="controls" role="group" aria-label="Diapositiben nabigazioa">
+        <button class="nav-btn" id="prevBtn" type="button">Aurrekoa</button>
+        <div class="slide-counter"><span id="counterValue">1 / 10</span> <span class="live-badge">ZUZENEKO MODUA</span></div>
+        <button class="nav-btn" id="fullBtn" type="button">Pantaila osoa (F)</button>
+        <button class="nav-btn" id="nextBtn" type="button">Hurrengoa</button>
+
+        <div class="presenter-tools">
+          <label class="presenter-only" for="timerMinutes">Denbora
+            <select class="presenter-select" id="timerMinutes" aria-label="Aurkezpenaren minutuak">
+              <option value="300">5 min</option>
+              <option value="480">8 min</option>
+              <option value="600" selected>10 min</option>
+              <option value="720">12 min</option>
+            </select>
+          </label>
+          <button class="nav-btn presenter-only" id="timerBtn" type="button">Kronometroa hasi</button>
+          <div class="presenter-pill presenter-only" id="timerDisplay">10:00</div>
+          <div class="presenter-pill presenter-only pace-pill pace-ok" id="paceDisplay">Erritmoa D1: 01:00 | tartea +01:00</div>
+          <label class="presenter-only" for="autoPlayInterval">Auto-play
+            <select class="presenter-select" id="autoPlayInterval" aria-label="Auto-play tartea">
+              <option value="10000">10 s / diapositiba</option>
+              <option value="15000" selected>15 s / diapositiba</option>
+              <option value="20000">20 s / diapositiba</option>
+              <option value="30000">30 s / diapositiba</option>
+            </select>
+          </label>
+          <button class="nav-btn presenter-only" id="autoPlayBtn" type="button">Auto-play hasi</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+      var prevBtn = document.getElementById('prevBtn');
+      var nextBtn = document.getElementById('nextBtn');
+      var fullBtn = document.getElementById('fullBtn');
+      var leftZone = document.getElementById('leftZone');
+      var rightZone = document.getElementById('rightZone');
+      var timerBtn = document.getElementById('timerBtn');
+      var timerDisplay = document.getElementById('timerDisplay');
+      var paceDisplay = document.getElementById('paceDisplay');
+      var timerMinutes = document.getElementById('timerMinutes');
+      var autoPlayBtn = document.getElementById('autoPlayBtn');
+      var autoPlayInterval = document.getElementById('autoPlayInterval');
+      var counterValue = document.getElementById('counterValue');
+      var progressBar = document.getElementById('progressBar');
+      var deckShell = document.querySelector('.deck-shell');
+      var current = 0;
+      var total = slides.length;
+      var isAnimating = false;
+      var timerId = null;
+      var autoPlayId = null;
+      var remainingSeconds = Number(timerMinutes.value);
+
+      function updateUI() {
+        counterValue.textContent = (current + 1) + ' / ' + total;
+        progressBar.style.width = (((current + 1) / total) * 100).toFixed(2) + '%';
+        prevBtn.disabled = current === 0;
+        nextBtn.disabled = current === total - 1;
+        renderPacing();
+      }
+
+      function getTransitionOutDuration() {
+        var value = window.getComputedStyle(deckShell).getPropertyValue('--transition-out').trim();
+        var numeric = parseFloat(value);
+        return Number.isNaN(numeric) ? 380 : Math.round(numeric);
+      }
+
+      function goTo(index) {
+        if (index < 0 || index >= total || index === current || isAnimating) {
+          return;
+        }
+
+        var direction = index > current ? 'left' : 'right';
+        var currentSlide = slides[current];
+        var nextSlide = slides[index];
+
+        isAnimating = true;
+        currentSlide.classList.remove('active');
+        currentSlide.classList.add(direction === 'left' ? 'exiting-left' : 'exiting-right');
+
+        nextSlide.classList.add('active', direction === 'left' ? 'entering-left' : 'entering-right');
+        nextSlide.setAttribute('aria-hidden', 'false');
+        currentSlide.setAttribute('aria-hidden', 'true');
+
+        window.setTimeout(function () {
+          currentSlide.classList.remove('exiting-left', 'exiting-right');
+          nextSlide.classList.remove('entering-left', 'entering-right');
+          current = index;
+          refreshStaggerAnimation(slides[current]);
+          updateUI();
+          isAnimating = false;
+        }, getTransitionOutDuration() + 24);
+      }
+
+      function refreshStaggerAnimation(slide) {
+        var staggered = slide.querySelectorAll('.stagger');
+        for (var i = 0; i < staggered.length; i += 1) {
+          staggered[i].style.animation = 'none';
+          staggered[i].offsetHeight;
+          staggered[i].style.animation = '';
+        }
+      }
+
+      function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(function () {
+            return;
+          });
+          return;
+        }
+        document.exitFullscreen().catch(function () {
+          return;
+        });
+      }
+
+      function formatSeconds(value) {
+        var minutes = Math.floor(value / 60);
+        var seconds = value % 60;
+        return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+      }
+
+      function setPaceState(className) {
+        paceDisplay.classList.remove('pace-ok', 'pace-warn', 'pace-late');
+        paceDisplay.classList.add(className);
+      }
+
+      function renderPacing() {
+        var selectedTotal = Number(timerMinutes.value);
+        var perSlide = Math.round(selectedTotal / total);
+        var elapsed = selectedTotal - remainingSeconds;
+        var targetEnd = Math.round((current + 1) * (selectedTotal / total));
+        var margin = targetEnd - elapsed;
+        var sign = margin >= 0 ? '+' : '-';
+
+        paceDisplay.textContent = 'Erritmoa D' + (current + 1) + ': ' + formatSeconds(perSlide) + ' | tartea ' + sign + formatSeconds(Math.abs(margin));
+
+        if (margin > 20) {
+          setPaceState('pace-ok');
+          return;
+        }
+        if (margin >= 0) {
+          setPaceState('pace-warn');
+          return;
+        }
+        setPaceState('pace-late');
+      }
+
+      function renderTimer() {
+        timerDisplay.textContent = formatSeconds(remainingSeconds);
+        renderPacing();
+      }
+
+      function resetTimerFromSelection() {
+        remainingSeconds = Number(timerMinutes.value);
+        renderTimer();
+      }
+
+      function startTimer() {
+        if (timerId) {
+          return;
+        }
+        timerBtn.textContent = 'Kronometroa pausatu';
+        timerId = window.setInterval(function () {
+          if (remainingSeconds <= 0) {
+            window.clearInterval(timerId);
+            timerId = null;
+            timerBtn.textContent = 'Kronometroa berrabiarazi';
+            return;
+          }
+          remainingSeconds -= 1;
+          renderTimer();
+        }, 1000);
+      }
+
+      function pauseTimer() {
+        if (!timerId) {
+          return;
+        }
+        window.clearInterval(timerId);
+        timerId = null;
+        timerBtn.textContent = 'Kronometroa jarraitu';
+      }
+
+      function stopAutoPlay() {
+        if (!autoPlayId) {
+          return;
+        }
+        window.clearInterval(autoPlayId);
+        autoPlayId = null;
+        autoPlayBtn.textContent = 'Auto-play hasi';
+      }
+
+      function startAutoPlay() {
+        if (autoPlayId) {
+          return;
+        }
+        autoPlayBtn.textContent = 'Auto-play gelditu';
+        autoPlayId = window.setInterval(function () {
+          if (current >= total - 1) {
+            stopAutoPlay();
+            return;
+          }
+          goTo(current + 1);
+        }, Number(autoPlayInterval.value));
+      }
+
+      function shouldIgnoreKey(event) {
+        var tagName = event.target && event.target.tagName ? event.target.tagName.toLowerCase() : '';
+        return tagName === 'input' || tagName === 'select' || tagName === 'textarea';
+      }
+
+      function syncFullscreenState() {
+        var inFullscreen = Boolean(document.fullscreenElement);
+        if (inFullscreen) {
+          deckShell.classList.add('presenter-mode');
+          fullBtn.textContent = 'Pantaila osotik irten (F)';
+          return;
+        }
+        deckShell.classList.remove('presenter-mode');
+        fullBtn.textContent = 'Pantaila osoa (F)';
+      }
+
+      prevBtn.addEventListener('click', function () {
+        goTo(current - 1);
+      });
+
+      nextBtn.addEventListener('click', function () {
+        goTo(current + 1);
+      });
+
+      leftZone.addEventListener('click', function () {
+        goTo(current - 1);
+      });
+
+      rightZone.addEventListener('click', function () {
+        goTo(current + 1);
+      });
+
+      fullBtn.addEventListener('click', toggleFullscreen);
+
+      timerBtn.addEventListener('click', function () {
+        if (timerId) {
+          pauseTimer();
+          return;
+        }
+        if (remainingSeconds <= 0) {
+          resetTimerFromSelection();
+        }
+        startTimer();
+      });
+
+      timerMinutes.addEventListener('change', function () {
+        resetTimerFromSelection();
+        if (timerId) {
+          pauseTimer();
+        }
+        timerBtn.textContent = 'Kronometroa hasi';
+      });
+
+      autoPlayBtn.addEventListener('click', function () {
+        if (autoPlayId) {
+          stopAutoPlay();
+          return;
+        }
+        startAutoPlay();
+      });
+
+      autoPlayInterval.addEventListener('change', function () {
+        if (!autoPlayId) {
+          return;
+        }
+        stopAutoPlay();
+        startAutoPlay();
+      });
+
+      window.addEventListener('keydown', function (event) {
+        if (shouldIgnoreKey(event)) {
+          return;
+        }
+        if (event.key === 'ArrowRight' || event.key === 'PageDown') {
+          goTo(current + 1);
+        }
+        if (event.key === 'ArrowLeft' || event.key === 'PageUp') {
+          goTo(current - 1);
+        }
+        if (event.key === 'f' || event.key === 'F') {
+          toggleFullscreen();
+        }
+        if (event.key === 'l' || event.key === 'L') {
+          deckShell.classList.toggle('presenter-mode');
+        }
+        if (event.key === 'a' || event.key === 'A') {
+          if (autoPlayId) {
+            stopAutoPlay();
+          } else {
+            startAutoPlay();
+          }
+        }
+        if (event.key === 't' || event.key === 'T') {
+          if (timerId) {
+            pauseTimer();
+          } else {
+            startTimer();
+          }
+        }
+      });
+
+      document.addEventListener('fullscreenchange', syncFullscreenState);
+
+      renderTimer();
+      refreshStaggerAnimation(slides[current]);
+      updateUI();
+    })();
+  </script>
+</body>
+</html>
