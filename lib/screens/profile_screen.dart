@@ -9,6 +9,7 @@ import 'package:record/record.dart';
 import '../app_theme.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
+import '../services/demo_service.dart';
 import '../services/firestore_service.dart';
 import '../services/imgbb_service.dart';
 import '../services/voice_bio_storage_service.dart';
@@ -1152,8 +1153,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final isDemo = DemoService.instance.isDemoMode.value;
     return StreamBuilder<UserProfile?>(
-      stream: _firestore.myProfileStream(),
+      stream: isDemo
+          ? Stream<UserProfile?>.value(
+              DemoService.instance.selectedDemoUser.value ??
+                  DemoService.instance.demoProfiles.first,
+            )
+          : _firestore.myProfileStream(),
       builder: (context, snapshot) {
         final profile = snapshot.data;
         if (profile == null) {
@@ -1166,8 +1173,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ? 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80'
             : profile.fotoPerfil;
 
-        _maybeShowPointsToast(profile);
-        unawaited(_maybeSyncLocalVoiceBio(profile));
+        if (!isDemo) {
+          _maybeShowPointsToast(profile);
+          unawaited(_maybeSyncLocalVoiceBio(profile));
+        }
 
         return SafeArea(
           child: SingleChildScrollView(
@@ -1192,7 +1201,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     clipBehavior: Clip.none,
                     children: [
                       InkWell(
-                        onTap: () => _pickProfilePhoto(profile),
+                        onTap: isDemo ? null : () => _pickProfilePhoto(profile),
                         borderRadius: BorderRadius.circular(58),
                         child: Hero(
                           tag: 'photo_${profile.uid}',
@@ -1234,7 +1243,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         right: -4,
                         bottom: -4,
                         child: InkWell(
-                          onTap: () => _editarPerfil(profile),
+                          onTap: isDemo ? null : () => _editarPerfil(profile),
                           borderRadius: BorderRadius.circular(18),
                           child: Container(
                             width: 36,

@@ -11,6 +11,7 @@ import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
 import '../models/user_profile.dart';
+import '../services/demo_service.dart';
 import '../widgets/app_cached_network_image.dart';
 import 'profile_detail_screen.dart';
 
@@ -41,7 +42,13 @@ class _MapScreenState extends State<MapScreen> {
   void initState() {
     super.initState();
     _mapController = MapController();
-    _loadMarkersFromFirestore();
+    if (DemoService.instance.isDemoMode.value) {
+      _usersWithPiso = DemoService.instance.demoProfiles
+          .where((user) => user.tienePiso)
+          .toList(growable: false);
+    } else {
+      _loadMarkersFromFirestore();
+    }
   }
 
   void _loadMarkersFromFirestore() {
@@ -118,7 +125,13 @@ class _MapScreenState extends State<MapScreen> {
       }
     });
 
-    final pois = await _fetchNearbyServicesFromOverpass(housePosition);
+    final isDemo = DemoService.instance.isDemoMode.value;
+    if (isDemo) {
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+    }
+    final pois = isDemo
+        ? const <ServicePoi>[]
+        : await _fetchNearbyServicesFromOverpass(housePosition);
     final resolvedPois = pois.isNotEmpty
         ? pois
         : _buildMockNearbyServices(housePosition);
@@ -134,7 +147,7 @@ class _MapScreenState extends State<MapScreen> {
       }
     });
 
-    if (mounted && pois.isEmpty) {
+    if (mounted && pois.isEmpty && !isDemo) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -379,6 +392,8 @@ out body;
       ),
       body: Stack(
         children: [
+          if (DemoService.instance.isDemoMode.value)
+            Positioned.fill(child: _buildDemoMapBackground()),
           // FlutterMap con CartoDB Positron
           FlutterMap(
             mapController: _mapController,
@@ -388,13 +403,13 @@ out body;
               onTap: (tapPosition, latLng) => _clearSelection(),
             ),
             children: [
-              // TileLayer - CartoDB Positron (limpio y minimalista)
-              TileLayer(
-                urlTemplate:
-                    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-                subdomains: const ['a', 'b', 'c'],
-                userAgentPackageName: 'com.bizimatch.app',
-              ),
+              if (!DemoService.instance.isDemoMode.value)
+                TileLayer(
+                  urlTemplate:
+                      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                  subdomains: const ['a', 'b', 'c'],
+                  userAgentPackageName: 'com.bizimatch.app',
+                ),
               // Marcadores personalizados (gotas de agua)
               MarkerLayer(
                 markers: _usersWithPiso.map((user) {
@@ -627,6 +642,19 @@ out body;
         ),
         size: const Size(40, 50),
       ),
+    );
+  }
+
+  Widget _buildDemoMapBackground() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFE8F8F1), Color(0xFFEAF0FF), Color(0xFFE0FBFF)],
+        ),
+      ),
+      child: CustomPaint(painter: _DemoMapPainter()),
     );
   }
 
@@ -939,4 +967,111 @@ class DropPinPainter extends CustomPainter {
   @override
   bool shouldRepaint(DropPinPainter oldDelegate) =>
       oldDelegate.isSelected != isSelected || oldDelegate.color != color;
+}
+
+class _DemoMapPainter extends CustomPainter {
+  const _DemoMapPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final blockPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.56)
+      ..style = PaintingStyle.fill;
+    final parkPaint = Paint()
+      ..color = const Color(0xFFB7F3D7).withValues(alpha: 0.65)
+      ..style = PaintingStyle.fill;
+    final roadPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.9)
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 18;
+    final avenuePaint = Paint()
+      ..color = const Color(0xFFD5E8FF).withValues(alpha: 0.95)
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 28;
+    final secondaryRoadPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.72)
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 10;
+
+    final blocks = <RRect>[
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(size.width * .08, size.height * .10, 92, 70),
+        const Radius.circular(18),
+      ),
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(size.width * .58, size.height * .12, 116, 86),
+        const Radius.circular(22),
+      ),
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(size.width * .16, size.height * .45, 132, 92),
+        const Radius.circular(24),
+      ),
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(size.width * .62, size.height * .52, 98, 118),
+        const Radius.circular(24),
+      ),
+    ];
+    for (final block in blocks) {
+      canvas.drawRRect(block, blockPaint);
+    }
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(size.width * .08, size.height * .24, 140, 92),
+        const Radius.circular(36),
+      ),
+      parkPaint,
+    );
+
+    final avenue = ui.Path()
+      ..moveTo(size.width * .04, size.height * .78)
+      ..cubicTo(
+        size.width * .30,
+        size.height * .66,
+        size.width * .62,
+        size.height * .92,
+        size.width * .96,
+        size.height * .66,
+      );
+    canvas.drawPath(avenue, avenuePaint);
+
+    final roadA = ui.Path()
+      ..moveTo(size.width * .20, size.height * .02)
+      ..lineTo(size.width * .42, size.height * .96);
+    final roadB = ui.Path()
+      ..moveTo(size.width * .02, size.height * .36)
+      ..lineTo(size.width * .94, size.height * .20);
+    final roadC = ui.Path()
+      ..moveTo(size.width * .55, size.height * .02)
+      ..lineTo(size.width * .76, size.height * .86);
+    canvas
+      ..drawPath(roadA, roadPaint)
+      ..drawPath(roadB, roadPaint)
+      ..drawPath(roadC, secondaryRoadPaint);
+
+    final glow = Paint()
+      ..shader =
+          RadialGradient(
+            colors: [
+              const Color(0xFF10B981).withValues(alpha: 0.18),
+              Colors.transparent,
+            ],
+          ).createShader(
+            Rect.fromCircle(
+              center: Offset(size.width * .72, size.height * .32),
+              radius: size.width * .55,
+            ),
+          );
+    canvas.drawCircle(
+      Offset(size.width * .72, size.height * .32),
+      size.width * .55,
+      glow,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _DemoMapPainter oldDelegate) => false;
 }

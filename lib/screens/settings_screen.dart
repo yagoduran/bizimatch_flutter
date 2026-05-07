@@ -374,7 +374,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: DemoService.instance.demoProfiles.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 12),
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(width: 12),
                         itemBuilder: (context, index) {
                           final p = DemoService.instance.demoProfiles[index];
                           return GestureDetector(
@@ -425,6 +426,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
           ),
+          const SizedBox(height: 14),
           _section(
             title: 'Notificaciones',
             child: Column(

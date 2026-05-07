@@ -105,32 +105,11 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   @override
   void initState() {
     super.initState();
-    _myProfileSub = _firestoreService.myProfileStream().listen((profile) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _myProfile = profile;
-        _filteredProfiles = _filtrar(_allProfiles);
-        _loading = false;
-      });
-      _scheduleNextProfilePrecache();
-    });
-    _discoverSub = _firestoreService.discoverProfiles().listen((profiles) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _allProfiles = profiles;
-        _filteredProfiles = _filtrar(_allProfiles);
-        _loading = false;
-        if (_activeIndex >= _filteredProfiles.length &&
-            _filteredProfiles.isNotEmpty) {
-          _activeIndex = 0;
-        }
-      });
-      _scheduleNextProfilePrecache();
-    });
+    if (DemoService.instance.isDemoMode.value) {
+      _activateDemoProfiles();
+    } else {
+      _subscribeToFirestoreProfiles();
+    }
 
     _swipeOutController =
         AnimationController(vsync: this, duration: AppTheme.motionDiscoverSwipe)
@@ -186,41 +165,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     DemoService.instance.isDemoMode.addListener(() {
       final demoOn = DemoService.instance.isDemoMode.value;
       if (demoOn) {
-        _myProfileSub?.cancel();
-        _discoverSub?.cancel();
-        final demoMe = DemoService.instance.selectedDemoUser.value;
-        setState(() {
-          _myProfile = demoMe;
-          _allProfiles = DemoService.instance.demoProfiles;
-          _filteredProfiles = _filtrar(_allProfiles);
-          _loading = false;
-          _activeIndex = 0;
-        });
-        _scheduleNextProfilePrecache();
+        _activateDemoProfiles();
       } else {
-        // Re-subscribe to Firestore streams
-        _myProfileSub = _firestoreService.myProfileStream().listen((profile) {
-          if (!mounted) return;
-          setState(() {
-            _myProfile = profile;
-            _filteredProfiles = _filtrar(_allProfiles);
-            _loading = false;
-          });
-          _scheduleNextProfilePrecache();
-        });
-        _discoverSub = _firestoreService.discoverProfiles().listen((profiles) {
-          if (!mounted) return;
-          setState(() {
-            _allProfiles = profiles;
-            _filteredProfiles = _filtrar(_allProfiles);
-            _loading = false;
-            if (_activeIndex >= _filteredProfiles.length &&
-                _filteredProfiles.isNotEmpty) {
-              _activeIndex = 0;
-            }
-          });
-          _scheduleNextProfilePrecache();
-        });
+        _subscribeToFirestoreProfiles();
       }
     });
     DemoService.instance.resetRevision.addListener(_onDemoReset);
@@ -268,6 +215,56 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     });
   }
 
+  void _activateDemoProfiles() {
+    _myProfileSub?.cancel();
+    _discoverSub?.cancel();
+    final demoMe =
+        DemoService.instance.selectedDemoUser.value ??
+        DemoService.instance.demoProfiles.first;
+    DemoService.instance.selectedDemoUser.value ??= demoMe;
+    setState(() {
+      _myProfile = demoMe;
+      _allProfiles = DemoService.instance.demoProfiles
+          .where((p) => p.uid != demoMe.uid)
+          .toList(growable: false);
+      _filteredProfiles = _filtrar(_allProfiles);
+      _loading = false;
+      _activeIndex = 0;
+    });
+    _scheduleNextProfilePrecache();
+  }
+
+  void _subscribeToFirestoreProfiles() {
+    _myProfileSub?.cancel();
+    _discoverSub?.cancel();
+    _myProfileSub = _firestoreService.myProfileStream().listen((profile) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _myProfile = profile;
+        _filteredProfiles = _filtrar(_allProfiles);
+        _loading = false;
+      });
+      _scheduleNextProfilePrecache();
+    });
+    _discoverSub = _firestoreService.discoverProfiles().listen((profiles) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _allProfiles = profiles;
+        _filteredProfiles = _filtrar(_allProfiles);
+        _loading = false;
+        if (_activeIndex >= _filteredProfiles.length &&
+            _filteredProfiles.isNotEmpty) {
+          _activeIndex = 0;
+        }
+      });
+      _scheduleNextProfilePrecache();
+    });
+  }
+
   void _onDemoReset() {
     if (!mounted || !DemoService.instance.isDemoMode.value) {
       return;
@@ -276,7 +273,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final demoMe = DemoService.instance.selectedDemoUser.value;
     setState(() {
       _myProfile = demoMe;
-      _allProfiles = DemoService.instance.demoProfiles;
+      _allProfiles = DemoService.instance.demoProfiles
+          .where((p) => p.uid != demoMe?.uid)
+          .toList(growable: false);
       _filteredProfiles = _filtrar(_allProfiles);
       _activeIndex = 0;
       _dragOffset = Offset.zero;
@@ -555,7 +554,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       barrierLabel: 'demo-match',
       barrierColor: Colors.black.withOpacity(0.5),
       transitionDuration: const Duration(milliseconds: 360),
-      pageBuilder: (dialogContext, _, __) {
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
         return _DemoMatchOverlay(
           me: _myProfile,
           other: targetUser,

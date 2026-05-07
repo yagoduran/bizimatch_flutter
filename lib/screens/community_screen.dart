@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../models/community_plan_model.dart';
 import '../models/community_plan_type.dart';
 import '../services/community_service.dart';
+import '../services/demo_service.dart';
 import 'community_plan_chat_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
@@ -34,6 +35,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
   }
 
   Future<void> _initCity() async {
+    if (DemoService.instance.isDemoMode.value) {
+      setState(() => _selectedCity = 'General');
+      return;
+    }
     final city = await _communityService.obtenerCiudadUsuario();
     if (!mounted) return;
     setState(() => _selectedCity = city);
@@ -82,7 +87,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
         ],
       ),
       body: StreamBuilder<List<CommunityPlan>>(
-        stream: _communityService.planesPorCiudad(city),
+        stream: DemoService.instance.isDemoMode.value
+            ? Stream<List<CommunityPlan>>.value(_demoPlans(city))
+            : _communityService.planesPorCiudad(city),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(
@@ -178,6 +185,40 @@ class _CommunityScreenState extends State<CommunityScreen> {
         label: const Text('Crear Plan'),
       ),
     );
+  }
+
+  List<CommunityPlan> _demoPlans(String city) {
+    final now = DateTime.now();
+    return [
+      CommunityPlan(
+        id: 'demo_plan_1',
+        titulo: 'CaÃ±as para romper el hielo',
+        descripcion:
+            'Quedada informal para conocer futuros compaÃ±eros de piso por el centro.',
+        creadorId: 'demo_1',
+        creadorNombre: 'Daniel Ruiz',
+        ciudad: city,
+        fechaHora: now.add(const Duration(days: 1, hours: 2)),
+        tipoPlan: CommunityPlanType.canas,
+        asistentesIds: const ['demo_1', 'demo_2', 'demo_5'],
+        chatActivo: true,
+        chatPlanId: 'demo_plan_chat_1',
+      ),
+      CommunityPlan(
+        id: 'demo_plan_2',
+        titulo: 'Tour de pisos por ChamberÃ­',
+        descripcion:
+            'Ruta corta para visitar zonas, comparar precios y compartir impresiones.',
+        creadorId: 'demo_4',
+        creadorNombre: 'Iker Salazar',
+        ciudad: city,
+        fechaHora: now.add(const Duration(days: 3, hours: 5)),
+        tipoPlan: CommunityPlanType.turismo,
+        asistentesIds: const ['demo_4', 'demo_7'],
+        chatActivo: true,
+        chatPlanId: 'demo_plan_chat_2',
+      ),
+    ];
   }
 
   List<CommunityPlan> _filteredPlans(List<CommunityPlan> plans) {

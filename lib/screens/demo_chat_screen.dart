@@ -54,6 +54,21 @@ class _DemoChatScreenState extends State<DemoChatScreen> {
         }),
       );
     });
+    if (widget.otherUser.fotosPiso.isNotEmpty) {
+      Future.delayed(const Duration(milliseconds: 900), () {
+        if (!mounted) {
+          return;
+        }
+        setState(
+          () => _messages.add({
+            'from': widget.otherUser.uid,
+            'text': 'Te dejo algunas fotos del piso.',
+            'photos': widget.otherUser.fotosPiso.take(2).toList(),
+            'time': DateTime.now(),
+          }),
+        );
+      });
+    }
   }
 
   @override
@@ -80,6 +95,9 @@ class _DemoChatScreenState extends State<DemoChatScreen> {
               itemBuilder: (context, index) {
                 final msg = _messages[index];
                 final fromMe = msg['from'] == 'demo_me';
+                final photos = List<String>.from(
+                  (msg['photos'] as List?) ?? const <String>[],
+                );
                 return Container(
                   margin: const EdgeInsets.only(bottom: 10),
                   alignment: fromMe
@@ -95,11 +113,39 @@ class _DemoChatScreenState extends State<DemoChatScreen> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: const Color(0xFFECECEC)),
                     ),
-                    child: Text(
-                      msg['text'] as String,
-                      style: TextStyle(
-                        color: fromMe ? Colors.white : AppTheme.textPrimary,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          msg['text'] as String,
+                          style: TextStyle(
+                            color: fromMe ? Colors.white : AppTheme.textPrimary,
+                          ),
+                        ),
+                        if (photos.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            height: 120,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: photos.length,
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(width: 8),
+                              itemBuilder: (context, photoIndex) {
+                                return ClipRRect(
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: Image.asset(
+                                    photos[photoIndex],
+                                    width: 150,
+                                    height: 120,
+                                    fit: BoxFit.cover,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 );
