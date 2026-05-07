@@ -29,7 +29,12 @@ class DemoService {
       (p) => p.uid == uid,
       orElse: () => demoProfiles.first,
     );
+    if (selectedDemoUser.value?.uid == found.uid) {
+      return;
+    }
     selectedDemoUser.value = found;
+    demoThreads = <ChatThread>[];
+    resetRevision.value++;
   }
 
   void resetDemoData() {
@@ -60,6 +65,7 @@ class DemoService {
       ),
       ...demoThreads,
     ];
+    resetRevision.value++;
   }
 
   UserProfile _copyWithDemoPoints(UserProfile profile, int points) {

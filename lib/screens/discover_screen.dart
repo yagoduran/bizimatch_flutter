@@ -292,7 +292,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         if (tipo == 'like') {
           HapticFeedback.lightImpact();
           // Treat demo_1 as a forced match for demo presentation
-          if (toUid == 'demo_1') {
+          if (toUid.isNotEmpty) {
             final target = DemoService.instance.demoProfiles.firstWhere(
               (p) => p.uid == toUid,
               orElse: () => DemoService.instance.demoProfiles.first,
@@ -2222,7 +2222,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   Expanded(
                     flex: 3,
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
+                      padding: const EdgeInsets.fromLTRB(18, 12, 18, 14),
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.74),
@@ -2233,7 +2233,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                           ),
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                          padding: const EdgeInsets.fromLTRB(14, 9, 14, 9),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -2279,22 +2279,22 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 7),
                               Text(
                                 user.bio,
-                                maxLines: 2,
+                                maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   color: AppTheme.textSecondary,
-                                  fontSize: 12.5,
-                                  height: 1.25,
+                                  fontSize: 12.2,
+                                  height: 1.15,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 7),
                               Wrap(
-                                spacing: 6,
-                                runSpacing: 4,
+                                spacing: 5,
+                                runSpacing: 3,
                                 children: user.intereses
                                     .take(3)
                                     .map(
@@ -2395,7 +2395,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   Widget _miniInterestChip(String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: const Color(0xFFF3F8F6),
         borderRadius: BorderRadius.circular(999),
@@ -2404,7 +2404,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       child: Text(
         text,
         style: const TextStyle(
-          fontSize: 11.5,
+          fontSize: 10.8,
           fontWeight: FontWeight.w700,
           color: Color(0xFF4F675E),
         ),

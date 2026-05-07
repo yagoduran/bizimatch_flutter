@@ -368,9 +368,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       'Cuenta de presentación',
                       style: TextStyle(fontWeight: FontWeight.w700),
                     ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Elige quien eres en la demo. Al cambiar, se reinicia el mazo para ensenar un match limpio.',
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 12,
+                        height: 1.25,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     SizedBox(
-                      height: 82,
+                      height: 96,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: DemoService.instance.demoProfiles.length,
@@ -378,6 +387,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             const SizedBox(width: 12),
                         itemBuilder: (context, index) {
                           final p = DemoService.instance.demoProfiles[index];
+                          final selected =
+                              DemoService
+                                  .instance
+                                  .selectedDemoUser
+                                  .value
+                                  ?.uid ==
+                              p.uid;
                           return GestureDetector(
                             onTap: DemoService.instance.isDemoMode.value
                                 ? () {
@@ -385,13 +401,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       p.uid,
                                     );
                                     setState(() {});
+                                    _showInfo(
+                                      'Cuenta demo activa: ${p.nombre}. Ve a Explorar y da like para mostrar el match.',
+                                    );
                                   }
                                 : null,
                             child: Column(
                               children: [
-                                CircleAvatar(
-                                  radius: 28,
-                                  backgroundImage: AssetImage(p.fotoPerfil),
+                                Container(
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: selected
+                                          ? AppTheme.primary
+                                          : Colors.transparent,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Stack(
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 28,
+                                        backgroundImage: AssetImage(
+                                          p.fotoPerfil,
+                                        ),
+                                      ),
+                                      if (selected)
+                                        const Positioned(
+                                          right: -2,
+                                          bottom: -2,
+                                          child: CircleAvatar(
+                                            radius: 10,
+                                            backgroundColor: AppTheme.primary,
+                                            child: Icon(
+                                              Icons.check,
+                                              color: Colors.white,
+                                              size: 13,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
                                 ),
                                 const SizedBox(height: 6),
                                 SizedBox(
@@ -403,13 +455,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       fontSize: 12,
-                                      fontWeight:
-                                          DemoService
-                                                  .instance
-                                                  .selectedDemoUser
-                                                  .value
-                                                  ?.uid ==
-                                              p.uid
+                                      color: selected
+                                          ? AppTheme.primary
+                                          : AppTheme.textPrimary,
+                                      fontWeight: selected
                                           ? FontWeight.w800
                                           : FontWeight.w600,
                                     ),
