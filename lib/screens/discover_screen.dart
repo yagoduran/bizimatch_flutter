@@ -1869,55 +1869,58 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     opacity: 0.56,
                     key: _profileCardKey(next, 'next'),
                   ),
-                  GestureDetector(
-                    onPanStart: (_) {
-                      _snapBackController.stop();
-                      HapticFeedback.lightImpact();
-                    },
-                    onPanUpdate: (details) {
-                      setState(() => _dragOffset += details.delta);
-                      final crossed = _dragOffset.dx.abs() >= _swipeThreshold;
-                      if (crossed && !_didThresholdHaptic) {
-                        HapticFeedback.mediumImpact();
-                        _didThresholdHaptic = true;
-                      }
-                    },
-                    onPanEnd: (details) {
-                      final v = details.velocity.pixelsPerSecond.dx;
-                      if (_dragOffset.dx > _swipeThreshold || v > 800) {
-                        _pendingApprovedUid = current.uid;
-                        if (afinidad >= 85) {
-                          HapticFeedback.heavyImpact();
-                        } else {
-                          HapticFeedback.lightImpact();
+                  Positioned.fill(
+                    child: GestureDetector(
+                      onPanStart: (_) {
+                        _snapBackController.stop();
+                        HapticFeedback.lightImpact();
+                      },
+                      onPanUpdate: (details) {
+                        setState(() => _dragOffset += details.delta);
+                        final crossed = _dragOffset.dx.abs() >= _swipeThreshold;
+                        if (crossed && !_didThresholdHaptic) {
+                          HapticFeedback.mediumImpact();
+                          _didThresholdHaptic = true;
                         }
-                        _animateOut(true);
-                      } else if (_dragOffset.dx < -_swipeThreshold ||
-                          v < -800) {
-                        _pendingApprovedUid = null;
-                        HapticFeedback.selectionClick();
-                        _animateOut(false);
-                      } else {
-                        _snapBack();
-                      }
-                    },
-                    child: Transform.translate(
-                      offset: _dragOffset,
-                      child: Transform.scale(
-                        scale: 1 - (dragProgress * 0.035),
-                        child: _profileCard(
-                          current,
-                          afinidad,
-                          topOffset: 0,
-                          scale: 1,
-                          opacity: 1,
-                          showApprove: _dragOffset.dx > 8,
-                          showReject: _dragOffset.dx < -8,
-                          overlayOpacity: dragProgress,
-                          enableHero: true,
-                          dynamicRotation:
-                              (_dragOffset.dx / 260) * (math.pi / 18),
-                          key: _profileCardKey(current, 'current'),
+                      },
+                      onPanEnd: (details) {
+                        final v = details.velocity.pixelsPerSecond.dx;
+                        if (_dragOffset.dx > _swipeThreshold || v > 800) {
+                          _pendingApprovedUid = current.uid;
+                          if (afinidad >= 85) {
+                            HapticFeedback.heavyImpact();
+                          } else {
+                            HapticFeedback.lightImpact();
+                          }
+                          _animateOut(true);
+                        } else if (_dragOffset.dx < -_swipeThreshold ||
+                            v < -800) {
+                          _pendingApprovedUid = null;
+                          HapticFeedback.selectionClick();
+                          _animateOut(false);
+                        } else {
+                          _snapBack();
+                        }
+                      },
+                      child: Transform.translate(
+                        offset: _dragOffset,
+                        child: Transform.scale(
+                          scale: 1 - (dragProgress * 0.035),
+                          child: _profileCard(
+                            current,
+                            afinidad,
+                            topOffset: 0,
+                            scale: 1,
+                            opacity: 1,
+                            showApprove: _dragOffset.dx > 8,
+                            showReject: _dragOffset.dx < -8,
+                            overlayOpacity: dragProgress,
+                            enableHero: true,
+                            positioned: false,
+                            dynamicRotation:
+                                (_dragOffset.dx / 260) * (math.pi / 18),
+                            key: _profileCardKey(current, 'current'),
+                          ),
                         ),
                       ),
                     ),
@@ -2014,6 +2017,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     bool showReject = false,
     double overlayOpacity = 0,
     bool enableHero = false,
+    bool positioned = true,
     double dynamicRotation = 0,
     required Key key,
   }) {
@@ -2067,6 +2071,222 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
     final profileAvatarUrl = user.fotoPerfil;
 
+    final card = Opacity(
+      opacity: opacity,
+      child: Transform.scale(
+        scale: scale,
+        child: Transform.rotate(
+          angle: dynamicRotation,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: AppTheme.glassGradient,
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.58)),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primary.withValues(alpha: 0.22),
+                  blurRadius: 34,
+                  spreadRadius: -8,
+                  offset: const Offset(0, 16),
+                ),
+                BoxShadow(
+                  color: AppTheme.indigo.withValues(alpha: 0.12),
+                  blurRadius: 28,
+                  spreadRadius: -10,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: Column(
+                children: [
+                  Expanded(
+                    flex: 8,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (enableHero)
+                          Hero(tag: 'photo_${user.uid}', child: image)
+                        else
+                          image,
+                        const DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              stops: [0.55, 1.0],
+                              colors: [Color(0x00000000), Color(0xCC000000)],
+                            ),
+                          ),
+                        ),
+                        // Show profile avatar in corner if showing piso image
+                        if (showPisoImage)
+                          Positioned(
+                            top: 14,
+                            right: 14,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Color(0x80000000),
+                                    blurRadius: 8,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: CircleAvatar(
+                                radius: 28,
+                                backgroundColor: Colors.white,
+                                backgroundImage:
+                                    profileAvatarUrl.startsWith('assets/')
+                                    ? AssetImage(profileAvatarUrl)
+                                    : (profileAvatarUrl.startsWith('/')
+                                              ? FileImage(
+                                                  File(profileAvatarUrl),
+                                                )
+                                              : NetworkImage(profileAvatarUrl))
+                                          as ImageProvider,
+                              ),
+                            ),
+                          ),
+                        if (showApprove)
+                          _overlayTag(
+                            text: 'APROBADO',
+                            icon: Icons.home_work_rounded,
+                            color: AppTheme.primary,
+                            alignLeft: true,
+                            opacity: overlayOpacity,
+                          ),
+                        if (showReject)
+                          _overlayTag(
+                            text: 'DESCARTAR',
+                            icon: Icons.close_rounded,
+                            color: const Color(0xFFEA5A5A),
+                            alignLeft: false,
+                            opacity: overlayOpacity,
+                          ),
+                        Positioned(
+                          left: 18,
+                          right: 18,
+                          bottom: 18,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${user.nombre}, ${user.edad}',
+                                style: const TextStyle(
+                                  fontSize: 25,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '${user.origen} · ${user.horario == 'Manana' ? 'Mañana' : user.horario}',
+                                style: const TextStyle(color: Colors.white70),
+                              ),
+                              const SizedBox(height: 10),
+                              if (user.tienePiso &&
+                                  user.precioAlquilerPorPersona != null) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 7,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF10B981),
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  child: Text(
+                                    '¡Tiene piso! - ${user.precioAlquilerPorPersona!.round()}€/mes',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: affinityColor.withValues(
+                                alpha: isExceptionalAffinity ? 0.22 : 0.15,
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              border: isExceptionalAffinity
+                                  ? Border.all(
+                                      color: const Color(0xFFE2C15B),
+                                      width: 1.1,
+                                    )
+                                  : null,
+                              boxShadow: isExceptionalAffinity
+                                  ? const [
+                                      BoxShadow(
+                                        color: Color(0x80D4AF37),
+                                        blurRadius: 14,
+                                        spreadRadius: 1,
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Text(
+                              '$afinidad% de afinidad',
+                              style: TextStyle(
+                                color: affinityColor,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(100),
+                            child: LinearProgressIndicator(
+                              minHeight: 10,
+                              value: afinidad / 100,
+                              backgroundColor: const Color(0xFFE9F2EE),
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                AppTheme.primary,
+                              ),
+                            ),
+                          ),
+                          if ((user.voiceBioUrl ?? '').trim().isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            _voiceBioMiniPlayer(user),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (!positioned) {
+      return KeyedSubtree(key: key, child: card);
+    }
+
     return AnimatedPositioned(
       key: key,
       duration: AppTheme.motionFast,
@@ -2075,219 +2295,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       left: 0,
       right: 0,
       bottom: 0,
-      child: Opacity(
-        opacity: opacity,
-        child: Transform.scale(
-          scale: scale,
-          child: Transform.rotate(
-            angle: dynamicRotation,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: AppTheme.glassGradient,
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.58)),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primary.withValues(alpha: 0.22),
-                    blurRadius: 34,
-                    spreadRadius: -8,
-                    offset: const Offset(0, 16),
-                  ),
-                  BoxShadow(
-                    color: AppTheme.indigo.withValues(alpha: 0.12),
-                    blurRadius: 28,
-                    spreadRadius: -10,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(30),
-                child: Column(
-                  children: [
-                    Expanded(
-                      flex: 8,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          if (enableHero)
-                            Hero(tag: 'photo_${user.uid}', child: image)
-                          else
-                            image,
-                          const DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                stops: [0.55, 1.0],
-                                colors: [Color(0x00000000), Color(0xCC000000)],
-                              ),
-                            ),
-                          ),
-                          // Show profile avatar in corner if showing piso image
-                          if (showPisoImage)
-                            Positioned(
-                              top: 14,
-                              right: 14,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: Color(0x80000000),
-                                      blurRadius: 8,
-                                      offset: Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: CircleAvatar(
-                                  radius: 28,
-                                  backgroundColor: Colors.white,
-                                  backgroundImage:
-                                      profileAvatarUrl.startsWith('assets/')
-                                      ? AssetImage(profileAvatarUrl)
-                                      : (profileAvatarUrl.startsWith('/')
-                                                ? FileImage(
-                                                    File(profileAvatarUrl),
-                                                  )
-                                                : NetworkImage(
-                                                    profileAvatarUrl,
-                                                  ))
-                                            as ImageProvider,
-                                ),
-                              ),
-                            ),
-                          if (showApprove)
-                            _overlayTag(
-                              text: 'APROBADO',
-                              icon: Icons.home_work_rounded,
-                              color: AppTheme.primary,
-                              alignLeft: true,
-                              opacity: overlayOpacity,
-                            ),
-                          if (showReject)
-                            _overlayTag(
-                              text: 'DESCARTAR',
-                              icon: Icons.close_rounded,
-                              color: const Color(0xFFEA5A5A),
-                              alignLeft: false,
-                              opacity: overlayOpacity,
-                            ),
-                          Positioned(
-                            left: 18,
-                            right: 18,
-                            bottom: 18,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${user.nombre}, ${user.edad}',
-                                  style: const TextStyle(
-                                    fontSize: 25,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  '${user.origen} · ${user.horario == 'Manana' ? 'Mañana' : user.horario}',
-                                  style: const TextStyle(color: Colors.white70),
-                                ),
-                                const SizedBox(height: 10),
-                                if (user.tienePiso &&
-                                    user.precioAlquilerPorPersona != null) ...[
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 7,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF10B981),
-                                      borderRadius: BorderRadius.circular(18),
-                                    ),
-                                    child: Text(
-                                      '¡Tiene piso! - ${user.precioAlquilerPorPersona!.round()}€/mes',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: affinityColor.withValues(
-                                  alpha: isExceptionalAffinity ? 0.22 : 0.15,
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                border: isExceptionalAffinity
-                                    ? Border.all(
-                                        color: const Color(0xFFE2C15B),
-                                        width: 1.1,
-                                      )
-                                    : null,
-                                boxShadow: isExceptionalAffinity
-                                    ? const [
-                                        BoxShadow(
-                                          color: Color(0x80D4AF37),
-                                          blurRadius: 14,
-                                          spreadRadius: 1,
-                                        ),
-                                      ]
-                                    : null,
-                              ),
-                              child: Text(
-                                '$afinidad% de afinidad',
-                                style: TextStyle(
-                                  color: affinityColor,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(100),
-                              child: LinearProgressIndicator(
-                                minHeight: 10,
-                                value: afinidad / 100,
-                                backgroundColor: const Color(0xFFE9F2EE),
-                                valueColor: const AlwaysStoppedAnimation<Color>(
-                                  AppTheme.primary,
-                                ),
-                              ),
-                            ),
-                            if ((user.voiceBioUrl ?? '').trim().isNotEmpty) ...[
-                              const SizedBox(height: 10),
-                              _voiceBioMiniPlayer(user),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+      child: card,
     );
   }
 
