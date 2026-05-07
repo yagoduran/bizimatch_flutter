@@ -68,6 +68,74 @@ class _MainScaffoldState extends State<MainScaffold>
 
   bool _shouldFakeLoad(int index) => index == 1 || index == 3;
 
+  int _bottomIndexFor(int screenIndex) {
+    if (screenIndex <= 3) {
+      return screenIndex;
+    }
+    return 4;
+  }
+
+  void _selectScreen(int index) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _currentIndex = index;
+      if (_shouldFakeLoad(index)) {
+        _loadingRevision++;
+      }
+    });
+    _tabController.animateTo(
+      index,
+      duration: AppTheme.motionNavigation,
+      curve: AppTheme.motionCurveEmphasized,
+    );
+  }
+
+  Future<void> _openMoreMenu() async {
+    HapticFeedback.selectionClick();
+    final selected = await showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: GlassCard(
+              borderRadius: 28,
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  _MoreMenuTile(
+                    index: 4,
+                    icon: Icons.person_outline_rounded,
+                    title: 'Perfil',
+                    subtitle: 'Tu identidad y progreso',
+                  ),
+                  _MoreMenuTile(
+                    index: 5,
+                    icon: Icons.map_outlined,
+                    title: 'Mapa',
+                    subtitle: 'Pisos y servicios cercanos',
+                  ),
+                  _MoreMenuTile(
+                    index: 6,
+                    icon: Icons.tune_rounded,
+                    title: 'Ajustes',
+                    subtitle: 'Demo, notificaciones y privacidad',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (selected != null && mounted) {
+      _selectScreen(selected);
+    }
+  }
+
   Widget _buildTabBody(Widget screen, int index) {
     if (!_shouldFakeLoad(index)) {
       return screen;
@@ -209,20 +277,16 @@ class _MainScaffoldState extends State<MainScaffold>
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
+        currentIndex: _bottomIndexFor(_currentIndex),
+        showUnselectedLabels: false,
+        selectedFontSize: 12,
+        unselectedFontSize: 0,
         onTap: (index) {
-          HapticFeedback.selectionClick();
-          setState(() {
-            _currentIndex = index;
-            if (_shouldFakeLoad(index)) {
-              _loadingRevision++;
-            }
-          });
-          _tabController.animateTo(
-            index,
-            duration: AppTheme.motionNavigation,
-            curve: AppTheme.motionCurveEmphasized,
-          );
+          if (index == 4) {
+            _openMoreMenu();
+            return;
+          }
+          _selectScreen(index);
         },
         items: const [
           BottomNavigationBarItem(
@@ -239,22 +303,47 @@ class _MainScaffoldState extends State<MainScaffold>
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.home_work_outlined),
-            label: 'Mi Casa',
+            label: 'Casa',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline_rounded),
-            label: 'Perfil',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.map_outlined),
-            label: 'Mapa',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.tune_rounded),
-            label: 'Ajustes',
+            icon: Icon(Icons.more_horiz_rounded),
+            label: 'Más',
           ),
         ],
       ),
+    );
+  }
+}
+
+class _MoreMenuTile extends StatelessWidget {
+  const _MoreMenuTile({
+    required this.index,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final int index;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: AppTheme.primary.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Icon(icon, color: AppTheme.primary),
+      ),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+      subtitle: Text(subtitle),
+      trailing: const Icon(Icons.chevron_right_rounded),
+      onTap: () => Navigator.pop(context, index),
     );
   }
 }

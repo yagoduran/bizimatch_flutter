@@ -2058,6 +2058,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         ? Image.asset(
             mainImageUrl,
             fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
             cacheHeight: 800,
             cacheWidth: 400,
           )
@@ -2078,9 +2080,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         child: Transform.rotate(
           angle: dynamicRotation,
           child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
               gradient: AppTheme.glassGradient,
-              borderRadius: BorderRadius.circular(30),
+              borderRadius: BorderRadius.circular(34),
               border: Border.all(color: Colors.white.withValues(alpha: 0.58)),
               boxShadow: [
                 BoxShadow(
@@ -2098,11 +2101,11 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(30),
+              borderRadius: BorderRadius.circular(34),
               child: Column(
                 children: [
                   Expanded(
-                    flex: 8,
+                    flex: 7,
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
@@ -2215,9 +2218,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     ),
                   ),
                   Expanded(
-                    flex: 2,
+                    flex: 3,
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                      padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [

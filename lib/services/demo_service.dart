@@ -150,7 +150,7 @@ class DemoService {
         horario: 'Tarde',
         bio:
             'Profesional creativa buscando compañera/o para compartir gastos y buen rollo.',
-        fotoPerfil: 'assets/images/demo_people/maria.jpg',
+        fotoPerfil: 'assets/images/demo_people/descarga.jpg',
         intereses: ['Cocina', 'Yoga', 'Series'],
       ),
       UserProfile(
@@ -272,7 +272,6 @@ class DemoService {
 
   static List<UserProfile> _buildExtraDemoPeopleProfiles() {
     const peopleAssets = [
-      'assets/images/demo_people/descarga.jpg',
       'assets/images/demo_people/descarga (6).jpg',
       'assets/images/demo_people/descarga (7).jpg',
       'assets/images/demo_people/descarga (8).jpg',
