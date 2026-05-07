@@ -2040,8 +2040,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         ? Image.file(
             File(mainImageUrl),
             fit: BoxFit.cover,
-            cacheHeight: 800,
-            cacheWidth: 400,
+            width: double.infinity,
+            height: double.infinity,
             frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
               if (wasSynchronouslyLoaded || frame != null) return child;
               return _loadingImagePlaceholder();
@@ -2060,8 +2060,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,
-            cacheHeight: 800,
-            cacheWidth: 400,
           )
         : AppCachedNetworkImage(
             imageUrl: mainImageUrl.isEmpty ? fallbackImage : mainImageUrl,
@@ -2082,7 +2080,11 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              gradient: AppTheme.glassGradient,
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.white, Color(0xFFF8FCFA)],
+              ),
               borderRadius: BorderRadius.circular(34),
               border: Border.all(color: Colors.white.withValues(alpha: 0.58)),
               boxShadow: [
@@ -2221,60 +2223,94 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     flex: 3,
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: affinityColor.withValues(
-                                alpha: isExceptionalAffinity ? 0.22 : 0.15,
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                              border: isExceptionalAffinity
-                                  ? Border.all(
-                                      color: const Color(0xFFE2C15B),
-                                      width: 1.1,
-                                    )
-                                  : null,
-                              boxShadow: isExceptionalAffinity
-                                  ? const [
-                                      BoxShadow(
-                                        color: Color(0x80D4AF37),
-                                        blurRadius: 14,
-                                        spreadRadius: 1,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.74),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: const Color(0xFFE7F1EC),
+                            width: 1,
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 11,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: affinityColor.withValues(
+                                        alpha: isExceptionalAffinity
+                                            ? 0.18
+                                            : 0.11,
                                       ),
-                                    ]
-                                  : null,
-                            ),
-                            child: Text(
-                              '$afinidad% de afinidad',
-                              style: TextStyle(
-                                color: affinityColor,
-                                fontWeight: FontWeight.w700,
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Text(
+                                      '$afinidad% match',
+                                      style: TextStyle(
+                                        color: affinityColor,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(100),
+                                      child: LinearProgressIndicator(
+                                        minHeight: 8,
+                                        value: afinidad / 100,
+                                        backgroundColor: const Color(
+                                          0xFFE9F2EE,
+                                        ),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              affinityColor,
+                                            ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(100),
-                            child: LinearProgressIndicator(
-                              minHeight: 10,
-                              value: afinidad / 100,
-                              backgroundColor: const Color(0xFFE9F2EE),
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                AppTheme.primary,
+                              const SizedBox(height: 8),
+                              Text(
+                                user.bio,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 12.5,
+                                  height: 1.25,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
-                            ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 4,
+                                children: user.intereses
+                                    .take(3)
+                                    .map(
+                                      (interest) => _miniInterestChip(interest),
+                                    )
+                                    .toList(growable: false),
+                              ),
+                              if ((user.voiceBioUrl ?? '')
+                                  .trim()
+                                  .isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                _voiceBioMiniPlayer(user),
+                              ],
+                            ],
                           ),
-                          if ((user.voiceBioUrl ?? '').trim().isNotEmpty) ...[
-                            const SizedBox(height: 10),
-                            _voiceBioMiniPlayer(user),
-                          ],
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -2352,6 +2388,25 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           fontSize: 12,
           fontWeight: FontWeight.w700,
           color: Color(0xFF4E645A),
+        ),
+      ),
+    );
+  }
+
+  Widget _miniInterestChip(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F8F6),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFFE0ECE7)),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF4F675E),
         ),
       ),
     );
