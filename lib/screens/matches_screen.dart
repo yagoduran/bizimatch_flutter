@@ -7,6 +7,8 @@ import '../models/user_profile.dart';
 import '../services/firestore_service.dart';
 import '../widgets/app_cached_network_image.dart';
 import 'chat_detail_screen.dart';
+import '../services/demo_service.dart';
+import 'demo_chat_screen.dart';
 
 class MatchesScreen extends StatefulWidget {
   const MatchesScreen({super.key});
@@ -25,11 +27,20 @@ class _MatchesScreenState extends State<MatchesScreen> {
   @override
   void initState() {
     super.initState();
-    _threadsStream = _firestore.chatThreads();
-    _myUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    if (DemoService.instance.isDemoMode.value) {
+      _threadsStream = Stream.value(DemoService.instance.demoThreads);
+      _myUid = 'demo_me';
+    } else {
+      _threadsStream = _firestore.chatThreads();
+      _myUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    }
   }
 
   Future<UserProfile?> _userFuture(String uid) {
+    if (DemoService.instance.isDemoMode.value && uid.startsWith('demo')) {
+      final demo = DemoService.instance.demoProfiles.firstWhere((p) => p.uid == uid, orElse: () => DemoService.instance.demoProfiles.first);
+      return Future.value(demo);
+    }
     return _userCache.putIfAbsent(uid, () => _firestore.getUserById(uid));
   }
 
@@ -41,6 +52,10 @@ class _MatchesScreenState extends State<MatchesScreen> {
     String avatarUrl,
   ) async {
     HapticFeedback.selectionClick();
+    if (DemoService.instance.isDemoMode.value && otherUid.startsWith('demo')) {
+      await Navigator.push(context, MaterialPageRoute(builder: (_) => DemoChatScreen(otherUser: DemoService.instance.demoProfiles.firstWhere((p) => p.uid == otherUid))));
+      return;
+    }
     await Navigator.push(
       context,
       PageRouteBuilder<void>(

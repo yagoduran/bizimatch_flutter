@@ -56,6 +56,20 @@ class AppCachedAvatar extends StatelessWidget {
       );
     }
 
+    if (imageUrl.startsWith('assets/')) {
+      return CircleAvatar(
+        radius: radius,
+        backgroundColor: backgroundColor,
+        child: ClipOval(
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: Image.asset(imageUrl, fit: BoxFit.cover, width: size, height: size),
+          ),
+        ),
+      );
+    }
+
     return CircleAvatar(
       radius: radius,
       backgroundColor: backgroundColor,

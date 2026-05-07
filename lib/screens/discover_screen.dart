@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app_theme.dart';
+import '../services/demo_service.dart';
+import 'demo_chat_screen.dart';
 import '../models/escuadron_model.dart';
 import '../models/user_model.dart';
 import '../models/user_profile.dart';
@@ -181,6 +183,47 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       duration: const Duration(milliseconds: 900),
     )..repeat();
 
+    // Listen to demo mode toggle to switch data source
+    DemoService.instance.isDemoMode.addListener(() {
+      final demoOn = DemoService.instance.isDemoMode.value;
+      if (demoOn) {
+        _myProfileSub?.cancel();
+        _discoverSub?.cancel();
+        final demoMe = DemoService.instance.selectedDemoUser.value;
+        setState(() {
+          _myProfile = demoMe;
+          _allProfiles = DemoService.instance.demoProfiles;
+          _filteredProfiles = _filtrar(_allProfiles);
+          _loading = false;
+          _activeIndex = 0;
+        });
+        _scheduleNextProfilePrecache();
+      } else {
+        // Re-subscribe to Firestore streams
+        _myProfileSub = _firestoreService.myProfileStream().listen((profile) {
+          if (!mounted) return;
+          setState(() {
+            _myProfile = profile;
+            _filteredProfiles = _filtrar(_allProfiles);
+            _loading = false;
+          });
+          _scheduleNextProfilePrecache();
+        });
+        _discoverSub = _firestoreService.discoverProfiles().listen((profiles) {
+          if (!mounted) return;
+          setState(() {
+            _allProfiles = profiles;
+            _filteredProfiles = _filtrar(_allProfiles);
+            _loading = false;
+            if (_activeIndex >= _filteredProfiles.length && _filteredProfiles.isNotEmpty) {
+              _activeIndex = 0;
+            }
+          });
+          _scheduleNextProfilePrecache();
+        });
+      }
+    });
+
     _audioStateSub = _audioPlayer.onPlayerStateChanged.listen((state) {
       if (!mounted) {
         return;
@@ -226,6 +269,35 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   Future<void> _guardarSwipeYDetectarMatch(String toUid, String tipo) async {
     try {
+      // If demo mode is active, avoid any Firebase calls and use local demo logic
+      if (DemoService.instance.isDemoMode.value) {
+        if (tipo == 'like') {
+          // Treat demo_1 as a forced match for demo presentation
+          if (toUid == 'demo_1') {
+            final target = DemoService.instance.demoProfiles.firstWhere((p) => p.uid == toUid, orElse: () => DemoService.instance.demoProfiles.first);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Has dado like — ¡es un Vínculo!')),
+              );
+              _showDemoMatchOverlay(target);
+            }
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Has dado like (Modo Demo).')),
+              );
+            }
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Dislike registrado (Modo Demo).')),
+            );
+          }
+        }
+        return;
+      }
+
       final reward = await _firestoreService.guardarSwipe(
         toUid: toUid,
         tipo: tipo,
@@ -447,6 +519,32 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     );
   }
 
+  void _showDemoMatchOverlay(UserProfile targetUser) {
+    showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      barrierLabel: 'demo-match',
+      barrierColor: Colors.black.withOpacity(0.5),
+      transitionDuration: const Duration(milliseconds: 360),
+      pageBuilder: (dialogContext, _, __) {
+        return _DemoMatchOverlay(
+          me: _myProfile,
+          other: targetUser,
+          onSendMessage: () {
+            Navigator.pop(dialogContext);
+            Navigator.push(
+              context,
+              MaterialPageRoute<void>(builder: (_) => DemoChatScreen(otherUser: targetUser)),
+            );
+          },
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut), child: child);
+      },
+    );
+  }
+
   void _setLikePressed(bool value) {
     if (_isLikePressed == value || !mounted) {
       return;
@@ -498,6 +596,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       return FileImage(File(user.fotoPerfil));
     }
 
+    if (user.fotoPerfil.startsWith('assets/')) {
+      return AssetImage(user.fotoPerfil);
+    }
+
     final fallbackImage = user.tienePiso
         ? _unsplashRoomByContext()
         : _unsplashPortraitByGender(user.genero);
@@ -507,6 +609,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       maxWidth: 500,
     );
   }
+
 
   Key _profileCardKey(UserProfile user, String slot) {
     final id = user.uid.trim();
@@ -2280,6 +2383,104 @@ class _MatchCelebrationOverlay extends StatefulWidget {
   @override
   State<_MatchCelebrationOverlay> createState() =>
       _MatchCelebrationOverlayState();
+}
+
+class _DemoMatchOverlay extends StatefulWidget {
+  const _DemoMatchOverlay({required this.me, required this.other, required this.onSendMessage});
+
+  final UserProfile? me;
+  final UserProfile other;
+  final VoidCallback onSendMessage;
+
+  @override
+  State<_DemoMatchOverlay> createState() => _DemoMatchOverlayState();
+}
+
+class _DemoMatchOverlayState extends State<_DemoMatchOverlay> with SingleTickerProviderStateMixin {
+  late final AnimationController _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _anim = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _anim.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final me = widget.me;
+    return Material(
+      color: Colors.transparent,
+      child: Stack(
+        children: [
+          Positioned.fill(child: Container(color: Colors.black.withOpacity(0.46))),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircleAvatar(radius: 48, backgroundImage: me != null ? (me.fotoPerfil.startsWith('assets/') ? AssetImage(me.fotoPerfil) : NetworkImage(me.fotoPerfil)) as ImageProvider : const AssetImage('assets/images/logo.png')),
+                      const SizedBox(width: 18),
+                      CircleAvatar(radius: 48, backgroundImage: widget.other.fotoPerfil.startsWith('assets/') ? AssetImage(widget.other.fotoPerfil) : NetworkImage(widget.other.fotoPerfil)),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  AnimatedBuilder(
+                    animation: _anim,
+                    builder: (context, child) {
+                      final t = _anim.value;
+                      final scale = 1.0 + 0.06 * t;
+                      return Transform.scale(
+                        scale: scale,
+                        child: child,
+                      );
+                    },
+                    child: const Text(
+                      "¡IT'S A MATCH!",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 36,
+                        fontWeight: FontWeight.w900,
+                        shadows: [Shadow(color: Colors.black45, blurRadius: 8, offset: Offset(0, 4))],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('¡Han conectado! Ahora podéis hablar para coordinar la visita.', style: TextStyle(color: Color(0xE6FFFFFF))),
+                  const SizedBox(height: 18),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xFF10B981)),
+                        child: const Text('Cerrar'),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: widget.onSendMessage,
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981)),
+                        child: const Text('Enviar mensaje'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _MatchCelebrationOverlayState extends State<_MatchCelebrationOverlay>

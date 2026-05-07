@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../app_theme.dart';
 import '../services/firestore_service.dart';
+import '../services/demo_service.dart';
 import 'login_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -304,6 +305,77 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 14),
           _section(
+            title: 'Configuración de Presentación',
+            child: ValueListenableBuilder<bool>(
+              valueListenable: DemoService.instance.isDemoMode,
+              builder: (context, isDemo, _) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      activeThumbColor: AppTheme.primary,
+                      value: isDemo,
+                      title: const Text('Activar Modo Demo'),
+                      subtitle: const Text('Usar perfiles y chats locales sin conexión.'),
+                      onChanged: (value) {
+                        HapticFeedback.selectionClick();
+                        DemoService.instance.enableDemo(value);
+                        setState(() {});
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    Text('Cuenta de presentación', style: TextStyle(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 82,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: DemoService.instance.demoProfiles.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 12),
+                        itemBuilder: (context, index) {
+                          final p = DemoService.instance.demoProfiles[index];
+                          return GestureDetector(
+                            onTap: DemoService.instance.isDemoMode.value
+                                ? () {
+                                    DemoService.instance.selectDemoUserByUid(p.uid);
+                                    setState(() {});
+                                  }
+                                : null,
+                            child: Column(
+                              children: [
+                                CircleAvatar(
+                                  radius: 28,
+                                  backgroundImage: AssetImage(p.fotoPerfil),
+                                ),
+                                const SizedBox(height: 6),
+                                SizedBox(
+                                  width: 72,
+                                  child: Text(
+                                    p.nombre,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: DemoService.instance.selectedDemoUser.value?.uid == p.uid
+                                          ? FontWeight.w800
+                                          : FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          _section(
             title: 'Notificaciones',
             child: Column(
               children: [
@@ -513,6 +585,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ? null
                   : () {
                       HapticFeedback.mediumImpact();
+                      if (DemoService.instance.isDemoMode.value) {
+                        _showInfo('Modo Demo activo — acción deshabilitada.');
+                        return;
+                      }
                       seedDatabase();
                     },
               icon: _isBusy
@@ -570,6 +646,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: _isBusy
                       ? null
                       : () {
+                          if (DemoService.instance.isDemoMode.value) {
+                            HapticFeedback.selectionClick();
+                            _showInfo('Modo Demo activo — no se puede eliminar cuenta demo.');
+                            return;
+                          }
                           HapticFeedback.heavyImpact();
                           _confirmarEliminarCuenta();
                         },
