@@ -1160,6 +1160,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           return const Center(child: CircularProgressIndicator());
         }
 
+        final isAssetPath = profile.fotoPerfil.startsWith('assets/');
         final isLocalPath = profile.fotoPerfil.startsWith('/');
         final avatarUrl = profile.fotoPerfil.isEmpty
             ? 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80'
@@ -1193,7 +1194,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       InkWell(
                         onTap: () => _pickProfilePhoto(profile),
                         borderRadius: BorderRadius.circular(58),
-                        child: isLocalPath
+                        child: isAssetPath
+                            ? CircleAvatar(
+                                radius: 56,
+                                backgroundImage: AssetImage(profile.fotoPerfil),
+                              )
+                            : isLocalPath
                             ? CircleAvatar(
                                 radius: 56,
                                 backgroundImage: FileImage(
