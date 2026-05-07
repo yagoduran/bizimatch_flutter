@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+﻿import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -107,7 +107,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Revisa tu conexión o vuelve a intentarlo más tarde.',
+                      'Revisa tu conexi├│n o vuelve a intentarlo m├ís tarde.',
                       style: Theme.of(context).textTheme.bodyMedium,
                       textAlign: TextAlign.center,
                     ),
@@ -192,9 +192,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
     return [
       CommunityPlan(
         id: 'demo_plan_1',
-        titulo: 'CaÃ±as para romper el hielo',
+        titulo: 'Ca├â┬▒as para romper el hielo',
         descripcion:
-            'Quedada informal para conocer futuros compaÃ±eros de piso por el centro.',
+            'Quedada informal para conocer futuros compa├â┬▒eros de piso por el centro.',
         creadorId: 'demo_1',
         creadorNombre: 'Daniel Ruiz',
         ciudad: city,
@@ -206,7 +206,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
       ),
       CommunityPlan(
         id: 'demo_plan_2',
-        titulo: 'Tour de pisos por ChamberÃ­',
+        titulo: 'Tour de pisos por Chamber├â┬¡',
         descripcion:
             'Ruta corta para visitar zonas, comparar precios y compartir impresiones.',
         creadorId: 'demo_4',
@@ -313,7 +313,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
               _buildTag(plan.tipoPlan.label, plan.tipoPlan.icon),
               _buildTag(plan.ciudad, Icons.location_on_outlined),
               _buildTag(
-                past ? 'Pasado' : 'Próximo',
+                past ? 'Pasado' : 'Pr├│ximo',
                 past ? Icons.history_toggle_off : Icons.schedule,
               ),
             ],
@@ -321,7 +321,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           const SizedBox(height: 8),
           Text(plan.descripcion, style: const TextStyle(color: Colors.black87)),
           const SizedBox(height: 8),
-          Text('🕒 $day/$month $hh:$mm  •  ${plan.ciudad}'),
+          Text('­ƒòÆ $day/$month $hh:$mm  ÔÇó  ${plan.ciudad}'),
           const SizedBox(height: 3),
           Text('Organiza: ${plan.creadorNombre}'),
           const SizedBox(height: 3),
@@ -354,7 +354,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(plan.asistentesIds.contains(uid)
-                              ? 'Te has apuntado al plan ✅'
+                              ? 'Te has apuntado al plan Ô£à'
                               : 'Te has dado de baja del plan'),
                         ),
                       );
@@ -465,12 +465,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
                                 value: type,
                                 child: Text(
                                   '${type.label} ${type.icon == Icons.local_bar
-                                      ? '🍻'
+                                      ? '­ƒì╗'
                                       : type.icon == Icons.directions_run
-                                      ? '🏃'
+                                      ? '­ƒÅâ'
                                       : type.icon == Icons.map
-                                      ? '🗺️'
-                                      : '✨'}',
+                                      ? '­ƒù║´©Å'
+                                      : 'Ô£¿'}',
                                 ),
                               ),
                             )
@@ -554,7 +554,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
       if (!mounted) return;
       HapticFeedback.mediumImpact();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Plan publicado en Comunidad ✅')),
+        const SnackBar(content: Text('Plan publicado en Comunidad Ô£à')),
       );
     } catch (e) {
       if (!mounted) return;

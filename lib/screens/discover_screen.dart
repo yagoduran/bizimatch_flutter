@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lottie/lottie.dart';
 
 import '../app_theme.dart';
 import '../services/demo_service.dart';
@@ -64,8 +65,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   final Map<String, Duration> _voiceDurationsByUid = <String, Duration>{};
 
   // Squad Mode
-  bool _buscarCompaeros =
-      false; // true = look for roommates, false = look for housing
+  bool _buscarCompaeros = false;
   final EscuadronService _escuadronService = EscuadronService.instance;
 
   RangeValues _edadRango = const RangeValues(20, 40);
@@ -120,26 +120,15 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           })
           ..addStatusListener((status) {
             if (status == AnimationStatus.completed) {
-              // Guardar swipe en interacciones
-              if (_pendingApprovedUid != null &&
-                  _activeIndex < _filteredProfiles.length) {
-                final toUid = _filteredProfiles[_activeIndex].uid;
+              final current = _currentProfileOrNull();
+              if (current != null && _pendingApprovedUid != null) {
                 final tipo = _swipeLike ? 'like' : 'dislike';
-                _guardarSwipeYDetectarMatch(toUid, tipo);
+                _guardarSwipeYDetectarMatch(current.uid, tipo);
               }
-
-              _swipeOutController.reset();
-              _dragOffset = Offset.zero;
-              _didThresholdHaptic = false;
               _pendingApprovedUid = null;
-              setState(() {
-                _activeIndex += 1;
-                if (_activeIndex >= _filteredProfiles.length &&
-                    _filteredProfiles.isNotEmpty) {
-                  _activeIndex = 0;
-                }
-              });
-              _scheduleNextProfilePrecache();
+              _swipeLike = false;
+              _swipeOutController.reset();
+              _advanceProfileIfNeeded();
             }
           });
 
@@ -221,33 +210,34 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final demoMe =
         DemoService.instance.selectedDemoUser.value ??
         DemoService.instance.demoProfiles.first;
-    DemoService.instance.selectedDemoUser.value ??= demoMe;
-    setState(() {
-      _myProfile = demoMe;
-      _allProfiles = DemoService.instance.demoProfiles
-          .where((p) => p.uid != demoMe.uid)
-          .toList(growable: false);
-      _filteredProfiles = _filtrar(_allProfiles);
-      _loading = false;
-      _activeIndex = 0;
-    });
-    _scheduleNextProfilePrecache();
+    _myProfile = demoMe;
+    _allProfiles = DemoService.instance.demoProfiles
+        .where((profile) => profile.uid != demoMe.uid)
+        .toList();
+    _filteredProfiles = _filtrar(_allProfiles);
+    _activeIndex = 0;
+    _loading = false;
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _subscribeToFirestoreProfiles() {
     _myProfileSub?.cancel();
     _discoverSub?.cancel();
+    _loading = true;
+    if (mounted) {
+      setState(() {});
+    }
+
     _myProfileSub = _firestoreService.myProfileStream().listen((profile) {
       if (!mounted) {
         return;
       }
-      setState(() {
-        _myProfile = profile;
-        _filteredProfiles = _filtrar(_allProfiles);
-        _loading = false;
-      });
+      setState(() => _myProfile = profile);
       _scheduleNextProfilePrecache();
     });
+
     _discoverSub = _firestoreService.discoverProfiles().listen((profiles) {
       if (!mounted) {
         return;
@@ -255,14 +245,38 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       setState(() {
         _allProfiles = profiles;
         _filteredProfiles = _filtrar(_allProfiles);
-        _loading = false;
-        if (_activeIndex >= _filteredProfiles.length &&
-            _filteredProfiles.isNotEmpty) {
+        if (_activeIndex >= _filteredProfiles.length) {
           _activeIndex = 0;
         }
+        _loading = false;
       });
       _scheduleNextProfilePrecache();
     });
+  }
+
+  UserProfile? _currentProfileOrNull() {
+    if (_filteredProfiles.isEmpty) {
+      return null;
+    }
+    if (_activeIndex < 0 || _activeIndex >= _filteredProfiles.length) {
+      return _filteredProfiles.first;
+    }
+    return _filteredProfiles[_activeIndex];
+  }
+
+  void _advanceProfileIfNeeded() {
+    if (_filteredProfiles.isEmpty) {
+      return;
+    }
+    setState(() {
+      if (_activeIndex < _filteredProfiles.length - 1) {
+        _activeIndex += 1;
+      } else {
+        _activeIndex = 0;
+      }
+      _dragOffset = Offset.zero;
+    });
+    _scheduleNextProfilePrecache();
   }
 
   void _onDemoReset() {
@@ -1988,7 +2002,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         width: isPressed ? 66 : 72,
         height: isPressed ? 66 : 72,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Colors.white.withValues(alpha: 0.96),
           borderRadius: BorderRadius.circular(100),
           border: Border.all(
             color: color.withValues(alpha: isPressed ? 0.62 : 0.4),
@@ -1996,9 +2010,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           ),
           boxShadow: [
             BoxShadow(
-              color: Color(0x140E1E18),
-              blurRadius: isPressed ? 10 : 18,
-              offset: Offset(0, isPressed ? 4 : 8),
+              color: color.withValues(alpha: 0.32),
+              blurRadius: isPressed ? 18 : 28,
+              spreadRadius: isPressed ? 1 : 3,
+              offset: Offset(0, isPressed ? 5 : 12),
             ),
           ],
         ),
@@ -2720,6 +2735,18 @@ class _MatchCelebrationOverlayState extends State<_MatchCelebrationOverlay>
         children: [
           Positioned.fill(
             child: Container(color: Colors.black.withValues(alpha: 0.34)),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: 0.95,
+                child: Lottie.asset(
+                  'assets/animations/match_celebration.json',
+                  fit: BoxFit.cover,
+                  repeat: true,
+                ),
+              ),
+            ),
           ),
           Align(
             alignment: Alignment.topCenter,

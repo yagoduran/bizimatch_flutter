@@ -155,8 +155,20 @@ class _MatchesScreenState extends State<MatchesScreen> {
 
                   final threads = snapshot.data ?? const <ChatThread>[];
                   if (threads.isEmpty) {
-                    return const Center(
-                      child: Text('Aun no tienes conversaciones activas.'),
+                    return EmptyStateWidget(
+                      icon: Icons.forum_outlined,
+                      title: 'No tienes conversaciones activas',
+                      message:
+                          'Cuando hagas match o te apuntes a un plan, verás aquí los vínculos disponibles.',
+                      actionLabel: 'Explorar perfiles',
+                      onAction: () {
+                        HapticFeedback.selectionClick();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Ve a Descubrir para empezar a crear vínculos.'),
+                          ),
+                        );
+                      },
                     );
                   }
 

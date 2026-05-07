@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 class AppTheme {
   const AppTheme._();
 
-  static const Color background = Color(0xFFF7FAF8);
-  static const Color surface = Color(0xFFFFFFFF);
+  static const Color background = Color(0xFFF4F8F6);
+  static const Color surface = Color(0xFFFDFEFE);
   static const Color primary = Color(0xFF10B981);
   static const Color turquoise = Color(0xFF22D3EE);
   static const Color indigo = Color(0xFF6366F1);
@@ -24,7 +24,7 @@ class AppTheme {
   static const LinearGradient glassGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xBFFFFFFF), Color(0x66FFFFFF), Color(0x1A10B981)],
+    colors: [Color(0xCCFFFFFF), Color(0x66FFFFFF), Color(0x14FFFFFF)],
   );
 
   // Motion tokens for a consistent native-feel across screens.
@@ -77,16 +77,16 @@ class AppTheme {
       ),
       textTheme: textTheme,
       appBarTheme: AppBarTheme(
-        backgroundColor: Colors.white.withValues(alpha: 0.62),
+        backgroundColor: Colors.white.withValues(alpha: 0.56),
         foregroundColor: textPrimary,
         centerTitle: true,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
       ),
       cardTheme: CardThemeData(
-        color: Colors.white.withValues(alpha: 0.72),
+        color: Colors.white.withValues(alpha: 0.16),
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
       dividerColor: const Color(0xFFE4ECE7),
       snackBarTheme: SnackBarThemeData(
@@ -97,7 +97,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.72),
+        fillColor: Colors.white.withValues(alpha: 0.74),
         hintStyle: const TextStyle(color: textSecondary),
         labelStyle: const TextStyle(color: textSecondary),
         border: OutlineInputBorder(
@@ -146,9 +146,34 @@ class AppTheme {
             borderRadius: BorderRadius.circular(24),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-          shadowColor: primary.withValues(alpha: 0.42),
-          elevation: 8,
+          shadowColor: primary.withValues(alpha: 0.48),
+          elevation: 10,
         ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: primary.withValues(alpha: 0.18)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          foregroundColor: textPrimary,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: primary,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        ),
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: primary,
+        foregroundColor: Colors.white,
+        elevation: 10,
       ),
     );
   }

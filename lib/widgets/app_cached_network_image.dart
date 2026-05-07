@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../app_theme.dart';
 
@@ -21,15 +22,73 @@ class AppCachedNetworkImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CachedNetworkImage(
+    return PremiumImage(
       imageUrl: imageUrl,
       fit: fit,
       width: width,
       height: height,
       memCacheWidth: memCacheWidth,
-      placeholder: (context, url) => const _EmeraldLoadingPlaceholder(),
-      errorWidget: (context, url, error) => const _EmeraldErrorPlaceholder(),
     );
+  }
+}
+
+class PremiumImage extends StatelessWidget {
+  const PremiumImage({
+    required this.imageUrl,
+    super.key,
+    this.fit,
+    this.width,
+    this.height,
+    this.borderRadius,
+    this.memCacheWidth = 500,
+  });
+
+  final String imageUrl;
+  final BoxFit? fit;
+  final double? width;
+  final double? height;
+  final BorderRadius? borderRadius;
+  final int memCacheWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final resolved = imageUrl.trim();
+    Widget content;
+
+    if (resolved.isEmpty) {
+      content = const _ImageShimmerPlaceholder();
+    } else if (resolved.startsWith('assets/')) {
+      content = Image.asset(
+        resolved,
+        fit: fit,
+        width: width,
+        height: height,
+        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+          if (wasSynchronouslyLoaded || frame != null) {
+            return child;
+          }
+          return const _ImageShimmerPlaceholder();
+        },
+        errorBuilder: (context, error, stackTrace) =>
+            const _EmeraldErrorPlaceholder(),
+      );
+    } else {
+      content = CachedNetworkImage(
+        imageUrl: resolved,
+        fit: fit,
+        width: width,
+        height: height,
+        memCacheWidth: memCacheWidth,
+        placeholder: (context, url) => const _ImageShimmerPlaceholder(),
+        errorWidget: (context, url, error) => const _EmeraldErrorPlaceholder(),
+      );
+    }
+
+    if (borderRadius != null) {
+      return ClipRRect(borderRadius: borderRadius!, child: content);
+    }
+
+    return content;
   }
 }
 
@@ -56,20 +115,6 @@ class AppCachedAvatar extends StatelessWidget {
       );
     }
 
-    if (imageUrl.startsWith('assets/')) {
-      return CircleAvatar(
-        radius: radius,
-        backgroundColor: backgroundColor,
-        child: ClipOval(
-          child: SizedBox(
-            width: size,
-            height: size,
-            child: Image.asset(imageUrl, fit: BoxFit.cover, width: size, height: size),
-          ),
-        ),
-      );
-    }
-
     return CircleAvatar(
       radius: radius,
       backgroundColor: backgroundColor,
@@ -77,7 +122,7 @@ class AppCachedAvatar extends StatelessWidget {
         child: SizedBox(
           width: size,
           height: size,
-          child: AppCachedNetworkImage(
+          child: PremiumImage(
             imageUrl: imageUrl,
             fit: BoxFit.cover,
             width: size,
@@ -89,23 +134,15 @@ class AppCachedAvatar extends StatelessWidget {
   }
 }
 
-class _EmeraldLoadingPlaceholder extends StatelessWidget {
-  const _EmeraldLoadingPlaceholder();
+class _ImageShimmerPlaceholder extends StatelessWidget {
+  const _ImageShimmerPlaceholder();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFFF3F5F4),
-      child: const Center(
-        child: SizedBox(
-          width: 28,
-          height: 28,
-          child: CircularProgressIndicator(
-            strokeWidth: 2.4,
-            color: AppTheme.primary,
-          ),
-        ),
-      ),
+    return Shimmer.fromColors(
+      baseColor: const Color(0xFFD9E6DF),
+      highlightColor: const Color(0xFFF7FBF9),
+      child: Container(color: Colors.white),
     );
   }
 }

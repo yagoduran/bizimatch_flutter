@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../app_theme.dart';
 
@@ -11,9 +12,9 @@ class GlassCard extends StatelessWidget {
     super.key,
     this.padding = const EdgeInsets.all(20),
     this.margin,
-    this.borderRadius = 28,
-    this.opacity = 0.66,
-    this.blur = 18,
+    this.borderRadius = 24,
+    this.opacity = 0.14,
+    this.blur = 10,
     this.glowColor = AppTheme.primary,
     this.gradient,
   });
@@ -33,45 +34,57 @@ class GlassCard extends StatelessWidget {
       margin: margin,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            glowColor.withValues(alpha: 0.22),
+            Colors.white.withValues(alpha: 0.12),
+            AppTheme.indigo.withValues(alpha: 0.10),
+          ],
+        ),
         boxShadow: [
           BoxShadow(
             color: glowColor.withValues(alpha: 0.18),
-            blurRadius: 30,
-            spreadRadius: -8,
-            offset: const Offset(0, 18),
+            blurRadius: 26,
+            spreadRadius: -10,
+            offset: const Offset(0, 14),
           ),
           const BoxShadow(
-            color: Color(0x1A0B1220),
+            color: Color(0x120B1220),
             blurRadius: 18,
             offset: Offset(0, 10),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-          child: Container(
-            padding: padding,
-            decoration: BoxDecoration(
-              gradient:
-                  gradient ??
-                  LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Colors.white.withValues(alpha: opacity),
-                      Colors.white.withValues(alpha: 0.34),
-                      AppTheme.primary.withValues(alpha: 0.08),
-                    ],
-                  ),
-              borderRadius: BorderRadius.circular(borderRadius),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.62),
-                width: 1.2,
+      child: Padding(
+        padding: const EdgeInsets.all(1),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(borderRadius - 1),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+            child: Container(
+              padding: padding,
+              decoration: BoxDecoration(
+                gradient:
+                    gradient ??
+                    LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white.withValues(alpha: opacity),
+                        Colors.white.withValues(alpha: 0.22),
+                        AppTheme.primary.withValues(alpha: 0.05),
+                      ],
+                    ),
+                borderRadius: BorderRadius.circular(borderRadius - 1),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.26),
+                  width: 1,
+                ),
               ),
+              child: child,
             ),
-            child: child,
           ),
         ),
       ),
@@ -168,54 +181,55 @@ class _ShimmerSkeletonState extends State<ShimmerSkeleton>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) {
-        return Padding(
-          padding: widget.padding,
-          child: Column(
-            children: List.generate(widget.itemCount, (index) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: GlassCard(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      _ShimmerBox(
-                        progress: _controller.value,
-                        width: 54,
-                        height: 54,
-                        radius: 18,
+    return Padding(
+      padding: widget.padding,
+      child: Shimmer.fromColors(
+        baseColor: const Color(0xFFD9E6DF),
+        highlightColor: const Color(0xFFF8FBFA),
+        period: const Duration(milliseconds: 1200),
+        child: Column(
+          children: List.generate(widget.itemCount, (index) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: GlassCard(
+                padding: const EdgeInsets.all(16),
+                borderRadius: 24,
+                child: Row(
+                  children: [
+                    _ShimmerBox(
+                      progress: _controller.value,
+                      width: 54,
+                      height: 54,
+                      radius: 18,
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _ShimmerBox(
+                            progress: _controller.value,
+                            width: double.infinity,
+                            height: 14,
+                            radius: 7,
+                          ),
+                          const SizedBox(height: 10),
+                          _ShimmerBox(
+                            progress: _controller.value,
+                            width: 160,
+                            height: 12,
+                            radius: 6,
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _ShimmerBox(
-                              progress: _controller.value,
-                              width: double.infinity,
-                              height: 14,
-                              radius: 7,
-                            ),
-                            const SizedBox(height: 10),
-                            _ShimmerBox(
-                              progress: _controller.value,
-                              width: 160,
-                              height: 12,
-                              radius: 6,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              );
-            }),
-          ),
-        );
-      },
+              ),
+            );
+          }),
+        ),
+      ),
     );
   }
 }
@@ -312,6 +326,162 @@ class _AnimatedOrganicBackgroundState extends State<AnimatedOrganicBackground>
         );
       },
       child: widget.child,
+    );
+  }
+}
+
+class EmptyStateWidget extends StatelessWidget {
+  const EmptyStateWidget({
+    required this.title,
+    required this.message,
+    required this.actionLabel,
+    required this.onAction,
+    super.key,
+    this.icon = Icons.home_work_outlined,
+    this.secondaryActionLabel,
+    this.onSecondaryAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final String actionLabel;
+  final VoidCallback onAction;
+  final String? secondaryActionLabel;
+  final VoidCallback? onSecondaryAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: GlassCard(
+          borderRadius: 28,
+          glowColor: AppTheme.indigo,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 170,
+                height: 150,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: 122,
+                      height: 122,
+                      decoration: BoxDecoration(
+                        gradient: AppTheme.brandGradient,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primary.withValues(alpha: 0.24),
+                            blurRadius: 24,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      left: 20,
+                      top: 16,
+                      child: _OrbitDot(color: AppTheme.turquoise),
+                    ),
+                    Positioned(
+                      right: 24,
+                      top: 28,
+                      child: _OrbitDot(color: AppTheme.violet),
+                    ),
+                    Positioned(
+                      left: 28,
+                      bottom: 20,
+                      child: _OrbitDot(color: AppTheme.primary),
+                    ),
+                    Positioned(
+                      right: 18,
+                      bottom: 16,
+                      child: _OrbitDot(color: Colors.white),
+                    ),
+                    Container(
+                      width: 68,
+                      height: 68,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.96),
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 18,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Icon(icon, size: 34, color: AppTheme.primary),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  height: 1.4,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 18),
+              FilledButton(
+                onPressed: onAction,
+                child: Text(actionLabel),
+              ),
+              if (secondaryActionLabel != null && onSecondaryAction != null) ...[
+                const SizedBox(height: 10),
+                TextButton(
+                  onPressed: onSecondaryAction,
+                  child: Text(secondaryActionLabel!),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OrbitDot extends StatelessWidget {
+  const _OrbitDot({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 18,
+      height: 18,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.9),
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.32),
+            blurRadius: 10,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
     );
   }
 }

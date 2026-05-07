@@ -100,27 +100,22 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
 
     if (_idCasa == null && !isDemoWithHouse) {
       return Scaffold(
+        backgroundColor: const Color(0xFFF2FBF7),
         appBar: AppBar(
-          title: const Text('Mi Casa'),
-          backgroundColor: const Color(0xFF10B981),
-        ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.home_outlined, size: 80, color: Colors.grey[400]),
-              const SizedBox(height: 16),
-              Text(
-                'Aun no tienes casa compartida',
-                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Completa una mudanza para activar Mi Casa',
-                style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-              ),
-            ],
+          title: const Text(
+            'Mi Casa',
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
+          backgroundColor: const Color(0xFF10B981),
+          elevation: 0,
+        ),
+        body: EmptyStateWidget(
+          icon: Icons.home_work_outlined,
+          title: 'Todavía no tienes casa compartida',
+          message:
+              'Completa una mudanza para activar Mi Casa y empezar a organizar el piso.',
+          actionLabel: 'Ir a descubrir',
+          onAction: () => Navigator.of(context).maybePop(),
         ),
       );
     }
@@ -581,32 +576,13 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
               final tareas = snapshot.data ?? [];
 
               if (tareas.isEmpty) {
-                return Card(
-                  elevation: 0,
-                  color: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.check_circle_outline,
-                          size: 64,
-                          color: Colors.grey[300],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'No hay tareas',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                return EmptyStateWidget(
+                  icon: Icons.check_circle_outline,
+                  title: 'No hay tareas pendientes',
+                  message:
+                      'Cuando se generen tareas de la casa, aparecerán aquí con puntos y estado de progreso.',
+                  actionLabel: 'Crear tarea',
+                  onAction: () => _showCrearTareaDialog(idCasa, myUid),
                 );
               }
 

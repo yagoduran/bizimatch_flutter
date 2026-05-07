@@ -58,6 +58,8 @@ dependencies:
   path_provider: ^2.1.5
   wakelock_plus: ^1.6.0
   animate_do: ^5.1.0
+  shimmer: ^3.0.0
+  lottie: ^3.1.2
 
 dev_dependencies:
   flutter_test:
@@ -83,6 +85,7 @@ flutter:
     - assets/images/logo.png
     - assets/images/demo_people/
     - assets/images/demo_apartments/
+    - assets/animations/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

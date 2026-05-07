@@ -412,8 +412,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                       snapshot.data?.docs ??
                       const <QueryDocumentSnapshot<Map<String, dynamic>>>[];
                   if (messages.isEmpty) {
-                    return const Center(
-                      child: Text('Empieza la conversacion sobre el piso.'),
+                    return EmptyStateWidget(
+                      icon: Icons.chat_bubble_outline_rounded,
+                      title: 'Aún no hay mensajes',
+                      message:
+                          'Empieza la conversación sobre el piso con un mensaje claro y cercano.',
+                      actionLabel: 'Escribir ahora',
+                      onAction: _openExpenseCalculator,
                     );
                   }
 
@@ -450,30 +455,32 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                           alignment: isMine
                               ? Alignment.centerRight
                               : Alignment.centerLeft,
-                          child: Container(
+                          child: GlassCard(
                             margin: const EdgeInsets.only(bottom: 8),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 14,
                               vertical: 10,
                             ),
-                            constraints: const BoxConstraints(maxWidth: 290),
-                            decoration: BoxDecoration(
-                              color: isMine
-                                  ? const Color(0xFF10B981)
-                                  : const Color(0xFFF1F3F4),
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(
-                                color: isMine
-                                    ? const Color(0xFF0F9D74)
-                                    : const Color(0xFFE2E8E4),
-                              ),
-                            ),
-                            child: Text(
-                              text,
-                              style: TextStyle(
-                                color: isMine
-                                    ? Colors.white
-                                    : AppTheme.textPrimary,
+                            borderRadius: 24,
+                            glowColor: isMine
+                                ? AppTheme.primary
+                                : AppTheme.indigo,
+                            gradient: isMine
+                                ? const LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [Color(0xFF10B981), Color(0xFF0F9D74)],
+                                  )
+                                : AppTheme.glassGradient,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 290),
+                              child: Text(
+                                text,
+                                style: TextStyle(
+                                  color: isMine
+                                      ? Colors.white
+                                      : AppTheme.textPrimary,
+                                ),
                               ),
                             ),
                           ),
@@ -510,46 +517,33 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                       scale: _biziBotLoading ? 0.94 : 1,
                       duration: AppTheme.motionChatMessage,
                       curve: AppTheme.motionCurve,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF9F7AEA), Color(0xFF10B981)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF9F7AEA).withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: _biziBotLoading
-                                ? null
-                                : _openBiziBotSuggestions,
-                            borderRadius: BorderRadius.circular(16),
-                            child: _biziBotLoading
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Icon(
-                                    Icons.auto_awesome,
+                      child: _biziBotLoading
+                          ? GlassCard(
+                              borderRadius: 16,
+                              padding: const EdgeInsets.all(0),
+                              glowColor: AppTheme.violet,
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [Color(0xFF9F7AEA), Color(0xFF10B981)],
+                              ),
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
                                     color: Colors.white,
-                                    size: 20,
                                   ),
-                          ),
-                        ),
-                      ),
+                                ),
+                              ),
+                            )
+                          : GlowIconButton(
+                              icon: Icons.auto_awesome,
+                              onPressed: _openBiziBotSuggestions,
+                              size: 48,
+                              colors: const [Color(0xFF9F7AEA), Color(0xFF10B981)],
+                            ),
                     ),
                   ),
                   const SizedBox(width: 8),
