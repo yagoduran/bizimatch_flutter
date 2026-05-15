@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest_all.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 
 class NotificationService {
   NotificationService._();
@@ -33,6 +35,7 @@ class NotificationService {
       '@mipmap/ic_launcher',
     );
     const iosSettings = DarwinInitializationSettings();
+    tz_data.initializeTimeZones();
 
     await _localNotifications.initialize(
       const InitializationSettings(android: androidSettings, iOS: iosSettings),
@@ -51,6 +54,29 @@ class NotificationService {
     });
 
     _initialized = true;
+  }
+
+  Future<void> triggerDemoNotification() async {
+    await initialize();
+    await _localNotifications.zonedSchedule(
+      1001,
+      'BiziMatch',
+      '¡Tienes un nuevo Match esperándote!',
+      tz.TZDateTime.now(tz.local).add(const Duration(seconds: 10)),
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _chatChannel.id,
+          _chatChannel.name,
+          channelDescription: _chatChannel.description,
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: const DarwinNotificationDetails(),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
   }
 
   Future<void> requestNotificationPermissions() async {

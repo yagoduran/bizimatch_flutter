@@ -33,7 +33,6 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   String? _idCasa;
-  final Set<String> _completedDemoTasks = <String>{'Pagar internet'};
   late AnimationController _celebrationController;
 
   @override
@@ -66,11 +65,7 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
     if (!mounted) {
       return;
     }
-    setState(() {
-      _completedDemoTasks
-        ..clear()
-        ..add('Pagar internet');
-    });
+    setState(() {});
   }
 
   Future<void> _loadIdCasa() async {
@@ -1056,7 +1051,7 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
 
     return demoTasks.map((task) {
       final title = task['titulo'] as String;
-      final completada = _completedDemoTasks.contains(title);
+      final completada = DemoService.instance.isDemoTaskCompleted(title);
       return Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: Card(
@@ -1082,7 +1077,8 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
                       ? null
                       : () {
                           HapticFeedback.lightImpact();
-                          setState(() => _completedDemoTasks.add(title));
+                          DemoService.instance.completeDemoTask(title);
+                          setState(() {});
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text('+${task['puntos']} BiziPuntos'),

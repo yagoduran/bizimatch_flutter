@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_profile.dart';
+import 'demo_service.dart';
 
 /// Servicio BiziBot: Genera frases de apertura inteligentes basadas en perfiles
 class BiziBotService {
@@ -95,6 +96,15 @@ class BiziBotService {
   /// Obtiene el perfil del usuario y genera sugerencias
   Future<List<String>> generarSugerencias(String otherUid) async {
     try {
+      if (DemoService.instance.isDemoMode.value) {
+        await Future<void>.delayed(const Duration(milliseconds: 1500));
+        return const [
+          'Hola! He visto que buscas piso por el centro, que zonas prefieres?',
+          'Tu perfil tiene muy buena vibra. Te apetece hablar de rutinas de convivencia?',
+          'Creo que podriamos encajar bien como compis. Que es imprescindible para ti en un piso?',
+        ];
+      }
+
       final doc = await _firestore.collection('usuarios').doc(otherUid).get();
       if (!doc.exists) {
         return _getRandomPhrases(_fallbackPhrases, 3);

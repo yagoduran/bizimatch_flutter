@@ -8,6 +8,7 @@ import '../app_theme.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../services/demo_service.dart';
+import '../services/notification_service.dart';
 import '../widgets/glassmorphism.dart';
 import 'login_screen.dart';
 
@@ -147,6 +148,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (mounted) {
       _showInfo('Demo reiniciada: mazo, chats y BiziPuntos a cero.');
+    }
+  }
+
+  Future<void> _triggerDemoNotification() async {
+    HapticFeedback.mediumImpact();
+    await NotificationService.instance.triggerDemoNotification();
+    if (mounted) {
+      _showInfo('Notificacion demo programada para dentro de 10 segundos.');
     }
   }
 
@@ -361,6 +370,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onPressed: _isBusy ? null : _resetDemoData,
                         icon: const Icon(Icons.restart_alt_rounded),
                         label: const Text('Resetear Datos de Demo'),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 46,
+                      child: OutlinedButton.icon(
+                        onPressed: _triggerDemoNotification,
+                        icon: const Icon(Icons.notifications_active_outlined),
+                        label: const Text('Probar notificacion demo'),
                       ),
                     ),
                     const SizedBox(height: 8),

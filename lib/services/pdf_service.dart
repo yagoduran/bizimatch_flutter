@@ -1,9 +1,14 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+
+import 'demo_service.dart';
 
 class PdfService {
   PdfService._internal();
@@ -137,6 +142,22 @@ class PdfService {
   }) async {
     final now = DateTime.now();
     final ts = now.millisecondsSinceEpoch;
+    if (DemoService.instance.isDemoMode.value) {
+      final directory = await getTemporaryDirectory();
+      final file = File('${directory.path}/contrato_bizimatch_demo_$ts.pdf');
+      await file.writeAsBytes(pdfBytes, flush: true);
+      await OpenFilex.open(file.path);
+
+      return {
+        'pdf_url': file.path,
+        'storage_path': file.path,
+        'chat_id': chatId,
+        'id_casa': idCasa,
+        'generado_en': now.toIso8601String(),
+        'demo_local': true,
+      };
+    }
+
     final path = 'contratos/$chatId/contrato_$ts.pdf';
 
     final ref = _storage.ref().child(path);

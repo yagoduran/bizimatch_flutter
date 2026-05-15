@@ -12,6 +12,10 @@ class DemoService {
   final ValueNotifier<UserProfile?> selectedDemoUser =
       ValueNotifier<UserProfile?>(null);
   final ValueNotifier<int> resetRevision = ValueNotifier<int>(0);
+  final ValueNotifier<Set<String>> completedDemoTasks =
+      ValueNotifier<Set<String>>(<String>{'Pagar internet'});
+  final ValueNotifier<Set<String>> settledDemoExpenses =
+      ValueNotifier<Set<String>>(<String>{});
 
   late final List<UserProfile> demoProfiles = _buildDemoProfiles();
 
@@ -39,6 +43,8 @@ class DemoService {
 
   void resetDemoData() {
     demoThreads = <ChatThread>[];
+    completedDemoTasks.value = <String>{'Pagar internet'};
+    settledDemoExpenses.value = <String>{};
     resetRevision.value++;
 
     final selected = selectedDemoUser.value;
@@ -65,6 +71,20 @@ class DemoService {
       ),
       ...demoThreads,
     ];
+    resetRevision.value++;
+  }
+
+  void completeDemoTask(String title) {
+    completedDemoTasks.value = <String>{...completedDemoTasks.value, title};
+    resetRevision.value++;
+  }
+
+  bool isDemoTaskCompleted(String title) {
+    return completedDemoTasks.value.contains(title);
+  }
+
+  void settleDemoExpense(String id) {
+    settledDemoExpenses.value = <String>{...settledDemoExpenses.value, id};
     resetRevision.value++;
   }
 

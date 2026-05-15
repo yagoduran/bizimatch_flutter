@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../app_theme.dart';
+import '../services/demo_service.dart';
 import 'glassmorphism.dart';
 
 class ExpenseDashboard extends StatelessWidget {
@@ -15,9 +16,9 @@ class ExpenseDashboard extends StatelessWidget {
   ];
 
   static const List<_TransactionItem> _transactions = [
-    _TransactionItem('Alquiler mayo', 'Pendiente con Lucia', 260),
-    _TransactionItem('Internet fibra', 'Pagado por Daniel', 14),
-    _TransactionItem('Compra semanal', 'Compartido entre 3', 79),
+    _TransactionItem('rent_may', 'Alquiler mayo', 'Pendiente con Lucia', 260),
+    _TransactionItem('fiber', 'Internet fibra', 'Pagado por Daniel', 14),
+    _TransactionItem('groceries', 'Compra semanal', 'Compartido entre 3', 79),
   ];
 
   @override
@@ -28,13 +29,19 @@ class ExpenseDashboard extends StatelessWidget {
     final secondaryText =
         isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary;
 
-    return GlassCard(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(18),
-      borderRadius: 26,
-      opacity: isDark ? 0.08 : 0.16,
-      glowColor: AppTheme.primary,
-      child: Column(
+    return ValueListenableBuilder<Set<String>>(
+      valueListenable: DemoService.instance.settledDemoExpenses,
+      builder: (context, settledExpenses, _) {
+        final allSettled = _transactions.every(
+          (item) => settledExpenses.contains(item.id),
+        );
+        return GlassCard(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.all(18),
+          borderRadius: 26,
+          opacity: isDark ? 0.08 : 0.16,
+          glowColor: AppTheme.primary,
+          child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -161,20 +168,36 @@ class ExpenseDashboard extends StatelessWidget {
           ..._transactions.map(
             (item) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: _TransactionRow(item: item),
+              child: _TransactionRow(
+                item: item,
+                settled: settledExpenses.contains(item.id),
+              ),
             ),
           ),
           const SizedBox(height: 4),
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.payments_rounded, size: 18),
-              label: const Text('Saldar deuda'),
+              onPressed: allSettled
+                  ? null
+                  : () {
+                      for (final item in _transactions) {
+                        DemoService.instance.settleDemoExpense(item.id);
+                      }
+                    },
+              icon: Icon(
+                allSettled
+                    ? Icons.check_circle_rounded
+                    : Icons.payments_rounded,
+                size: 18,
+              ),
+              label: Text(allSettled ? 'Deuda saldada' : 'Saldar deuda'),
             ),
           ),
         ],
       ),
+        );
+      },
     );
   }
 }
@@ -223,9 +246,10 @@ class _LegendRow extends StatelessWidget {
 }
 
 class _TransactionRow extends StatelessWidget {
-  const _TransactionRow({required this.item});
+  const _TransactionRow({required this.item, required this.settled});
 
   final _TransactionItem item;
+  final bool settled;
 
   @override
   Widget build(BuildContext context) {
@@ -272,15 +296,28 @@ class _TransactionRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  item.subtitle,
+                  settled ? 'Saldado en demo offline' : item.subtitle,
                   style: TextStyle(color: secondaryText, fontSize: 12),
                 ),
               ],
             ),
           ),
-          Text(
-            '${item.amount.toStringAsFixed(0)} EUR',
-            style: TextStyle(color: primaryText, fontWeight: FontWeight.w900),
+          AnimatedSwitcher(
+            duration: AppTheme.motionFast,
+            child: settled
+                ? const Icon(
+                    Icons.check_circle_rounded,
+                    key: ValueKey<String>('settled'),
+                    color: AppTheme.primary,
+                  )
+                : Text(
+                    '${item.amount.toStringAsFixed(0)} EUR',
+                    key: const ValueKey<String>('amount'),
+                    style: TextStyle(
+                      color: primaryText,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
           ),
         ],
       ),
@@ -297,8 +334,9 @@ class _ExpenseSlice {
 }
 
 class _TransactionItem {
-  const _TransactionItem(this.title, this.subtitle, this.amount);
+  const _TransactionItem(this.id, this.title, this.subtitle, this.amount);
 
+  final String id;
   final String title;
   final String subtitle;
   final double amount;
