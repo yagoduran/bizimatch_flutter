@@ -19,6 +19,7 @@ class BiziMatchApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final baseTheme = AppTheme.lightTheme();
+    final darkTheme = AppTheme.darkTheme();
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'BiziMatch',
@@ -28,6 +29,13 @@ class BiziMatchApp extends StatelessWidget {
           baseTheme.primaryTextTheme,
         ),
       ),
+      darkTheme: darkTheme.copyWith(
+        textTheme: GoogleFonts.outfitTextTheme(darkTheme.textTheme),
+        primaryTextTheme: GoogleFonts.outfitTextTheme(
+          darkTheme.primaryTextTheme,
+        ),
+      ),
+      themeMode: ThemeMode.system,
       home: const SplashScreen(),
     );
   }

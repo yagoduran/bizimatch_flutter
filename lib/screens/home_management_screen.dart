@@ -16,6 +16,7 @@ import '../screens/contract_url_preview_screen.dart';
 import '../services/home_service.dart';
 import '../services/demo_service.dart';
 import '../widgets/app_cached_network_image.dart';
+import '../widgets/expense_dashboard.dart';
 import '../widgets/glassmorphism.dart';
 
 class HomeManagementScreen extends StatefulWidget {
@@ -100,13 +101,13 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
 
     if (_idCasa == null && !isDemoWithHouse) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF2FBF7),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           title: const Text(
             'Mi Casa',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          backgroundColor: const Color(0xFF10B981),
+          backgroundColor: AppTheme.primary,
           elevation: 0,
         ),
         body: EmptyStateWidget(
@@ -125,19 +126,21 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2FBF7),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
           'Mi Casa',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: const Color(0xFF10B981),
+        backgroundColor: AppTheme.primary,
         elevation: 0,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
             _buildContratoVigenteCard(_idCasa!),
+            const SizedBox(height: 16),
+            const ExpenseDashboard(),
             const SizedBox(height: 16),
 
             // Dashboard de Ranking
@@ -847,13 +850,13 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
         : 'assets/images/demo_apartments/piso1.jpg';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2FBF7),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
           'Mi Casa',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: const Color(0xFF10B981),
+        backgroundColor: AppTheme.primary,
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -876,6 +879,8 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
             const SizedBox(height: 16),
 
             // Información de la casa demo
+            const ExpenseDashboard(),
+            const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(

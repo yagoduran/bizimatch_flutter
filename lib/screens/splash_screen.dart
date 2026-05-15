@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/auth_service.dart';
 import '../services/demo_service.dart';
 import 'login_screen.dart';
 import 'main_scaffold.dart';
+import 'onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -32,6 +34,8 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenOnboarding = prefs.getBool('seen_onboarding') ?? false;
     final hasDemoAdminSession = await _authService.hasDemoAdminSession();
     if (hasDemoAdminSession) {
       DemoService.instance.enableDemo(true);
@@ -54,7 +58,11 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     setState(() {
-      _destination = user != null ? const MainScaffold() : const LoginScreen();
+      _destination = user != null
+          ? const MainScaffold()
+          : hasSeenOnboarding
+          ? const LoginScreen()
+          : const OnboardingScreen();
       _isReady = true;
     });
 

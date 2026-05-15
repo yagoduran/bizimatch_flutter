@@ -30,6 +30,8 @@ class GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final glassOpacity = isDark ? opacity.clamp(0.05, 0.08) : opacity;
     return Container(
       margin: margin,
       decoration: BoxDecoration(
@@ -38,22 +40,22 @@ class GlassCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            glowColor.withValues(alpha: 0.22),
-            Colors.white.withValues(alpha: 0.12),
-            AppTheme.indigo.withValues(alpha: 0.10),
+            glowColor.withValues(alpha: isDark ? 0.28 : 0.22),
+            Colors.white.withValues(alpha: isDark ? 0.08 : 0.12),
+            AppTheme.indigo.withValues(alpha: isDark ? 0.14 : 0.10),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: glowColor.withValues(alpha: 0.18),
-            blurRadius: 26,
-            spreadRadius: -10,
+            color: glowColor.withValues(alpha: isDark ? 0.28 : 0.18),
+            blurRadius: isDark ? 34 : 26,
+            spreadRadius: isDark ? -8 : -10,
             offset: const Offset(0, 14),
           ),
-          const BoxShadow(
-            color: Color(0x120B1220),
+          BoxShadow(
+            color: isDark ? Colors.black.withValues(alpha: 0.32) : const Color(0x120B1220),
             blurRadius: 18,
-            offset: Offset(0, 10),
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -72,14 +74,14 @@ class GlassCard extends StatelessWidget {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        Colors.white.withValues(alpha: opacity),
-                        Colors.white.withValues(alpha: 0.22),
-                        AppTheme.primary.withValues(alpha: 0.05),
+                        Colors.white.withValues(alpha: glassOpacity.toDouble()),
+                        Colors.white.withValues(alpha: isDark ? 0.06 : 0.22),
+                        AppTheme.primary.withValues(alpha: isDark ? 0.08 : 0.05),
                       ],
                     ),
                 borderRadius: BorderRadius.circular(borderRadius - 1),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.26),
+                  color: Colors.white.withValues(alpha: isDark ? 0.11 : 0.26),
                   width: 1,
                 ),
               ),

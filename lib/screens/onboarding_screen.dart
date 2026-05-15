@@ -20,19 +20,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   static const List<_OnboardingPageData> _pages = [
     _OnboardingPageData(
-      icon: Icons.home_work,
-      title: 'Encuentra tu espacio',
-      subtitle: 'Miles de pisos y habitaciones te esperan.',
+      icon: Icons.favorite_rounded,
+      title: 'Haz Match',
+      subtitle: 'Encuentra personas compatibles antes de compartir piso.',
     ),
     _OnboardingPageData(
-      icon: Icons.people_alt,
-      title: 'Vínculos perfectos',
-      subtitle: 'Nuestro algoritmo te une con compañeros 100% afines a ti.',
+      icon: Icons.verified_user_rounded,
+      title: 'Firma Contratos Seguros',
+      subtitle: 'Centraliza acuerdos, confianza y documentos importantes.',
     ),
     _OnboardingPageData(
-      icon: Icons.forum,
-      title: 'Conecta al instante',
-      subtitle: 'Chatea en tiempo real y planea tu próxima mudanza.',
+      icon: Icons.donut_large_rounded,
+      title: 'Gestiona tu Piso',
+      subtitle: 'Organiza pagos, tareas y convivencia desde un lugar limpio.',
     ),
   ];
 
@@ -65,71 +65,131 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
 
     await _pageController.nextPage(
-      duration: const Duration(milliseconds: 280),
-      curve: Curves.easeOutCubic,
+      duration: AppTheme.motionNavigation,
+      curve: AppTheme.motionCurveEmphasized,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final isLastPage = _currentPage == _pages.length - 1;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final background =
+        isDark ? AppTheme.darkBackground : const Color(0xFFF6FBF8);
+    final textColor = isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary;
+    final mutedColor =
+        isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6FBF8),
+      backgroundColor: background,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-          child: Column(
-            children: [
-              Expanded(
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: _pages.length,
-                  onPageChanged: (index) {
-                    setState(() => _currentPage = index);
+        child: Stack(
+          children: [
+            PageView.builder(
+              controller: _pageController,
+              itemCount: _pages.length,
+              onPageChanged: (index) {
+                setState(() => _currentPage = index);
+              },
+              itemBuilder: (context, index) {
+                final page = _pages[index];
+                return AnimatedBuilder(
+                  animation: _pageController,
+                  builder: (context, child) {
+                    var delta = 0.0;
+                    if (_pageController.hasClients &&
+                        _pageController.page != null) {
+                      delta = (_pageController.page! - index).abs();
+                    }
+                    final opacity = (1 - delta * 0.42).clamp(0.0, 1.0);
+                    final offset = 24 * delta;
+                    return Opacity(
+                      opacity: opacity,
+                      child: Transform.translate(
+                        offset: Offset(offset, 0),
+                        child: child,
+                      ),
+                    );
                   },
-                  itemBuilder: (context, index) {
-                    final page = _pages[index];
-                    return _OnboardingPage(page: page);
-                  },
-                ),
-              ),
-              const SizedBox(height: 14),
-              SmoothPageIndicator(
-                controller: _pageController,
-                count: _pages.length,
-                effect: WormEffect(
-                  spacing: 8,
-                  dotHeight: 9,
-                  dotWidth: 9,
-                  dotColor: const Color(0xFFCFE1D8),
-                  activeDotColor: AppTheme.primary,
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _onPrimaryAction,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+                  child: _OnboardingPage(
+                    page: page,
+                    textColor: textColor,
+                    mutedColor: mutedColor,
                   ),
-                  child: Text(
-                    isLastPage ? 'Comenzar' : 'Siguiente',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+                );
+              },
+            ),
+            Positioned(
+              top: 14,
+              right: 18,
+              child: TextButton(
+                onPressed: _finishOnboarding,
+                child: Text(
+                  'Saltar',
+                  style: TextStyle(
+                    color: mutedColor,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+            Positioned(
+              left: 24,
+              right: 24,
+              bottom: 26,
+              child: Row(
+                children: [
+                  SmoothPageIndicator(
+                    controller: _pageController,
+                    count: _pages.length,
+                    effect: ExpandingDotsEffect(
+                      spacing: 7,
+                      dotHeight: 8,
+                      dotWidth: 8,
+                      expansionFactor: 3.6,
+                      dotColor: isDark
+                          ? Colors.white.withValues(alpha: 0.18)
+                          : const Color(0xFFCFE1D8),
+                      activeDotColor: AppTheme.primary,
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary,
+                      borderRadius: BorderRadius.circular(22),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primary.withValues(
+                            alpha: isDark ? 0.42 : 0.28,
+                          ),
+                          blurRadius: 28,
+                          spreadRadius: -6,
+                          offset: const Offset(0, 12),
+                        ),
+                      ],
+                    ),
+                    child: FloatingActionButton(
+                      heroTag: 'onboarding_next',
+                      onPressed: _onPrimaryAction,
+                      elevation: 0,
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      child: AnimatedSwitcher(
+                        duration: AppTheme.motionFast,
+                        child: Icon(
+                          isLastPage
+                              ? Icons.check_rounded
+                              : Icons.arrow_forward_rounded,
+                          key: ValueKey<bool>(isLastPage),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -149,45 +209,72 @@ class _OnboardingPageData {
 }
 
 class _OnboardingPage extends StatelessWidget {
-  const _OnboardingPage({required this.page});
+  const _OnboardingPage({
+    required this.page,
+    required this.textColor,
+    required this.mutedColor,
+  });
 
   final _OnboardingPageData page;
+  final Color textColor;
+  final Color mutedColor;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(28, 64, 28, 112),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 170,
-            height: 170,
+            width: 156,
+            height: 156,
             decoration: BoxDecoration(
-              color: const Color(0xFFE8F7F0),
-              borderRadius: BorderRadius.circular(40),
-              border: Border.all(color: const Color(0xFFD3EBDD)),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : const Color(0xFFE8F7F0),
+              borderRadius: BorderRadius.circular(42),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.10)
+                    : const Color(0xFFD3EBDD),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primary.withValues(
+                    alpha: isDark ? 0.26 : 0.14,
+                  ),
+                  blurRadius: 34,
+                  spreadRadius: -8,
+                  offset: const Offset(0, 16),
+                ),
+              ],
             ),
-            child: Icon(page.icon, size: 88, color: AppTheme.primary),
+            child: Icon(page.icon, size: 72, color: AppTheme.primary),
           ),
-          const SizedBox(height: 34),
+          const SizedBox(height: 38),
           Text(
             page.title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 30,
+            style: TextStyle(
+              fontSize: 32,
               height: 1.1,
-              fontWeight: FontWeight.w800,
-              color: AppTheme.textPrimary,
+              fontWeight: FontWeight.w900,
+              color: textColor,
             ),
           ),
           const SizedBox(height: 14),
-          Text(
-            page.subtitle,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 16,
-              color: AppTheme.textSecondary,
-              height: 1.45,
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 310),
+            child: Text(
+              page.subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: mutedColor,
+                height: 1.45,
+              ),
             ),
           ),
         ],

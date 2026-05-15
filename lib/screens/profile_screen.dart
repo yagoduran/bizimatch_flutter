@@ -14,6 +14,7 @@ import '../services/firestore_service.dart';
 import '../services/imgbb_service.dart';
 import '../services/voice_bio_storage_service.dart';
 import '../widgets/app_cached_network_image.dart';
+import '../widgets/badge_widget.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -1288,6 +1289,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 12),
                 _reputationSection(profile),
                 const SizedBox(height: 12),
+                _coexistenceAchievementsSection(),
+                const SizedBox(height: 12),
                 _reviewActionsSection(),
                 const SizedBox(height: 12),
                 _habitsSection(profile),
@@ -1309,25 +1312,121 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _coexistenceAchievementsSection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary;
+    final subtitleColor =
+        isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.10)
+              : const Color(0xFFE8EFEB),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Logros de Convivencia',
+                    style: TextStyle(
+                      color: titleColor,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.workspace_premium_rounded,
+                  size: 20,
+                  color: AppTheme.primary.withValues(alpha: 0.90),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Text(
+              'Insignias que resumen tu estilo dentro del piso.',
+              style: TextStyle(color: subtitleColor, fontSize: 13),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 104,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              children: const [
+                BadgeWidget(
+                  icon: Icons.cleaning_services_rounded,
+                  label: 'Limpio',
+                  colors: [Color(0xFF10B981), Color(0xFF22D3EE)],
+                ),
+                SizedBox(width: 10),
+                BadgeWidget(
+                  icon: Icons.schedule_rounded,
+                  label: 'Puntual en pagos',
+                  colors: [Color(0xFF22D3EE), Color(0xFF6366F1)],
+                ),
+                SizedBox(width: 10),
+                BadgeWidget(
+                  icon: Icons.groups_2_rounded,
+                  label: 'Sociable',
+                  colors: [Color(0xFFA7F3D0), Color(0xFF10B981)],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _section(String title, String content) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE8EFEB)),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.10)
+              : const Color(0xFFE8EFEB),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+            style: TextStyle(
+              color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             content,
-            style: const TextStyle(color: AppTheme.textSecondary, height: 1.4),
+            style: TextStyle(
+              color: isDark
+                  ? AppTheme.darkTextSecondary
+                  : AppTheme.textSecondary,
+              height: 1.4,
+            ),
           ),
         ],
       ),

@@ -9,6 +9,10 @@ class AppTheme {
   static const Color turquoise = Color(0xFF22D3EE);
   static const Color indigo = Color(0xFF6366F1);
   static const Color violet = Color(0xFFA855F7);
+  static const Color darkBackground = Color(0xFF0B1220);
+  static const Color darkSurface = Color(0xFF121A2A);
+  static const Color darkTextPrimary = Color(0xFFF7FBF9);
+  static const Color darkTextSecondary = Color(0xFFA7B7B0);
   static const Color textPrimary = Color(0xFF1C2A25);
   static const Color textSecondary = Color(0xFF6B7A74);
   static const List<Color> emeraldIndigo = [
@@ -174,6 +178,134 @@ class AppTheme {
         backgroundColor: primary,
         foregroundColor: Colors.white,
         elevation: 10,
+      ),
+    );
+  }
+
+  static ThemeData darkTheme() {
+    final base = ThemeData.dark(useMaterial3: true);
+    final textTheme = base.textTheme.copyWith(
+      headlineMedium: const TextStyle(
+        fontSize: 32,
+        fontWeight: FontWeight.w900,
+        color: darkTextPrimary,
+        letterSpacing: 0,
+      ),
+      titleLarge: const TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w800,
+        color: darkTextPrimary,
+      ),
+      titleMedium: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: darkTextPrimary,
+      ),
+      bodyMedium: const TextStyle(
+        fontSize: 14,
+        height: 1.35,
+        color: darkTextSecondary,
+      ),
+    );
+
+    return base.copyWith(
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: darkBackground,
+      colorScheme: base.colorScheme.copyWith(
+        brightness: Brightness.dark,
+        primary: primary,
+        secondary: turquoise,
+        tertiary: indigo,
+        surface: darkSurface,
+        onSurface: darkTextPrimary,
+        onPrimary: Colors.white,
+      ),
+      textTheme: textTheme,
+      appBarTheme: AppBarTheme(
+        backgroundColor: darkBackground.withValues(alpha: 0.72),
+        foregroundColor: darkTextPrimary,
+        centerTitle: true,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+      ),
+      cardTheme: CardThemeData(
+        color: Colors.white.withValues(alpha: 0.06),
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      ),
+      dividerColor: Colors.white.withValues(alpha: 0.10),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF172033),
+        contentTextStyle: const TextStyle(color: darkTextPrimary),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.07),
+        hintStyle: const TextStyle(color: darkTextSecondary),
+        labelStyle: const TextStyle(color: darkTextSecondary),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(24),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(24),
+          borderSide: const BorderSide(color: turquoise, width: 1.5),
+        ),
+      ),
+      chipTheme: ChipThemeData(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.10)),
+        backgroundColor: Colors.white.withValues(alpha: 0.06),
+        selectedColor: primary.withValues(alpha: 0.20),
+        labelStyle: const TextStyle(color: darkTextPrimary),
+      ),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: const Color(0xE60B1220),
+        selectedItemColor: primary,
+        unselectedItemColor: darkTextSecondary,
+        type: BottomNavigationBarType.fixed,
+        elevation: 0,
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primary,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          shadowColor: primary.withValues(alpha: 0.58),
+          elevation: 12,
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: primary.withValues(alpha: 0.34)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          foregroundColor: darkTextPrimary,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: primary,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        ),
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: primary,
+        foregroundColor: Colors.white,
+        elevation: 12,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       ),
     );
   }
