@@ -53,7 +53,7 @@
     .logo.muted{opacity:0.14}
 
     /* Center content */
-    .center{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem}
+    .center{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:1rem 2rem;overflow-y:auto;overflow-x:hidden}
     h1.title{font-size:5rem;margin:0;line-height:1;color:var(--text);background:var(--accent-grad);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 8px 28px rgba(79,172,254,0.06)}
     p.lead{color:var(--text-soft);font-size:1.15rem;margin-top:0.8rem}
     .emoji{font-size:4.5rem;margin-bottom:0.6rem}
@@ -85,11 +85,12 @@
     .row{display:flex;gap:24px;align-items:stretch;min-height:0}
     .col{flex:1;min-width:0;min-height:0}
     .glass{background:var(--glass);border:1px solid var(--glass-border);padding:18px;border-radius:14px}
-    .card-title{font-weight:700;color:var(--text);margin-bottom:8px}
-    .card-text{color:var(--text-soft);font-size:0.98rem}
+    .card-title{font-weight:700;color:var(--text);font-size:1.05rem;margin-bottom:4px}
+    .card-text{color:var(--text-soft);font-size:0.85rem;line-height:1.3}
+    ul{margin:8px 0;padding-left:20px;font-size:0.85rem}
 
     /* Specific small components */
-    .tech-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+    .tech-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
     .stat-row{display:flex;gap:32px;justify-content:center}
     .stat{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));padding:22px;border-radius:12px;min-width:160px}
     .stat .num{font-size:3.2rem;font-weight:800;background:var(--accent-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -126,15 +127,15 @@
         <div class="header"><div class="logo">BiziMatch</div><div>❌ Arazoa</div></div>
         <div class="center" style="align-items:flex-start;text-align:left;">
           <div class="row" style="width:100%">
-            <div class="col glass">
+            <div class="col glass" style="padding:10px">
               <div class="card-title">🔍 Bilaketa Hotza</div>
               <div class="card-text">Gaur egungo aplikazioek (Idealista, Badi) etxebizitza aurkitzen laguntzen dute soilik. Barruan zaudenean... eta orain zer?</div>
             </div>
-            <div class="col glass">
+            <div class="col glass" style="padding:10px">
               <div class="card-title">⚖️ Segurtasun Juridiko Falta</div>
               <div class="card-text">Bizikideen arteko kontratu argirik gabe, gatazka legalak ohikoak dira eta konpontzeko zailak.</div>
             </div>
-            <div class="col glass">
+            <div class="col glass" style="padding:10px">
               <div class="card-title">🏠 Elkarbizitza Gatazkak</div>
               <div class="card-text">Garbiketa, gastuak, bisitak... tresna digitalik gabe, elkarbizitza modu kaotiko eta informalean kudeatzen da.</div>
             </div>
@@ -151,10 +152,10 @@
         <div class="header"><div class="logo">BiziMatch</div><div>✅ BiziMatch - Soluzio Integrala</div></div>
         <div class="center" style="align-items:stretch;text-align:left;">
           <div class="row" style="width:100%">
-            <div class="col" style="display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:1rem;text-align:left;">
+            <div class="col" style="display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:1rem;text-align:left;">
               <h3 class="card-title">Erabiltzaileari laguntzen dion aplikazio mugikorra</h3>
               <p class="card-text">Etxebizitza bilatzen hasten denetik eguneroko elkarbizitza kudeatzen duen arte erabiltzaileari laguntzen dion plataforma mugikorra.</p>
-              <ul style="margin-top:10px;color:var(--text-soft)">
+              <ul style="color:var(--text-soft)">
                 <li>🔎 Bateragarritasunean oinarritutako bilaketa adimenduna</li>
                 <li>🤝 Antzeko pertsonen arteko match-a</li>
                 <li>📄 PDF kontratu automatikoak</li>
@@ -239,13 +240,13 @@
         <div class="header"><div class="logo">BiziMatch</div><div>📄 3. Kudeaketa Legala</div></div>
         <div class="center" style="align-items:stretch">
           <div class="row" style="width:100%">
-            <div class="col glass">
+            <div class="col glass" style="padding:10px">
               <div style="text-align:center;font-size:2rem">🤝</div>
               <div class="card-title">Elkarbizitza Ituna</div>
               <div class="card-text">Bizikideek etxeko arauak denbora errealean adosten dituzte: bisitak, garbiketa, maskotak eta zarata. Dena erregistratuta geratzen da.</div>
               <div style="margin-top:8px;color:#34d399">✓ Firestore sinkronizazioa denbora errealean</div>
             </div>
-            <div class="col glass">
+            <div class="col glass" style="padding:10px">
               <div style="text-align:center;font-size:2rem">📋</div>
               <div class="card-title">Kontratu Sortzailea</div>
               <div class="card-text">Botoi bakarrarekin, BiziMatch-ek maizter guztien datuekin PDF kontratu legal bat sortzen du eta hodeian gordetzen du.</div>
@@ -266,22 +267,22 @@
         <div class="header"><div class="logo">BiziMatch</div><div>🏠 4. Eguneroko Kudeaketa</div></div>
         <div class="center" style="align-items:stretch;padding:1rem 2rem">
           <div class="row" style="width:100%">
-            <div class="col" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-content:center">
-                <div class="glass" style="padding:14px">
+            <div class="col" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-content:center">
+                <div class="glass" style="padding:10px">
                   <div class="card-title">💰 Gastuen Kalkulagailua</div>
-                  <div class="card-text" style="font-size:.9rem">Alokairua, argia, ura eta internet banatu, eta ordainketa bakoitza txatean partekatu.</div>
+                  <div class="card-text">Alokairua, argia, ura eta internet banatu, eta ordainketa bakoitza txatean partekatu.</div>
                 </div>
-                <div class="glass" style="padding:14px">
+                <div class="glass" style="padding:10px">
                   <div class="card-title">🎮 Zeregin Gamifikatuak</div>
-                  <div class="card-text" style="font-size:.9rem">Etxeko zereginak banatu, amaitu eta BiziPuntuak irabazi.</div>
+                  <div class="card-text">Etxeko zereginak banatu, amaitu eta BiziPuntuak irabazi.</div>
                 </div>
-                <div class="glass" style="padding:14px">
+                <div class="glass" style="padding:10px">
                   <div class="card-title">🏆 BiziPuntuak</div>
-                  <div class="card-text" style="font-size:.9rem">Asteko rankingak parte-hartzea sustatzen du eta elkarbizitza neurgarri bihurtzen du.</div>
+                  <div class="card-text">Asteko rankingak parte-hartzea sustatzen du eta elkarbizitza neurgarri bihurtzen du.</div>
                 </div>
-                <div class="glass" style="padding:14px">
+                <div class="glass" style="padding:10px">
                   <div class="card-title">🌐 Komunitate Modua</div>
-                  <div class="card-text" style="font-size:.9rem">Hiriko plan sozialak: kafea, kirola eta irteerak etxetik harago.</div>
+                  <div class="card-text">Hiriko plan sozialak: kafea, kirola eta irteerak etxetik harago.</div>
                 </div>
             </div>
             <div class="col glass" style="height:calc(55vh + 48px);display:flex;flex-direction:row;gap:18px;align-items:center;justify-content:center;flex-wrap:nowrap;padding:24px;">
@@ -299,12 +300,12 @@
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>🏗️ Arkitektura Teknikoa</div></div>
         <div class="center" style="align-items:stretch">
-          <div style="display:grid;grid-template-columns:1fr;gap:20px;justify-items:center">
-            <div class="glass" style="width:80%;text-align:center;border-left:6px solid var(--accent-a)">Flutter App (Dart) - [Swipe UI] [Txat UI] [PDF Ikustailea] [Gamifikazioa]</div>
+          <div style="display:grid;grid-template-columns:1fr;gap:10px;justify-items:center">
+            <div class="glass" style="width:80%;text-align:center;border-left:6px solid var(--accent-a);padding:10px">Flutter App (Dart) - [Swipe UI] [Txat UI] [PDF Ikustailea] [Gamifikazioa]</div>
             <div style="font-size:2rem;color:var(--accent-b)">↓</div>
-            <div class="glass" style="width:80%;text-align:center;border-left:6px solid #06b6d4">Firebase (Google Cloud) - [Firestore] [Auth] [Storage] [Crashlytics]</div>
+            <div class="glass" style="width:80%;text-align:center;border-left:6px solid #06b6d4;padding:10px">Firebase (Google Cloud) - [Firestore] [Auth] [Storage] [Crashlytics]</div>
             <div style="font-size:2rem;color:#a78bfa">↓</div>
-            <div class="glass" style="width:80%;text-align:center;border-left:6px solid #9f7aea">Kanpoko APIak - [OpenAI API] [PDF Library]</div>
+            <div class="glass" style="width:80%;text-align:center;border-left:6px solid #9f7aea;padding:10px">Kanpoko APIak - [OpenAI API] [PDF Library]</div>
           </div>
           <p style="margin-top:12px;color:var(--text-soft)">Serverless arkitektura: zerbitzari propiorik gabe, lehen erabiltzailetik eskalagarria.</p>
         </div>
