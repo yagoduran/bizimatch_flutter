@@ -53,7 +53,7 @@
     .logo.muted{opacity:0.14}
 
     /* Center content */
-    .center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem}
+    .center{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem}
     h1.title{font-size:5rem;margin:0;line-height:1;color:var(--text);background:var(--accent-grad);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 8px 28px rgba(79,172,254,0.06)}
     p.lead{color:var(--text-soft);font-size:1.15rem;margin-top:0.8rem}
     .emoji{font-size:4.5rem;margin-bottom:0.6rem}
@@ -82,8 +82,8 @@
     .watermark{position:fixed;left:18px;top:18px;font-weight:700;background:var(--accent-grad);-webkit-background-clip:text;background-clip:text;color:transparent;opacity:0.16}
 
     /* Cards and grids for content (utility classes) */
-    .row{display:flex;gap:24px;align-items:stretch}
-    .col{flex:1}
+    .row{display:flex;gap:24px;align-items:stretch;min-height:0}
+    .col{flex:1;min-width:0;min-height:0}
     .glass{background:var(--glass);border:1px solid var(--glass-border);padding:18px;border-radius:14px}
     .card-title{font-weight:700;color:var(--text);margin-bottom:8px}
     .card-text{color:var(--text-soft);font-size:0.98rem}
@@ -151,7 +151,7 @@
         <div class="header"><div class="logo">BiziMatch</div><div>✅ BiziMatch - Soluzio Integrala</div></div>
         <div class="center" style="align-items:stretch;text-align:left;">
           <div class="row" style="width:100%">
-            <div class="col" style="padding-right:12px">
+            <div class="col" style="display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:1rem;text-align:left;">
               <h3 class="card-title">Erabiltzaileari laguntzen dion aplikazio mugikorra</h3>
               <p class="card-text">Etxebizitza bilatzen hasten denetik eguneroko elkarbizitza kudeatzen duen arte erabiltzaileari laguntzen dion plataforma mugikorra.</p>
               <ul style="margin-top:10px;color:var(--text-soft)">
@@ -163,8 +163,8 @@
                 <li>🎮 Etxeko zereginen gamifikazioa</li>
               </ul>
             </div>
-            <div class="col glass" style="min-width:280px;max-width:420px;display:flex;align-items:center;justify-content:center">
-              <img src="Descubrir.jpg" alt="BiziMatch aplikazioko aurkikuntza pantaila" style="width: 100%; max-width: 300px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 15px 35px rgba(0,0,0,0.6); object-fit: contain; max-height: 54vh;">
+            <div class="col glass" style="min-width:280px;max-width:420px;height:calc(55vh + 48px);display:flex;align-items:center;justify-content:center;padding:24px;align-self:center;">
+              <img src="Descubrir.jpg" alt="BiziMatch aplikazioko aurkikuntza pantaila" style="max-height: 55vh; width: auto; max-width: 100%; object-fit: contain; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
             </div>
           </div>
         </div>
@@ -197,13 +197,13 @@
         <div class="header"><div class="logo">BiziMatch</div><div>🔎 1. Match Sistema</div></div>
         <div class="center" style="align-items:stretch">
           <div class="row" style="width:100%">
-            <div class="col glass" style="display:flex;gap:18px;align-items:center;justify-content:center;flex-wrap:wrap">
-              <img src="Descubrir.jpg" alt="Profilen aurkikuntza pantaila" style="width: 100%; max-width: 300px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 15px 35px rgba(0,0,0,0.6); object-fit: contain; max-height: 48vh;">
-              <img src="AnimacionMatch.jpg" alt="Match animazioaren pantaila" style="width: 100%; max-width: 300px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 15px 35px rgba(0,0,0,0.6); object-fit: contain; max-height: 48vh;">
+            <div class="col glass" style="height:calc(45vh + 48px);display:flex;flex-direction:row;gap:18px;align-items:center;justify-content:center;flex-wrap:nowrap;padding:24px;">
+              <img src="Descubrir.jpg" alt="Profilen aurkikuntza pantaila" style="height: 100%; max-height: 45vh; width: auto; object-fit: contain; border-radius: 16px;">
+              <img src="AnimacionMatch.jpg" alt="Match animazioaren pantaila" style="height: 100%; max-height: 45vh; width: auto; object-fit: contain; border-radius: 16px;">
             </div>
-            <div class="col" style="padding-left:12px;display:flex;flex-direction:column;justify-content:center">
-              <div style="margin-bottom:12px"><strong>👆 Swipe Sistema</strong><div class="card-text">Profilak ohitura eta bizi-estiloen bateragarritasunaren arabera irristatzea.</div></div>
-              <div style="margin-bottom:12px"><strong>👥 Eskuadroia Modua</strong><div class="card-text">2-3 pertsonako taldeek bat egin dezakete etxebizitza oso bat elkarrekin bilatzeko.</div></div>
+            <div class="col" style="display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:1rem;text-align:left;">
+              <div><strong>👆 Swipe Sistema</strong><div class="card-text">Profilak ohitura eta bizi-estiloen bateragarritasunaren arabera irristatzea.</div></div>
+              <div><strong>👥 Eskuadroia Modua</strong><div class="card-text">2-3 pertsonako taldeek bat egin dezakete etxebizitza oso bat elkarrekin bilatzeko.</div></div>
               <div><strong>🎵 Audioa Profilean</strong><div class="card-text">Erabiltzaileek ahots-ohar bat gehitu dezakete profilean konfiantza handiagoa sortzeko.</div></div>
             </div>
           </div>
@@ -218,14 +218,14 @@
         <div class="header"><div class="logo">BiziMatch</div><div>🤖 2. BiziBot - IA Laguntzailea</div></div>
         <div class="center" style="align-items:stretch">
           <div class="row" style="width:100%">
-            <div class="col" style="padding-right:12px">
+            <div class="col" style="display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:1rem;text-align:left;">
               <h3 class="card-title">Profilaren Analisia</h3>
               <p class="card-text">IAk beste erabiltzailearen biografia irakurtzen du eta izotza apurtzeko galdera bakarrak eta pertsonalizatuak sortzen ditu.</p>
-              <ul style="margin-top:12px;color:var(--text-soft)"><li>🧠 Profilaren analisia</li><li>💬 Elkarrizketa hasteko laguntza</li><li>⚡ OpenAI bidez gaitua</li></ul>
+              <ul style="color:var(--text-soft)"><li>🧠 Profilaren analisia</li><li>💬 Elkarrizketa hasteko laguntza</li><li>⚡ OpenAI bidez gaitua</li></ul>
             </div>
-            <div class="col glass" style="display:flex;gap:18px;align-items:center;justify-content:center;flex-wrap:wrap">
-              <img src="PantallaComunidad.jpg" alt="Loturen eta komunitatearen pantaila" style="width: 100%; max-width: 300px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 15px 35px rgba(0,0,0,0.6); object-fit: contain; max-height: 48vh;">
-              <img src="DentroDelChat.jpg" alt="BiziBot txataren pantaila" style="width: 100%; max-width: 300px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 15px 35px rgba(0,0,0,0.6); object-fit: contain; max-height: 48vh;">
+            <div class="col glass" style="height:calc(45vh + 48px);display:flex;flex-direction:row;gap:18px;align-items:center;justify-content:center;flex-wrap:nowrap;padding:24px;">
+              <img src="PantallaComunidad.jpg" alt="Loturen eta komunitatearen pantaila" style="height: 100%; max-height: 45vh; width: auto; object-fit: contain; border-radius: 16px;">
+              <img src="DentroDelChat.jpg" alt="BiziBot txataren pantaila" style="height: 100%; max-height: 45vh; width: auto; object-fit: contain; border-radius: 16px;">
             </div>
           </div>
         </div>
@@ -251,8 +251,8 @@
               <div class="card-text">Botoi bakarrarekin, BiziMatch-ek maizter guztien datuekin PDF kontratu legal bat sortzen du eta hodeian gordetzen du.</div>
               <div style="margin-top:8px;color:#06b6d4">✓ Cloud Storage-en gordeta</div>
             </div>
-            <div class="col glass" style="display:flex;align-items:center;justify-content:center">
-              <img src="MiCasaSinCasa.jpg" alt="Etxerik gabeko Nire Etxea pantaila" style="width: 100%; max-width: 300px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 15px 35px rgba(0,0,0,0.6); object-fit: contain; max-height: 46vh;">
+            <div class="col glass" style="height:calc(55vh + 48px);display:flex;align-items:center;justify-content:center;padding:24px;align-self:center;">
+              <img src="MiCasaSinCasa.jpg" alt="Etxerik gabeko Nire Etxea pantaila" style="max-height: 55vh; width: auto; max-width: 100%; object-fit: contain; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
             </div>
           </div>
         </div>
@@ -284,9 +284,9 @@
                   <div class="card-text" style="font-size:.9rem">Hiriko plan sozialak: kafea, kirola eta irteerak etxetik harago.</div>
                 </div>
             </div>
-            <div class="col glass" style="display:flex;gap:18px;align-items:center;justify-content:center;flex-wrap:nowrap">
-              <img src="Perfil.jpg" alt="Erabiltzaile-profilaren pantaila" style="width: 100%; max-width: 300px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 15px 35px rgba(0,0,0,0.6); object-fit: contain; max-height: 42vh;">
-              <img src="MiCasaConCasa.jpg" alt="Nire Etxea etxearekin pantaila" style="width: 100%; max-width: 300px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 15px 35px rgba(0,0,0,0.6); object-fit: contain; max-height: 42vh;">
+            <div class="col glass" style="height:calc(55vh + 48px);display:flex;flex-direction:row;gap:18px;align-items:center;justify-content:center;flex-wrap:nowrap;padding:24px;">
+              <img src="Perfil.jpg" alt="Erabiltzaile-profilaren pantaila" style="max-height: 55vh; width: auto; max-width: 100%; object-fit: contain; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+              <img src="MiCasaConCasa.jpg" alt="Nire Etxea etxearekin pantaila" style="max-height: 55vh; width: auto; max-width: 100%; object-fit: contain; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
             </div>
           </div>
         </div>
