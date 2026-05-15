@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class ExpenseCalculatorScreen extends StatefulWidget {
   final String chatId;
@@ -94,10 +95,10 @@ class _ExpenseCalculatorScreenState extends State<ExpenseCalculatorScreen> {
       Navigator.pop(context);
     } else {
       // Si no hay callback, copiar al portapapeles
-      final clipboard = widget.onSendToChat;
+      Clipboard.setData(ClipboardData(text: message));
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Mensaje preparado: $message'),
+          content: Text('Desglose copiado al portapapeles'),
           backgroundColor: Color(0xFF10B981),
         ),
       );
