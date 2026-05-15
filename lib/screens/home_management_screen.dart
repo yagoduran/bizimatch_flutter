@@ -594,43 +594,149 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
               final completadas = tareas.where((t) => t.completada).toList();
 
               return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (pendientes.isNotEmpty) ...[
-                    const Text(
-                      'Pendientes',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey,
-                      ),
+                  const Text(
+                    'Pendientes',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey,
                     ),
-                    const SizedBox(height: 8),
+                  ),
+                  const SizedBox(height: 8),
+                  if (pendientes.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        'Todo al dia. Arrastra nuevas tareas aqui cuando aparezcan.',
+                        style: TextStyle(color: AppTheme.textSecondary),
+                      ),
+                    )
+                  else
                     ...pendientes.map(
-                      (tarea) => _buildTareaCard(tarea, idCasa, myUid),
+                      (tarea) => _buildDraggableTareaCard(tarea, idCasa, myUid),
                     ),
-                  ],
-                  if (completadas.isNotEmpty && pendientes.isNotEmpty)
-                    const SizedBox(height: 16),
-                  if (completadas.isNotEmpty) ...[
-                    const Text(
-                      'Completadas',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ...completadas.map(
-                      (tarea) => _buildTareaCard(tarea, idCasa, myUid),
-                    ),
-                  ],
+                  const SizedBox(height: 14),
+                  _buildCompletionDropZone(idCasa, myUid, completadas),
                 ],
               );
             },
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDraggableTareaCard(Tarea tarea, String idCasa, String myUid) {
+    final canDrag = tarea.asignadoA == myUid && !tarea.completada;
+    final card = _buildTareaCard(tarea, idCasa, myUid);
+
+    if (!canDrag) {
+      return card;
+    }
+
+    return LongPressDraggable<Tarea>(
+      data: tarea,
+      dragAnchorStrategy: pointerDragAnchorStrategy,
+      feedback: Material(
+        color: Colors.transparent,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 340),
+          child: Opacity(opacity: 0.92, child: card),
+        ),
+      ),
+      childWhenDragging: Opacity(opacity: 0.36, child: card),
+      onDragStarted: HapticFeedback.mediumImpact,
+      child: card,
+    );
+  }
+
+  Widget _buildCompletionDropZone(
+    String idCasa,
+    String myUid,
+    List<Tarea> completadas,
+  ) {
+    return DragTarget<Tarea>(
+      onWillAcceptWithDetails: (details) =>
+          details.data.asignadoA == myUid && !details.data.completada,
+      onAcceptWithDetails: (details) {
+        HapticFeedback.heavyImpact();
+        _completarTarea(
+          details.data,
+          idCasa,
+          myUid,
+          triggerHaptic: false,
+        );
+      },
+      builder: (context, candidateData, rejectedData) {
+        final isHovering = candidateData.isNotEmpty;
+        return AnimatedContainer(
+          duration: AppTheme.motionMedium,
+          curve: AppTheme.motionCurve,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppTheme.primary.withValues(alpha: isHovering ? 0.16 : 0.08),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: AppTheme.primary.withValues(alpha: isHovering ? 0.70 : 0.28),
+              width: isHovering ? 2 : 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primary.withValues(alpha: isHovering ? 0.24 : 0.10),
+                blurRadius: isHovering ? 28 : 16,
+                spreadRadius: -8,
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    isHovering
+                        ? Icons.task_alt_rounded
+                        : Icons.move_to_inbox_rounded,
+                    color: AppTheme.primary,
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Completado',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${completadas.length}',
+                    style: const TextStyle(
+                      color: AppTheme.primary,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isHovering
+                    ? 'Suelta para ganar BiziPuntos'
+                    : 'Mantén pulsada una tarea y arrastrala aqui.',
+                style: const TextStyle(color: AppTheme.textSecondary),
+              ),
+              if (completadas.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                ...completadas.take(3).map(
+                      (tarea) => _buildTareaCard(tarea, idCasa, myUid),
+                    ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -787,7 +893,12 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
     );
   }
 
-  Future<void> _completarTarea(Tarea tarea, String idCasa, String myUid) async {
+  Future<void> _completarTarea(
+    Tarea tarea,
+    String idCasa,
+    String myUid, {
+    bool triggerHaptic = true,
+  }) async {
     try {
       await _homeService.completarTarea(
         idCasa: idCasa,
@@ -796,7 +907,9 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
         puntos: tarea.puntos,
       );
 
-      HapticFeedback.lightImpact();
+      if (triggerHaptic) {
+        HapticFeedback.lightImpact();
+      }
 
       // Animación de celebración
       await _celebrationController.forward();

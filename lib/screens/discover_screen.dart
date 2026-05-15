@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -18,6 +19,7 @@ import '../models/user_profile.dart';
 import '../services/escuadron_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/app_cached_network_image.dart';
+import 'profile_detail_screen.dart';
 
 class DiscoverScreen extends StatefulWidget {
   const DiscoverScreen({super.key});
@@ -69,6 +71,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   final EscuadronService _escuadronService = EscuadronService.instance;
 
   RangeValues _edadRango = const RangeValues(20, 40);
+  RangeValues _precioRango = const RangeValues(200, 600);
   String _filtroGenero = 'Todos';
   bool? _filtroFumador;
   bool? _filtroMascotas;
@@ -79,6 +82,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   int get _activeFiltersCount {
     int count = 0;
     if (_edadRango.start.round() != 20 || _edadRango.end.round() != 40) {
+      count += 1;
+    }
+    if (_precioRango.start.round() != 200 ||
+        _precioRango.end.round() != 600) {
       count += 1;
     }
     if (_filtroGenero != 'Todos') {
@@ -497,6 +504,18 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           ),
         );
       },
+    );
+  }
+
+  Future<void> _openProfileDetail(UserProfile user) async {
+    HapticFeedback.selectionClick();
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ProfileDetailScreen(
+          userUid: user.uid,
+          heroTag: user.uid,
+        ),
+      ),
     );
   }
 
@@ -1048,6 +1067,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           final ageOk =
               u.edad >= _edadRango.start.round() &&
               u.edad <= _edadRango.end.round();
+          final precio = u.precioAlquilerPorPersona;
+          final priceOk =
+              precio == null ||
+              (precio >= _precioRango.start && precio <= _precioRango.end);
           final generoOk =
               _filtroGenero == 'Todos' || u.genero == _filtroGenero;
           final fumadorOk =
@@ -1063,6 +1086,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               _filtroNivelLimpieza == 'Todos' ||
               u.nivelLimpieza == _filtroNivelLimpieza;
           return ageOk &&
+              priceOk &&
               generoOk &&
               fumadorOk &&
               mascotasOk &&
@@ -1075,6 +1099,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   Future<void> _abrirFiltros() async {
     RangeValues tempEdad = _edadRango;
+    RangeValues tempPrecio = _precioRango;
     String tempGenero = _filtroGenero;
     bool? tempFumador = _filtroFumador;
     bool? tempMascotas = _filtroMascotas;
@@ -1092,12 +1117,21 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            return SafeArea(
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-                ),
+            return ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                child: SafeArea(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.82),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(30),
+                      ),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.58),
+                      ),
+                    ),
                 child: SingleChildScrollView(
                   padding: EdgeInsets.only(
                     left: 20,
@@ -1134,6 +1168,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                             onPressed: () {
                               setModalState(() {
                                 tempEdad = const RangeValues(20, 40);
+                                tempPrecio = const RangeValues(200, 600);
                                 tempGenero = 'Todos';
                                 tempFumador = null;
                                 tempMascotas = null;
@@ -1145,6 +1180,58 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                             child: const Text('Reiniciar'),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 18),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.58),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.72),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Text(
+                                  'Precio',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const Spacer(),
+                                _filterPill('${tempPrecio.start.round()} EUR'),
+                                const SizedBox(width: 8),
+                                _filterPill('${tempPrecio.end.round()} EUR'),
+                              ],
+                            ),
+                            RangeSlider(
+                              values: tempPrecio,
+                              min: 100,
+                              max: 1200,
+                              divisions: 22,
+                              labels: RangeLabels(
+                                '${tempPrecio.start.round()} EUR',
+                                '${tempPrecio.end.round()} EUR',
+                              ),
+                              activeColor: AppTheme.primary,
+                              inactiveColor: const Color(0xFFDCE7E1),
+                              onChanged: (value) =>
+                                  setModalState(() => tempPrecio = value),
+                            ),
+                            const Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('100 EUR', style: TextStyle(fontSize: 12)),
+                                Text('1200 EUR', style: TextStyle(fontSize: 12)),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 18),
                       Container(
@@ -1540,6 +1627,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                           onPressed: () {
                             setState(() {
                               _edadRango = tempEdad;
+                              _precioRango = tempPrecio;
                               _filtroGenero = tempGenero;
                               _filtroFumador = tempFumador;
                               _filtroMascotas = tempMascotas;
@@ -1567,6 +1655,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                         ),
                       ),
                     ],
+                  ),
                   ),
                 ),
               ),
@@ -1916,6 +2005,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                           _snapBack();
                         }
                       },
+                      onTap: () => _openProfileDetail(current),
                       child: Transform.translate(
                         offset: _dragOffset,
                         child: Transform.scale(
@@ -2127,7 +2217,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                       fit: StackFit.expand,
                       children: [
                         if (enableHero)
-                          Hero(tag: 'photo_${user.uid}', child: image)
+                          Hero(tag: user.uid, child: image)
                         else
                           image,
                         const DecoratedBox(

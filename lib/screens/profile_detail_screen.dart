@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -93,16 +95,13 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Avatar
-                Center(
-                  child: Hero(
-                    tag: widget.heroTag ?? 'photo_${user.uid}',
-                    child: Material(
-                      color: Colors.transparent,
-                      child: AppCachedAvatar(
-                        imageUrl: user.fotoPerfil,
-                        radius: 60,
-                      ),
+                Hero(
+                  tag: widget.heroTag ?? user.uid,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(30),
+                    child: SizedBox(
+                      height: 280,
+                      child: _profileHeroImage(user.fotoPerfil),
                     ),
                   ),
                 ),
@@ -260,6 +259,31 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
           );
         },
       ),
+    );
+  }
+
+  Widget _profileHeroImage(String imageUrl) {
+    if (imageUrl.startsWith('assets/')) {
+      return Image.asset(
+        imageUrl,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    }
+    if (imageUrl.startsWith('/')) {
+      return Image.file(
+        File(imageUrl),
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    }
+    return AppCachedNetworkImage(
+      imageUrl: imageUrl,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
     );
   }
 }

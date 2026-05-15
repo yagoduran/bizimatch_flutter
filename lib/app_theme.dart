@@ -42,6 +42,16 @@ class AppTheme {
   static const Duration motionChatMessage = Duration(milliseconds: 160);
   static const Curve motionCurve = Curves.easeOutCubic;
   static const Curve motionCurveEmphasized = Curves.easeInOutCubic;
+  static const PageTransitionsTheme motionPageTransitions =
+      PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
+        },
+      );
 
   static ThemeData lightTheme() {
     final base = ThemeData.light(useMaterial3: true);
@@ -80,6 +90,7 @@ class AppTheme {
         onPrimary: Colors.white,
       ),
       textTheme: textTheme,
+      pageTransitionsTheme: motionPageTransitions,
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.white.withValues(alpha: 0.56),
         foregroundColor: textPrimary,
@@ -221,6 +232,7 @@ class AppTheme {
         onPrimary: Colors.white,
       ),
       textTheme: textTheme,
+      pageTransitionsTheme: motionPageTransitions,
       appBarTheme: AppBarTheme(
         backgroundColor: darkBackground.withValues(alpha: 0.72),
         foregroundColor: darkTextPrimary,
