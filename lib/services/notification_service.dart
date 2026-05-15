@@ -61,7 +61,7 @@ class NotificationService {
     await _localNotifications.zonedSchedule(
       1001,
       'BiziMatch',
-      '¡Tienes un nuevo Match esperándote!',
+      '¡Lucía ha completado: Limpiar Salón!',
       tz.TZDateTime.now(tz.local).add(const Duration(seconds: 10)),
       NotificationDetails(
         android: AndroidNotificationDetails(

@@ -72,6 +72,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   RangeValues _edadRango = const RangeValues(20, 40);
   RangeValues _precioRango = const RangeValues(200, 600);
+  double _afinidadMinima = 0;
   String _filtroGenero = 'Todos';
   bool? _filtroFumador;
   bool? _filtroMascotas;
@@ -86,6 +87,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     }
     if (_precioRango.start.round() != 200 ||
         _precioRango.end.round() != 600) {
+      count += 1;
+    }
+    if (_afinidadMinima.round() > 0) {
       count += 1;
     }
     if (_filtroGenero != 'Todos') {
@@ -513,7 +517,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       MaterialPageRoute<void>(
         builder: (_) => ProfileDetailScreen(
           userUid: user.uid,
-          heroTag: user.uid,
+          heroTag: 'profile_image_${user.uid}',
         ),
       ),
     );
@@ -1071,6 +1075,11 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           final priceOk =
               precio == null ||
               (precio >= _precioRango.start && precio <= _precioRango.end);
+          final affinityOk =
+              _afinidadMinima <= 0 ||
+              _myProfile == null ||
+              calcularAfinidad(_toUserModel(_myProfile!), _toUserModel(u)) >=
+                  _afinidadMinima.round();
           final generoOk =
               _filtroGenero == 'Todos' || u.genero == _filtroGenero;
           final fumadorOk =
@@ -1087,6 +1096,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               u.nivelLimpieza == _filtroNivelLimpieza;
           return ageOk &&
               priceOk &&
+              affinityOk &&
               generoOk &&
               fumadorOk &&
               mascotasOk &&
@@ -1100,6 +1110,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   Future<void> _abrirFiltros() async {
     RangeValues tempEdad = _edadRango;
     RangeValues tempPrecio = _precioRango;
+    double tempAfinidadMinima = _afinidadMinima;
     String tempGenero = _filtroGenero;
     bool? tempFumador = _filtroFumador;
     bool? tempMascotas = _filtroMascotas;
@@ -1169,6 +1180,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                               setModalState(() {
                                 tempEdad = const RangeValues(20, 40);
                                 tempPrecio = const RangeValues(200, 600);
+                                tempAfinidadMinima = 0;
                                 tempGenero = 'Todos';
                                 tempFumador = null;
                                 tempMascotas = null;
@@ -1180,6 +1192,54 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                             child: const Text('Reiniciar'),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 18),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.58),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.72),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Text(
+                                  'Afinidad minima',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const Spacer(),
+                                _filterPill('${tempAfinidadMinima.round()}%'),
+                              ],
+                            ),
+                            Slider(
+                              value: tempAfinidadMinima,
+                              min: 0,
+                              max: 100,
+                              divisions: 10,
+                              label: '${tempAfinidadMinima.round()}%',
+                              activeColor: AppTheme.primary,
+                              inactiveColor: const Color(0xFFDCE7E1),
+                              onChanged: (value) => setModalState(
+                                () => tempAfinidadMinima = value,
+                              ),
+                            ),
+                            const Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('Libre', style: TextStyle(fontSize: 12)),
+                                Text('Muy afin', style: TextStyle(fontSize: 12)),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 18),
                       Container(
@@ -1628,6 +1688,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                             setState(() {
                               _edadRango = tempEdad;
                               _precioRango = tempPrecio;
+                              _afinidadMinima = tempAfinidadMinima;
                               _filtroGenero = tempGenero;
                               _filtroFumador = tempFumador;
                               _filtroMascotas = tempMascotas;
@@ -2218,7 +2279,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                       fit: StackFit.expand,
                       children: [
                         if (enableHero)
-                          Hero(tag: user.uid, child: image)
+                          Hero(tag: 'profile_image_${user.uid}', child: image)
                         else
                           image,
                         const DecoratedBox(

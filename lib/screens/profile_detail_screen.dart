@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../models/user_profile.dart';
+import '../services/demo_service.dart';
 import '../widgets/app_cached_network_image.dart';
 
 class ProfileDetailScreen extends StatefulWidget {
@@ -28,6 +29,14 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
 
   Future<UserProfile?> _fetchUserProfile() async {
     try {
+      if (DemoService.instance.isDemoMode.value &&
+          widget.userUid.startsWith('demo')) {
+        return DemoService.instance.demoProfiles.firstWhere(
+          (profile) => profile.uid == widget.userUid,
+          orElse: () => DemoService.instance.demoProfiles.first,
+        );
+      }
+
       final doc = await _firestore
           .collection('usuarios')
           .doc(widget.userUid)
@@ -96,7 +105,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Hero(
-                  tag: widget.heroTag ?? user.uid,
+                  tag: widget.heroTag ?? 'profile_image_${user.uid}',
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(30),
                     child: SizedBox(

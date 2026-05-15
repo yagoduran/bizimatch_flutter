@@ -11,6 +11,7 @@ import '../widgets/glassmorphism.dart';
 import 'chat_detail_screen.dart';
 import '../services/demo_service.dart';
 import 'demo_chat_screen.dart';
+import 'profile_detail_screen.dart';
 
 class MatchesScreen extends StatefulWidget {
   const MatchesScreen({super.key});
@@ -107,6 +108,22 @@ class _MatchesScreenState extends State<MatchesScreen> {
             child: SlideTransition(position: offset, child: child),
           );
         },
+      ),
+    );
+  }
+
+  Future<void> _openProfileDetail(BuildContext context, String otherUid) async {
+    if (otherUid.trim().isEmpty) {
+      return;
+    }
+    HapticFeedback.selectionClick();
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => ProfileDetailScreen(
+          userUid: otherUid,
+          heroTag: 'profile_image_$otherUid',
+        ),
       ),
     );
   }
@@ -228,10 +245,19 @@ class _MatchesScreenState extends State<MatchesScreen> {
                                   horizontal: 14,
                                   vertical: 8,
                                 ),
-                                leading: AppCachedAvatar(
-                                  imageUrl: avatarUrl,
-                                  radius: 26,
-                                  backgroundColor: const Color(0xFFE7F4EE),
+                                leading: GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: () =>
+                                      _openProfileDetail(context, otherUid),
+                                  child: Hero(
+                                    tag: 'profile_image_$otherUid',
+                                    child: AppCachedAvatar(
+                                      imageUrl: avatarUrl,
+                                      radius: 26,
+                                      backgroundColor:
+                                          const Color(0xFFE7F4EE),
+                                    ),
+                                  ),
                                 ),
                                 title: Text(
                                   name,
