@@ -10,15 +10,18 @@ import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 import '../app_theme.dart';
 import '../services/demo_service.dart';
+import '../services/feature_tour_service.dart';
 import 'demo_chat_screen.dart';
 import '../models/user_model.dart';
 import '../models/user_profile.dart';
 import '../services/escuadron_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/app_cached_network_image.dart';
+import '../widgets/feature_tour_action_button.dart';
 import 'profile_detail_screen.dart';
 
 class DiscoverScreen extends StatefulWidget {
@@ -85,8 +88,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     if (_edadRango.start.round() != 20 || _edadRango.end.round() != 40) {
       count += 1;
     }
-    if (_precioRango.start.round() != 200 ||
-        _precioRango.end.round() != 600) {
+    if (_precioRango.start.round() != 200 || _precioRango.end.round() != 600) {
       count += 1;
     }
     if (_afinidadMinima.round() > 0) {
@@ -615,6 +617,28 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     );
   }
 
+  List<TooltipActionButton> _buildDiscoverTooltipActions() {
+    final featureTourService = FeatureTourService.instance;
+    return [
+      TooltipActionButton.custom(
+        button: FeatureTourActionButton(
+          label: 'Saltar',
+          onTap: () {
+            featureTourService.markMainTutorialSeen();
+            ShowcaseView.get().dismiss();
+          },
+        ),
+      ),
+      TooltipActionButton.custom(
+        button: FeatureTourActionButton(
+          label: 'Siguiente',
+          primary: true,
+          onTap: () => ShowcaseView.get().next(force: true),
+        ),
+      ),
+    ];
+  }
+
   void _setLikePressed(bool value) {
     if (_isLikePressed == value || !mounted) {
       return;
@@ -1129,7 +1153,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         return StatefulBuilder(
           builder: (context, setModalState) {
             return ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(30),
+              ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                 child: SafeArea(
@@ -1143,584 +1169,613 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                         color: Colors.white.withValues(alpha: 0.58),
                       ),
                     ),
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.only(
-                    left: 20,
-                    right: 20,
-                    top: 14,
-                    bottom: 24 + MediaQuery.of(context).viewInsets.bottom,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 46,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFD8E5DE),
-                            borderRadius: BorderRadius.circular(100),
-                          ),
-                        ),
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.only(
+                        left: 20,
+                        right: 20,
+                        top: 14,
+                        bottom: 24 + MediaQuery.of(context).viewInsets.bottom,
                       ),
-                      const SizedBox(height: 16),
-                      Row(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Center(
+                            child: Container(
+                              width: 46,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFD8E5DE),
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              const Text(
+                                'Filtros',
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const Spacer(),
+                              TextButton(
+                                onPressed: () {
+                                  setModalState(() {
+                                    tempEdad = const RangeValues(20, 40);
+                                    tempPrecio = const RangeValues(200, 600);
+                                    tempAfinidadMinima = 0;
+                                    tempGenero = 'Todos';
+                                    tempFumador = null;
+                                    tempMascotas = null;
+                                    tempTeletrabajo = null;
+                                    tempFrecuenciaFiestas = 'Todos';
+                                    tempNivelLimpieza = 'Todos';
+                                  });
+                                },
+                                child: const Text('Reiniciar'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.58),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.72),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Text(
+                                      'Afinidad minima',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    _filterPill(
+                                      '${tempAfinidadMinima.round()}%',
+                                    ),
+                                  ],
+                                ),
+                                Slider(
+                                  value: tempAfinidadMinima,
+                                  min: 0,
+                                  max: 100,
+                                  divisions: 10,
+                                  label: '${tempAfinidadMinima.round()}%',
+                                  activeColor: AppTheme.primary,
+                                  inactiveColor: const Color(0xFFDCE7E1),
+                                  onChanged: (value) => setModalState(
+                                    () => tempAfinidadMinima = value,
+                                  ),
+                                ),
+                                const Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Libre',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                    Text(
+                                      'Muy afin',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.58),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.72),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Text(
+                                      'Precio',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    _filterPill(
+                                      '${tempPrecio.start.round()} EUR',
+                                    ),
+                                    const SizedBox(width: 8),
+                                    _filterPill(
+                                      '${tempPrecio.end.round()} EUR',
+                                    ),
+                                  ],
+                                ),
+                                RangeSlider(
+                                  values: tempPrecio,
+                                  min: 100,
+                                  max: 1200,
+                                  divisions: 22,
+                                  labels: RangeLabels(
+                                    '${tempPrecio.start.round()} EUR',
+                                    '${tempPrecio.end.round()} EUR',
+                                  ),
+                                  activeColor: AppTheme.primary,
+                                  inactiveColor: const Color(0xFFDCE7E1),
+                                  onChanged: (value) =>
+                                      setModalState(() => tempPrecio = value),
+                                ),
+                                const Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      '100 EUR',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                    Text(
+                                      '1200 EUR',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF7FBF9),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: const Color(0xFFE3EEE8),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Text(
+                                      'Edad',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    _filterPill(
+                                      '${tempEdad.start.round()} años',
+                                    ),
+                                    const SizedBox(width: 8),
+                                    _filterPill('${tempEdad.end.round()} años'),
+                                  ],
+                                ),
+                                RangeSlider(
+                                  values: tempEdad,
+                                  min: 18,
+                                  max: 55,
+                                  labels: RangeLabels(
+                                    '${tempEdad.start.round()}',
+                                    '${tempEdad.end.round()}',
+                                  ),
+                                  activeColor: AppTheme.primary,
+                                  inactiveColor: const Color(0xFFDCE7E1),
+                                  onChanged: (value) =>
+                                      setModalState(() => tempEdad = value),
+                                ),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      '18',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    Text(
+                                      '55',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 18),
                           const Text(
-                            'Filtros',
+                            'Género',
                             style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                          const Spacer(),
-                          TextButton(
-                            onPressed: () {
-                              setModalState(() {
-                                tempEdad = const RangeValues(20, 40);
-                                tempPrecio = const RangeValues(200, 600);
-                                tempAfinidadMinima = 0;
-                                tempGenero = 'Todos';
-                                tempFumador = null;
-                                tempMascotas = null;
-                                tempTeletrabajo = null;
-                                tempFrecuenciaFiestas = 'Todos';
-                                tempNivelLimpieza = 'Todos';
-                              });
-                            },
-                            child: const Text('Reiniciar'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.58),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.72),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Text(
-                                  'Afinidad minima',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: [
+                              ChoiceChip(
+                                label: const Text('Todos'),
+                                selected: tempGenero == 'Todos',
+                                selectedColor: AppTheme.primary.withValues(
+                                  alpha: 0.16,
                                 ),
-                                const Spacer(),
-                                _filterPill('${tempAfinidadMinima.round()}%'),
-                              ],
+                                backgroundColor: const Color(0xFFF6FAF8),
+                                labelStyle: TextStyle(
+                                  color: tempGenero == 'Todos'
+                                      ? AppTheme.primary
+                                      : Colors.black87,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                side: BorderSide(
+                                  color: tempGenero == 'Todos'
+                                      ? AppTheme.primary
+                                      : const Color(0xFFDCE7E1),
+                                ),
+                                onSelected: (_) =>
+                                    setModalState(() => tempGenero = 'Todos'),
+                              ),
+                              ChoiceChip(
+                                label: const Text('Mujer'),
+                                selected: tempGenero == 'Mujer',
+                                selectedColor: AppTheme.primary.withValues(
+                                  alpha: 0.16,
+                                ),
+                                backgroundColor: const Color(0xFFF6FAF8),
+                                labelStyle: TextStyle(
+                                  color: tempGenero == 'Mujer'
+                                      ? AppTheme.primary
+                                      : Colors.black87,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                side: BorderSide(
+                                  color: tempGenero == 'Mujer'
+                                      ? AppTheme.primary
+                                      : const Color(0xFFDCE7E1),
+                                ),
+                                onSelected: (_) =>
+                                    setModalState(() => tempGenero = 'Mujer'),
+                              ),
+                              ChoiceChip(
+                                label: const Text('Hombre'),
+                                selected: tempGenero == 'Hombre',
+                                selectedColor: AppTheme.primary.withValues(
+                                  alpha: 0.16,
+                                ),
+                                backgroundColor: const Color(0xFFF6FAF8),
+                                labelStyle: TextStyle(
+                                  color: tempGenero == 'Hombre'
+                                      ? AppTheme.primary
+                                      : Colors.black87,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                side: BorderSide(
+                                  color: tempGenero == 'Hombre'
+                                      ? AppTheme.primary
+                                      : const Color(0xFFDCE7E1),
+                                ),
+                                onSelected: (_) =>
+                                    setModalState(() => tempGenero = 'Hombre'),
+                              ),
+                              ChoiceChip(
+                                label: const Text('No binario'),
+                                selected: tempGenero == 'No binario',
+                                selectedColor: AppTheme.primary.withValues(
+                                  alpha: 0.16,
+                                ),
+                                backgroundColor: const Color(0xFFF6FAF8),
+                                labelStyle: TextStyle(
+                                  color: tempGenero == 'No binario'
+                                      ? AppTheme.primary
+                                      : Colors.black87,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                side: BorderSide(
+                                  color: tempGenero == 'No binario'
+                                      ? AppTheme.primary
+                                      : const Color(0xFFDCE7E1),
+                                ),
+                                onSelected: (_) => setModalState(
+                                  () => tempGenero = 'No binario',
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+                          _segmentedFilterGroup(
+                            title: 'Fumador',
+                            value: tempFumador,
+                            onChanged: (value) =>
+                                setModalState(() => tempFumador = value),
+                          ),
+                          const SizedBox(height: 18),
+                          _segmentedFilterGroup(
+                            title: 'Mascotas',
+                            value: tempMascotas,
+                            onChanged: (value) =>
+                                setModalState(() => tempMascotas = value),
+                          ),
+                          const SizedBox(height: 18),
+                          _segmentedFilterGroup(
+                            title: 'Teletrabajo',
+                            value: tempTeletrabajo,
+                            onChanged: (value) =>
+                                setModalState(() => tempTeletrabajo = value),
+                          ),
+                          const SizedBox(height: 18),
+                          const Text(
+                            'Frecuencia de fiestas',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
                             ),
-                            Slider(
-                              value: tempAfinidadMinima,
-                              min: 0,
-                              max: 100,
-                              divisions: 10,
-                              label: '${tempAfinidadMinima.round()}%',
-                              activeColor: AppTheme.primary,
-                              inactiveColor: const Color(0xFFDCE7E1),
-                              onChanged: (value) => setModalState(
-                                () => tempAfinidadMinima = value,
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: [
+                              ChoiceChip(
+                                label: const Text('Todos'),
+                                selected: tempFrecuenciaFiestas == 'Todos',
+                                selectedColor: AppTheme.primary.withValues(
+                                  alpha: 0.16,
+                                ),
+                                backgroundColor: const Color(0xFFF6FAF8),
+                                labelStyle: TextStyle(
+                                  color: tempFrecuenciaFiestas == 'Todos'
+                                      ? AppTheme.primary
+                                      : Colors.black87,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                side: BorderSide(
+                                  color: tempFrecuenciaFiestas == 'Todos'
+                                      ? AppTheme.primary
+                                      : const Color(0xFFDCE7E1),
+                                ),
+                                onSelected: (_) => setModalState(
+                                  () => tempFrecuenciaFiestas = 'Todos',
+                                ),
+                              ),
+                              ChoiceChip(
+                                label: const Text('Alta'),
+                                selected: tempFrecuenciaFiestas == 'Alta',
+                                selectedColor: AppTheme.primary.withValues(
+                                  alpha: 0.16,
+                                ),
+                                backgroundColor: const Color(0xFFF6FAF8),
+                                labelStyle: TextStyle(
+                                  color: tempFrecuenciaFiestas == 'Alta'
+                                      ? AppTheme.primary
+                                      : Colors.black87,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                side: BorderSide(
+                                  color: tempFrecuenciaFiestas == 'Alta'
+                                      ? AppTheme.primary
+                                      : const Color(0xFFDCE7E1),
+                                ),
+                                onSelected: (_) => setModalState(
+                                  () => tempFrecuenciaFiestas = 'Alta',
+                                ),
+                              ),
+                              ChoiceChip(
+                                label: const Text('Media'),
+                                selected: tempFrecuenciaFiestas == 'Media',
+                                selectedColor: AppTheme.primary.withValues(
+                                  alpha: 0.16,
+                                ),
+                                backgroundColor: const Color(0xFFF6FAF8),
+                                labelStyle: TextStyle(
+                                  color: tempFrecuenciaFiestas == 'Media'
+                                      ? AppTheme.primary
+                                      : Colors.black87,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                side: BorderSide(
+                                  color: tempFrecuenciaFiestas == 'Media'
+                                      ? AppTheme.primary
+                                      : const Color(0xFFDCE7E1),
+                                ),
+                                onSelected: (_) => setModalState(
+                                  () => tempFrecuenciaFiestas = 'Media',
+                                ),
+                              ),
+                              ChoiceChip(
+                                label: const Text('Baja'),
+                                selected: tempFrecuenciaFiestas == 'Baja',
+                                selectedColor: AppTheme.primary.withValues(
+                                  alpha: 0.16,
+                                ),
+                                backgroundColor: const Color(0xFFF6FAF8),
+                                labelStyle: TextStyle(
+                                  color: tempFrecuenciaFiestas == 'Baja'
+                                      ? AppTheme.primary
+                                      : Colors.black87,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                side: BorderSide(
+                                  color: tempFrecuenciaFiestas == 'Baja'
+                                      ? AppTheme.primary
+                                      : const Color(0xFFDCE7E1),
+                                ),
+                                onSelected: (_) => setModalState(
+                                  () => tempFrecuenciaFiestas = 'Baja',
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+                          const Text(
+                            'Nivel de limpieza',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: [
+                              ChoiceChip(
+                                label: const Text('Todos'),
+                                selected: tempNivelLimpieza == 'Todos',
+                                selectedColor: AppTheme.primary.withValues(
+                                  alpha: 0.16,
+                                ),
+                                backgroundColor: const Color(0xFFF6FAF8),
+                                labelStyle: TextStyle(
+                                  color: tempNivelLimpieza == 'Todos'
+                                      ? AppTheme.primary
+                                      : Colors.black87,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                side: BorderSide(
+                                  color: tempNivelLimpieza == 'Todos'
+                                      ? AppTheme.primary
+                                      : const Color(0xFFDCE7E1),
+                                ),
+                                onSelected: (_) => setModalState(
+                                  () => tempNivelLimpieza = 'Todos',
+                                ),
+                              ),
+                              ChoiceChip(
+                                label: const Text('Estricto'),
+                                selected: tempNivelLimpieza == 'Estricto',
+                                selectedColor: AppTheme.primary.withValues(
+                                  alpha: 0.16,
+                                ),
+                                backgroundColor: const Color(0xFFF6FAF8),
+                                labelStyle: TextStyle(
+                                  color: tempNivelLimpieza == 'Estricto'
+                                      ? AppTheme.primary
+                                      : Colors.black87,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                side: BorderSide(
+                                  color: tempNivelLimpieza == 'Estricto'
+                                      ? AppTheme.primary
+                                      : const Color(0xFFDCE7E1),
+                                ),
+                                onSelected: (_) => setModalState(
+                                  () => tempNivelLimpieza = 'Estricto',
+                                ),
+                              ),
+                              ChoiceChip(
+                                label: const Text('Normal'),
+                                selected: tempNivelLimpieza == 'Normal',
+                                selectedColor: AppTheme.primary.withValues(
+                                  alpha: 0.16,
+                                ),
+                                backgroundColor: const Color(0xFFF6FAF8),
+                                labelStyle: TextStyle(
+                                  color: tempNivelLimpieza == 'Normal'
+                                      ? AppTheme.primary
+                                      : Colors.black87,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                side: BorderSide(
+                                  color: tempNivelLimpieza == 'Normal'
+                                      ? AppTheme.primary
+                                      : const Color(0xFFDCE7E1),
+                                ),
+                                onSelected: (_) => setModalState(
+                                  () => tempNivelLimpieza = 'Normal',
+                                ),
+                              ),
+                              ChoiceChip(
+                                label: const Text('Relajado'),
+                                selected: tempNivelLimpieza == 'Relajado',
+                                selectedColor: AppTheme.primary.withValues(
+                                  alpha: 0.16,
+                                ),
+                                backgroundColor: const Color(0xFFF6FAF8),
+                                labelStyle: TextStyle(
+                                  color: tempNivelLimpieza == 'Relajado'
+                                      ? AppTheme.primary
+                                      : Colors.black87,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                side: BorderSide(
+                                  color: tempNivelLimpieza == 'Relajado'
+                                      ? AppTheme.primary
+                                      : const Color(0xFFDCE7E1),
+                                ),
+                                onSelected: (_) => setModalState(
+                                  () => tempNivelLimpieza = 'Relajado',
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 22),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                setState(() {
+                                  _edadRango = tempEdad;
+                                  _precioRango = tempPrecio;
+                                  _afinidadMinima = tempAfinidadMinima;
+                                  _filtroGenero = tempGenero;
+                                  _filtroFumador = tempFumador;
+                                  _filtroMascotas = tempMascotas;
+                                  _filtroTeletrabajo = tempTeletrabajo;
+                                  _filtroFrecuenciaFiestas =
+                                      tempFrecuenciaFiestas;
+                                  _filtroNivelLimpieza = tempNivelLimpieza;
+                                  _filteredProfiles = _filtrar(_allProfiles);
+                                  _activeIndex = 0;
+                                });
+                                _scheduleNextProfilePrecache();
+                                Navigator.pop(context);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 15,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                              ),
+                              child: const Text(
+                                'Aplicar filtros',
+                                style: TextStyle(fontWeight: FontWeight.w700),
                               ),
                             ),
-                            const Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('Libre', style: TextStyle(fontSize: 12)),
-                                Text('Muy afin', style: TextStyle(fontSize: 12)),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.58),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.72),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Text(
-                                  'Precio',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const Spacer(),
-                                _filterPill('${tempPrecio.start.round()} EUR'),
-                                const SizedBox(width: 8),
-                                _filterPill('${tempPrecio.end.round()} EUR'),
-                              ],
-                            ),
-                            RangeSlider(
-                              values: tempPrecio,
-                              min: 100,
-                              max: 1200,
-                              divisions: 22,
-                              labels: RangeLabels(
-                                '${tempPrecio.start.round()} EUR',
-                                '${tempPrecio.end.round()} EUR',
-                              ),
-                              activeColor: AppTheme.primary,
-                              inactiveColor: const Color(0xFFDCE7E1),
-                              onChanged: (value) =>
-                                  setModalState(() => tempPrecio = value),
-                            ),
-                            const Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('100 EUR', style: TextStyle(fontSize: 12)),
-                                Text('1200 EUR', style: TextStyle(fontSize: 12)),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF7FBF9),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: const Color(0xFFE3EEE8)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Text(
-                                  'Edad',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const Spacer(),
-                                _filterPill('${tempEdad.start.round()} años'),
-                                const SizedBox(width: 8),
-                                _filterPill('${tempEdad.end.round()} años'),
-                              ],
-                            ),
-                            RangeSlider(
-                              values: tempEdad,
-                              min: 18,
-                              max: 55,
-                              labels: RangeLabels(
-                                '${tempEdad.start.round()}',
-                                '${tempEdad.end.round()}',
-                              ),
-                              activeColor: AppTheme.primary,
-                              inactiveColor: const Color(0xFFDCE7E1),
-                              onChanged: (value) =>
-                                  setModalState(() => tempEdad = value),
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  '18',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                Text(
-                                  '55',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      const Text(
-                        'Género',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          ChoiceChip(
-                            label: const Text('Todos'),
-                            selected: tempGenero == 'Todos',
-                            selectedColor: AppTheme.primary.withValues(
-                              alpha: 0.16,
-                            ),
-                            backgroundColor: const Color(0xFFF6FAF8),
-                            labelStyle: TextStyle(
-                              color: tempGenero == 'Todos'
-                                  ? AppTheme.primary
-                                  : Colors.black87,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            side: BorderSide(
-                              color: tempGenero == 'Todos'
-                                  ? AppTheme.primary
-                                  : const Color(0xFFDCE7E1),
-                            ),
-                            onSelected: (_) =>
-                                setModalState(() => tempGenero = 'Todos'),
-                          ),
-                          ChoiceChip(
-                            label: const Text('Mujer'),
-                            selected: tempGenero == 'Mujer',
-                            selectedColor: AppTheme.primary.withValues(
-                              alpha: 0.16,
-                            ),
-                            backgroundColor: const Color(0xFFF6FAF8),
-                            labelStyle: TextStyle(
-                              color: tempGenero == 'Mujer'
-                                  ? AppTheme.primary
-                                  : Colors.black87,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            side: BorderSide(
-                              color: tempGenero == 'Mujer'
-                                  ? AppTheme.primary
-                                  : const Color(0xFFDCE7E1),
-                            ),
-                            onSelected: (_) =>
-                                setModalState(() => tempGenero = 'Mujer'),
-                          ),
-                          ChoiceChip(
-                            label: const Text('Hombre'),
-                            selected: tempGenero == 'Hombre',
-                            selectedColor: AppTheme.primary.withValues(
-                              alpha: 0.16,
-                            ),
-                            backgroundColor: const Color(0xFFF6FAF8),
-                            labelStyle: TextStyle(
-                              color: tempGenero == 'Hombre'
-                                  ? AppTheme.primary
-                                  : Colors.black87,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            side: BorderSide(
-                              color: tempGenero == 'Hombre'
-                                  ? AppTheme.primary
-                                  : const Color(0xFFDCE7E1),
-                            ),
-                            onSelected: (_) =>
-                                setModalState(() => tempGenero = 'Hombre'),
-                          ),
-                          ChoiceChip(
-                            label: const Text('No binario'),
-                            selected: tempGenero == 'No binario',
-                            selectedColor: AppTheme.primary.withValues(
-                              alpha: 0.16,
-                            ),
-                            backgroundColor: const Color(0xFFF6FAF8),
-                            labelStyle: TextStyle(
-                              color: tempGenero == 'No binario'
-                                  ? AppTheme.primary
-                                  : Colors.black87,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            side: BorderSide(
-                              color: tempGenero == 'No binario'
-                                  ? AppTheme.primary
-                                  : const Color(0xFFDCE7E1),
-                            ),
-                            onSelected: (_) =>
-                                setModalState(() => tempGenero = 'No binario'),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 18),
-                      _segmentedFilterGroup(
-                        title: 'Fumador',
-                        value: tempFumador,
-                        onChanged: (value) =>
-                            setModalState(() => tempFumador = value),
-                      ),
-                      const SizedBox(height: 18),
-                      _segmentedFilterGroup(
-                        title: 'Mascotas',
-                        value: tempMascotas,
-                        onChanged: (value) =>
-                            setModalState(() => tempMascotas = value),
-                      ),
-                      const SizedBox(height: 18),
-                      _segmentedFilterGroup(
-                        title: 'Teletrabajo',
-                        value: tempTeletrabajo,
-                        onChanged: (value) =>
-                            setModalState(() => tempTeletrabajo = value),
-                      ),
-                      const SizedBox(height: 18),
-                      const Text(
-                        'Frecuencia de fiestas',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          ChoiceChip(
-                            label: const Text('Todos'),
-                            selected: tempFrecuenciaFiestas == 'Todos',
-                            selectedColor: AppTheme.primary.withValues(
-                              alpha: 0.16,
-                            ),
-                            backgroundColor: const Color(0xFFF6FAF8),
-                            labelStyle: TextStyle(
-                              color: tempFrecuenciaFiestas == 'Todos'
-                                  ? AppTheme.primary
-                                  : Colors.black87,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            side: BorderSide(
-                              color: tempFrecuenciaFiestas == 'Todos'
-                                  ? AppTheme.primary
-                                  : const Color(0xFFDCE7E1),
-                            ),
-                            onSelected: (_) => setModalState(
-                              () => tempFrecuenciaFiestas = 'Todos',
-                            ),
-                          ),
-                          ChoiceChip(
-                            label: const Text('Alta'),
-                            selected: tempFrecuenciaFiestas == 'Alta',
-                            selectedColor: AppTheme.primary.withValues(
-                              alpha: 0.16,
-                            ),
-                            backgroundColor: const Color(0xFFF6FAF8),
-                            labelStyle: TextStyle(
-                              color: tempFrecuenciaFiestas == 'Alta'
-                                  ? AppTheme.primary
-                                  : Colors.black87,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            side: BorderSide(
-                              color: tempFrecuenciaFiestas == 'Alta'
-                                  ? AppTheme.primary
-                                  : const Color(0xFFDCE7E1),
-                            ),
-                            onSelected: (_) => setModalState(
-                              () => tempFrecuenciaFiestas = 'Alta',
-                            ),
-                          ),
-                          ChoiceChip(
-                            label: const Text('Media'),
-                            selected: tempFrecuenciaFiestas == 'Media',
-                            selectedColor: AppTheme.primary.withValues(
-                              alpha: 0.16,
-                            ),
-                            backgroundColor: const Color(0xFFF6FAF8),
-                            labelStyle: TextStyle(
-                              color: tempFrecuenciaFiestas == 'Media'
-                                  ? AppTheme.primary
-                                  : Colors.black87,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            side: BorderSide(
-                              color: tempFrecuenciaFiestas == 'Media'
-                                  ? AppTheme.primary
-                                  : const Color(0xFFDCE7E1),
-                            ),
-                            onSelected: (_) => setModalState(
-                              () => tempFrecuenciaFiestas = 'Media',
-                            ),
-                          ),
-                          ChoiceChip(
-                            label: const Text('Baja'),
-                            selected: tempFrecuenciaFiestas == 'Baja',
-                            selectedColor: AppTheme.primary.withValues(
-                              alpha: 0.16,
-                            ),
-                            backgroundColor: const Color(0xFFF6FAF8),
-                            labelStyle: TextStyle(
-                              color: tempFrecuenciaFiestas == 'Baja'
-                                  ? AppTheme.primary
-                                  : Colors.black87,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            side: BorderSide(
-                              color: tempFrecuenciaFiestas == 'Baja'
-                                  ? AppTheme.primary
-                                  : const Color(0xFFDCE7E1),
-                            ),
-                            onSelected: (_) => setModalState(
-                              () => tempFrecuenciaFiestas = 'Baja',
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-                      const Text(
-                        'Nivel de limpieza',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          ChoiceChip(
-                            label: const Text('Todos'),
-                            selected: tempNivelLimpieza == 'Todos',
-                            selectedColor: AppTheme.primary.withValues(
-                              alpha: 0.16,
-                            ),
-                            backgroundColor: const Color(0xFFF6FAF8),
-                            labelStyle: TextStyle(
-                              color: tempNivelLimpieza == 'Todos'
-                                  ? AppTheme.primary
-                                  : Colors.black87,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            side: BorderSide(
-                              color: tempNivelLimpieza == 'Todos'
-                                  ? AppTheme.primary
-                                  : const Color(0xFFDCE7E1),
-                            ),
-                            onSelected: (_) => setModalState(
-                              () => tempNivelLimpieza = 'Todos',
-                            ),
-                          ),
-                          ChoiceChip(
-                            label: const Text('Estricto'),
-                            selected: tempNivelLimpieza == 'Estricto',
-                            selectedColor: AppTheme.primary.withValues(
-                              alpha: 0.16,
-                            ),
-                            backgroundColor: const Color(0xFFF6FAF8),
-                            labelStyle: TextStyle(
-                              color: tempNivelLimpieza == 'Estricto'
-                                  ? AppTheme.primary
-                                  : Colors.black87,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            side: BorderSide(
-                              color: tempNivelLimpieza == 'Estricto'
-                                  ? AppTheme.primary
-                                  : const Color(0xFFDCE7E1),
-                            ),
-                            onSelected: (_) => setModalState(
-                              () => tempNivelLimpieza = 'Estricto',
-                            ),
-                          ),
-                          ChoiceChip(
-                            label: const Text('Normal'),
-                            selected: tempNivelLimpieza == 'Normal',
-                            selectedColor: AppTheme.primary.withValues(
-                              alpha: 0.16,
-                            ),
-                            backgroundColor: const Color(0xFFF6FAF8),
-                            labelStyle: TextStyle(
-                              color: tempNivelLimpieza == 'Normal'
-                                  ? AppTheme.primary
-                                  : Colors.black87,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            side: BorderSide(
-                              color: tempNivelLimpieza == 'Normal'
-                                  ? AppTheme.primary
-                                  : const Color(0xFFDCE7E1),
-                            ),
-                            onSelected: (_) => setModalState(
-                              () => tempNivelLimpieza = 'Normal',
-                            ),
-                          ),
-                          ChoiceChip(
-                            label: const Text('Relajado'),
-                            selected: tempNivelLimpieza == 'Relajado',
-                            selectedColor: AppTheme.primary.withValues(
-                              alpha: 0.16,
-                            ),
-                            backgroundColor: const Color(0xFFF6FAF8),
-                            labelStyle: TextStyle(
-                              color: tempNivelLimpieza == 'Relajado'
-                                  ? AppTheme.primary
-                                  : Colors.black87,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            side: BorderSide(
-                              color: tempNivelLimpieza == 'Relajado'
-                                  ? AppTheme.primary
-                                  : const Color(0xFFDCE7E1),
-                            ),
-                            onSelected: (_) => setModalState(
-                              () => tempNivelLimpieza = 'Relajado',
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 22),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              _edadRango = tempEdad;
-                              _precioRango = tempPrecio;
-                              _afinidadMinima = tempAfinidadMinima;
-                              _filtroGenero = tempGenero;
-                              _filtroFumador = tempFumador;
-                              _filtroMascotas = tempMascotas;
-                              _filtroTeletrabajo = tempTeletrabajo;
-                              _filtroFrecuenciaFiestas = tempFrecuenciaFiestas;
-                              _filtroNivelLimpieza = tempNivelLimpieza;
-                              _filteredProfiles = _filtrar(_allProfiles);
-                              _activeIndex = 0;
-                            });
-                            _scheduleNextProfilePrecache();
-                            Navigator.pop(context);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                          ),
-                          child: const Text(
-                            'Aplicar filtros',
-                            style: TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
                   ),
                 ),
               ),
-            ),
             );
           },
         );
@@ -2072,20 +2127,50 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                         offset: _dragOffset,
                         child: Transform.scale(
                           scale: 1 - (dragProgress * 0.035),
-                          child: _profileCard(
-                            current,
-                            afinidad,
-                            topOffset: 0,
-                            scale: 1,
-                            opacity: 1,
-                            showApprove: _dragOffset.dx > 8,
-                            showReject: _dragOffset.dx < -8,
-                            overlayOpacity: dragProgress,
-                            enableHero: true,
-                            positioned: false,
-                            dynamicRotation:
-                                (_dragOffset.dx / 260) * (math.pi / 18),
-                            key: _profileCardKey(current, 'current'),
+                          child: Showcase(
+                            key: FeatureTourService.instance.discoverCardKey,
+                            title: '¡Encuentra a tu compañero ideal!',
+                            description:
+                                'Haz swipe a la derecha si te gusta su perfil, o a la izquierda para pasar.',
+                            titleTextStyle: const TextStyle(
+                              color: Color(0xFF101828),
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                            ),
+                            descTextStyle: const TextStyle(
+                              color: Color(0xFF475467),
+                              fontSize: 14,
+                              height: 1.45,
+                            ),
+                            tooltipBackgroundColor: Colors.white,
+                            tooltipPadding: const EdgeInsets.all(18),
+                            tooltipActionConfig: const TooltipActionConfig(
+                              alignment: MainAxisAlignment.spaceBetween,
+                              position: TooltipActionPosition.inside,
+                              gapBetweenContentAndAction: 14,
+                            ),
+                            tooltipBorderRadius: BorderRadius.circular(24),
+                            targetPadding: const EdgeInsets.all(10),
+                            targetBorderRadius: BorderRadius.circular(34),
+                            overlayColor: Colors.black,
+                            overlayOpacity: 0.72,
+                            disableDefaultTargetGestures: true,
+                            tooltipActions: _buildDiscoverTooltipActions(),
+                            child: _profileCard(
+                              current,
+                              afinidad,
+                              topOffset: 0,
+                              scale: 1,
+                              opacity: 1,
+                              showApprove: _dragOffset.dx > 8,
+                              showReject: _dragOffset.dx < -8,
+                              overlayOpacity: dragProgress,
+                              enableHero: true,
+                              positioned: false,
+                              dynamicRotation:
+                                  (_dragOffset.dx / 260) * (math.pi / 18),
+                              key: _profileCardKey(current, 'current'),
+                            ),
                           ),
                         ),
                       ),
@@ -2103,6 +2188,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   color: const Color(0xFFEA5A5A),
                   isPressed: _isDislikePressed,
                   onPressChanged: _setDislikePressed,
+                  semanticsLabel: 'Descartar perfil / Baztertu profila',
+                  semanticsHint: 'Pasa al siguiente perfil sin hacer match',
                   onTap: () {
                     HapticFeedback.selectionClick();
                     _pendingApprovedUid = null;
@@ -2117,6 +2204,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   color: AppTheme.primary,
                   isPressed: _isLikePressed,
                   onPressChanged: _setLikePressed,
+                  semanticsLabel: 'Me gusta / Gustatzen zait',
+                  semanticsHint:
+                      'Muestra interés en este perfil y pasa al siguiente',
                   onTap: () {
                     if (afinidad >= 85) {
                       HapticFeedback.heavyImpact();
@@ -2140,36 +2230,45 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     required Color color,
     required bool isPressed,
     required ValueChanged<bool> onPressChanged,
+    required String semanticsLabel,
+    required String semanticsHint,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTapDown: (_) => onPressChanged(true),
-      onTapUp: (_) => onPressChanged(false),
-      onTapCancel: () => onPressChanged(false),
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(100),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOutCubic,
-        width: isPressed ? 66 : 72,
-        height: isPressed ? 66 : 72,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.96),
+    return Semantics(
+      button: true,
+      label: semanticsLabel,
+      hint: semanticsHint,
+      child: ExcludeSemantics(
+        child: InkWell(
+          onTapDown: (_) => onPressChanged(true),
+          onTapUp: (_) => onPressChanged(false),
+          onTapCancel: () => onPressChanged(false),
+          onTap: onTap,
           borderRadius: BorderRadius.circular(100),
-          border: Border.all(
-            color: color.withValues(alpha: isPressed ? 0.62 : 0.4),
-            width: isPressed ? 1.8 : 1.4,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.32),
-              blurRadius: isPressed ? 18 : 28,
-              spreadRadius: isPressed ? 1 : 3,
-              offset: Offset(0, isPressed ? 5 : 12),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            curve: Curves.easeOutCubic,
+            width: isPressed ? 66 : 72,
+            height: isPressed ? 66 : 72,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.96),
+              borderRadius: BorderRadius.circular(100),
+              border: Border.all(
+                color: color.withValues(alpha: isPressed ? 0.62 : 0.4),
+                width: isPressed ? 1.8 : 1.4,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.32),
+                  blurRadius: isPressed ? 18 : 28,
+                  spreadRadius: isPressed ? 1 : 3,
+                  offset: Offset(0, isPressed ? 5 : 12),
+                ),
+              ],
             ),
-          ],
+            child: Icon(icon, color: color, size: isPressed ? 31 : 34),
+          ),
         ),
-        child: Icon(icon, color: color, size: isPressed ? 31 : 34),
       ),
     );
   }
@@ -2282,13 +2381,15 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                           Hero(tag: 'profile_image_${user.uid}', child: image)
                         else
                           image,
-                        const DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              stops: [0.55, 1.0],
-                              colors: [Color(0x00000000), Color(0xCC000000)],
+                        const ExcludeSemantics(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                stops: [0.55, 1.0],
+                                colors: [Color(0x00000000), Color(0xCC000000)],
+                              ),
                             ),
                           ),
                         ),
@@ -2348,6 +2449,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                             children: [
                               Text(
                                 '${user.nombre}, ${user.edad}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontSize: 25,
                                   fontWeight: FontWeight.w700,
@@ -2357,6 +2460,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                               const SizedBox(height: 6),
                               Text(
                                 '${user.origen} · ${user.horario == 'Manana' ? 'Mañana' : user.horario}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(color: Colors.white70),
                               ),
                               const SizedBox(height: 10),
@@ -2373,6 +2478,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                                   ),
                                   child: Text(
                                     '¡Tiene piso! - ${user.precioAlquilerPorPersona!.round()}€/mes',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w700,

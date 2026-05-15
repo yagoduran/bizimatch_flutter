@@ -2,10 +2,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 import '../models/pact_model.dart';
 import '../screens/contract_preview_screen.dart';
+import '../services/biometric_service.dart';
+import '../services/feature_tour_service.dart';
 import '../services/pact_service.dart';
+import '../widgets/feature_tour_action_button.dart';
 
 class CoexistencePactScreen extends StatefulWidget {
   const CoexistencePactScreen({
@@ -25,11 +29,13 @@ class CoexistencePactScreen extends StatefulWidget {
 
 class _CoexistencePactScreenState extends State<CoexistencePactScreen> {
   final PactService _pactService = PactService.instance;
+  final BiometricService _biometricService = BiometricService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _reglaController = TextEditingController();
   late final String _myUid;
   bool _isSigning = false;
   bool _isGeneratingContract = false;
+  bool _didScheduleContractTutorial = false;
 
   @override
   void initState() {
@@ -41,6 +47,46 @@ class _CoexistencePactScreenState extends State<CoexistencePactScreen> {
   void dispose() {
     _reglaController.dispose();
     super.dispose();
+  }
+
+  Future<void> _maybeStartContractTutorial() async {
+    final featureTourService = FeatureTourService.instance;
+    final shouldStart = await featureTourService
+        .shouldAutoStartContractTutorial();
+    if (!shouldStart || !mounted) {
+      return;
+    }
+
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    if (!mounted) {
+      return;
+    }
+    ShowcaseView.get().startShowCase([featureTourService.contractPdfButtonKey]);
+  }
+
+  List<TooltipActionButton> _buildContractTutorialActions() {
+    final featureTourService = FeatureTourService.instance;
+    return [
+      TooltipActionButton.custom(
+        button: FeatureTourActionButton(
+          label: 'Saltar',
+          onTap: () {
+            featureTourService.markContractTutorialSeen();
+            ShowcaseView.get().dismiss();
+          },
+        ),
+      ),
+      TooltipActionButton.custom(
+        button: FeatureTourActionButton(
+          label: 'Entendido',
+          primary: true,
+          onTap: () {
+            featureTourService.markContractTutorialSeen();
+            ShowcaseView.get().dismiss();
+          },
+        ),
+      ),
+    ];
   }
 
   Future<void> _agregarReglasPersonalizadas(String chatId) async {
@@ -89,6 +135,25 @@ class _CoexistencePactScreenState extends State<CoexistencePactScreen> {
   }
 
   Future<void> _abrirGeneradorContrato(Pact pact) async {
+    if (_isGeneratingContract) {
+      return;
+    }
+
+    final authenticated = await _biometricService.authenticate();
+    if (!authenticated) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No se pudo verificar tu identidad biométrica para generar el contrato.',
+          ),
+        ),
+      );
+      return;
+    }
+
     setState(() => _isGeneratingContract = true);
     HapticFeedback.lightImpact();
 
@@ -195,6 +260,13 @@ class _CoexistencePactScreenState extends State<CoexistencePactScreen> {
         final yaFirme = pact.estadoFirmas[_myUid] ?? false;
         final otroFirmo = pact.estadoFirmas[widget.otherUid] ?? false;
         final estaCerrado = pact.estaCerrado;
+
+        if (estaCerrado && !_didScheduleContractTutorial) {
+          _didScheduleContractTutorial = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _maybeStartContractTutorial();
+          });
+        }
 
         return Scaffold(
           appBar: AppBar(
@@ -467,38 +539,68 @@ class _CoexistencePactScreenState extends State<CoexistencePactScreen> {
                     padding: const EdgeInsets.all(16),
                     child: SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _isGeneratingContract
-                            ? null
-                            : () => _abrirGeneradorContrato(pact),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF10B981),
-                          disabledBackgroundColor: Colors.grey[300],
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                      child: Showcase(
+                        key: FeatureTourService.instance.contractPdfButtonKey,
+                        title: 'Todo por escrito',
+                        description:
+                            'Genera un pacto de convivencia legal en PDF en un solo clic.',
+                        titleTextStyle: const TextStyle(
+                          color: Color(0xFF101828),
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
                         ),
-                        icon: _isGeneratingContract
-                            ? const SizedBox(
-                                height: 18,
-                                width: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
+                        descTextStyle: const TextStyle(
+                          color: Color(0xFF475467),
+                          fontSize: 14,
+                          height: 1.45,
+                        ),
+                        tooltipBackgroundColor: Colors.white,
+                        tooltipPadding: const EdgeInsets.all(18),
+                        tooltipActionConfig: const TooltipActionConfig(
+                          alignment: MainAxisAlignment.spaceBetween,
+                          position: TooltipActionPosition.inside,
+                          gapBetweenContentAndAction: 14,
+                        ),
+                        tooltipBorderRadius: BorderRadius.circular(24),
+                        targetPadding: const EdgeInsets.all(8),
+                        targetBorderRadius: BorderRadius.circular(18),
+                        overlayColor: Colors.black,
+                        overlayOpacity: 0.72,
+                        disableDefaultTargetGestures: true,
+                        tooltipActions: _buildContractTutorialActions(),
+                        child: ElevatedButton.icon(
+                          onPressed: _isGeneratingContract
+                              ? null
+                              : () => _abrirGeneradorContrato(pact),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF10B981),
+                            disabledBackgroundColor: Colors.grey[300],
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: _isGeneratingContract
+                              ? const SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
                                   ),
-                                ),
-                              )
-                            : const Icon(Icons.picture_as_pdf),
-                        label: Text(
-                          _isGeneratingContract
-                              ? 'Generando contrato...'
-                              : 'Generar Contrato Oficial',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                                )
+                              : const Icon(Icons.picture_as_pdf),
+                          label: Text(
+                            _isGeneratingContract
+                                ? 'Generando contrato...'
+                                : 'Generar Contrato Oficial',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),

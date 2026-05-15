@@ -53,7 +53,9 @@ class GlassCard extends StatelessWidget {
             offset: const Offset(0, 14),
           ),
           BoxShadow(
-            color: isDark ? Colors.black.withValues(alpha: 0.32) : const Color(0x120B1220),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.32)
+                : const Color(0x120B1220),
             blurRadius: 18,
             offset: const Offset(0, 10),
           ),
@@ -76,7 +78,9 @@ class GlassCard extends StatelessWidget {
                       colors: [
                         Colors.white.withValues(alpha: glassOpacity.toDouble()),
                         Colors.white.withValues(alpha: isDark ? 0.06 : 0.22),
-                        AppTheme.primary.withValues(alpha: isDark ? 0.08 : 0.05),
+                        AppTheme.primary.withValues(
+                          alpha: isDark ? 0.08 : 0.05,
+                        ),
                       ],
                     ),
                 borderRadius: BorderRadius.circular(borderRadius - 1),
@@ -102,6 +106,8 @@ class GlowIconButton extends StatelessWidget {
     this.size = 56,
     this.colors = AppTheme.emeraldIndigo,
     this.tooltip,
+    this.semanticLabel,
+    this.semanticHint,
   });
 
   final IconData icon;
@@ -109,6 +115,8 @@ class GlowIconButton extends StatelessWidget {
   final double size;
   final List<Color> colors;
   final String? tooltip;
+  final String? semanticLabel;
+  final String? semanticHint;
 
   @override
   Widget build(BuildContext context) {
@@ -141,10 +149,17 @@ class GlowIconButton extends StatelessWidget {
       ),
     );
 
+    final decoratedButton = Semantics(
+      button: true,
+      label: semanticLabel ?? tooltip,
+      hint: semanticHint ?? (tooltip != null ? 'Activa $tooltip' : null),
+      child: ExcludeSemantics(child: button),
+    );
+
     if (tooltip == null) {
-      return button;
+      return decoratedButton;
     }
-    return Tooltip(message: tooltip!, child: button);
+    return Tooltip(message: tooltip!, child: decoratedButton);
   }
 }
 
@@ -322,9 +337,16 @@ class _AnimatedOrganicBackgroundState extends State<AnimatedOrganicBackground>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        return CustomPaint(
-          painter: _OrganicBackgroundPainter(_controller.value),
-          child: child,
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            ExcludeSemantics(
+              child: CustomPaint(
+                painter: _OrganicBackgroundPainter(_controller.value),
+              ),
+            ),
+            if (child != null) child,
+          ],
         );
       },
       child: widget.child,
@@ -366,61 +388,63 @@ class EmptyStateWidget extends StatelessWidget {
               SizedBox(
                 width: 170,
                 height: 150,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      width: 122,
-                      height: 122,
-                      decoration: BoxDecoration(
-                        gradient: AppTheme.brandGradient,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.primary.withValues(alpha: 0.24),
-                            blurRadius: 24,
-                            spreadRadius: 2,
-                          ),
-                        ],
+                child: ExcludeSemantics(
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Container(
+                        width: 122,
+                        height: 122,
+                        decoration: BoxDecoration(
+                          gradient: AppTheme.brandGradient,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.primary.withValues(alpha: 0.24),
+                              blurRadius: 24,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    Positioned(
-                      left: 20,
-                      top: 16,
-                      child: _OrbitDot(color: AppTheme.turquoise),
-                    ),
-                    Positioned(
-                      right: 24,
-                      top: 28,
-                      child: _OrbitDot(color: AppTheme.violet),
-                    ),
-                    Positioned(
-                      left: 28,
-                      bottom: 20,
-                      child: _OrbitDot(color: AppTheme.primary),
-                    ),
-                    Positioned(
-                      right: 18,
-                      bottom: 16,
-                      child: _OrbitDot(color: Colors.white),
-                    ),
-                    Container(
-                      width: 68,
-                      height: 68,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.96),
-                        borderRadius: BorderRadius.circular(22),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 18,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
+                      Positioned(
+                        left: 20,
+                        top: 16,
+                        child: _OrbitDot(color: AppTheme.turquoise),
                       ),
-                      child: Icon(icon, size: 34, color: AppTheme.primary),
-                    ),
-                  ],
+                      Positioned(
+                        right: 24,
+                        top: 28,
+                        child: _OrbitDot(color: AppTheme.violet),
+                      ),
+                      Positioned(
+                        left: 28,
+                        bottom: 20,
+                        child: _OrbitDot(color: AppTheme.primary),
+                      ),
+                      Positioned(
+                        right: 18,
+                        bottom: 16,
+                        child: _OrbitDot(color: Colors.white),
+                      ),
+                      Container(
+                        width: 68,
+                        height: 68,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.96),
+                          borderRadius: BorderRadius.circular(22),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Icon(icon, size: 34, color: AppTheme.primary),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -444,11 +468,9 @@ class EmptyStateWidget extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 18),
-              FilledButton(
-                onPressed: onAction,
-                child: Text(actionLabel),
-              ),
-              if (secondaryActionLabel != null && onSecondaryAction != null) ...[
+              FilledButton(onPressed: onAction, child: Text(actionLabel)),
+              if (secondaryActionLabel != null &&
+                  onSecondaryAction != null) ...[
                 const SizedBox(height: 10),
                 TextButton(
                   onPressed: onSecondaryAction,
@@ -470,19 +492,21 @@ class _OrbitDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 18,
-      height: 18,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.9),
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.32),
-            blurRadius: 10,
-            spreadRadius: 1,
-          ),
-        ],
+    return ExcludeSemantics(
+      child: Container(
+        width: 18,
+        height: 18,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.9),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.32),
+              blurRadius: 10,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
       ),
     );
   }

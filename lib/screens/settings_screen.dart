@@ -1,11 +1,19 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../app_theme.dart';
+import '../providers/theme_provider.dart';
 import '../services/auth_service.dart';
+import '../services/feature_tour_service.dart';
 import '../services/firestore_service.dart';
 import '../services/demo_service.dart';
 import '../services/notification_service.dart';
@@ -159,6 +167,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _resetAndReplayTutorial() async {
+    HapticFeedback.mediumImpact();
+    await FeatureTourService.instance.resetTutorialProgress();
+    FeatureTourService.instance.requestReplay();
+    if (mounted) {
+      _showInfo('Tutorial reiniciado. Volvemos a enseñarlo desde Explorar.');
+    }
+  }
+
   Future<void> seedDatabase() async {
     if (_isBusy) {
       return;
@@ -301,6 +318,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final themeProvider = context.watch<ThemeProvider>();
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.all(20),
@@ -341,6 +359,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 14),
           _section(
+            title: 'Apariencia (Itxura)',
+            child: _buildThemeSection(context, themeProvider),
+          ),
+          const SizedBox(height: 14),
+          _section(
             title: 'Configuración de Presentación',
             child: ValueListenableBuilder<bool>(
               valueListenable: DemoService.instance.isDemoMode,
@@ -370,6 +393,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onPressed: _isBusy ? null : _resetDemoData,
                         icon: const Icon(Icons.restart_alt_rounded),
                         label: const Text('Resetear Datos de Demo'),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 46,
+                      child: FilledButton.icon(
+                        onPressed: isDemo ? _resetAndReplayTutorial : null,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF2ECC71),
+                          foregroundColor: Colors.white,
+                        ),
+                        icon: const Icon(Icons.play_circle_outline_rounded),
+                        label: const Text('Repetir tutorial guiado'),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -780,6 +817,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           ),
+          const SizedBox(height: 14),
+          _section(
+            title: 'RGPD',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Gestiona tu información personal, exporta tus datos o elimina tu cuenta.',
+                  style: TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 13,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    onPressed: _isBusy ? null : _descargarMisDatos,
+                    icon: _isBusy
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.download_rounded),
+                    label: const Text('Descargar mis datos'),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: _isBusy
+                        ? null
+                        : () {
+                            if (DemoService.instance.isDemoMode.value) {
+                              HapticFeedback.selectionClick();
+                              _showInfo(
+                                'Modo Demo activo â€” no se puede eliminar cuenta demo.',
+                              );
+                              return;
+                            }
+                            HapticFeedback.heavyImpact();
+                            _confirmarEliminarCuenta();
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD61F1F),
+                      foregroundColor: Colors.white,
+                    ),
+                    icon: const Icon(Icons.delete_forever_outlined),
+                    label: const Text('Eliminar mi cuenta'),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -804,6 +900,88 @@ class _SettingsScreenState extends State<SettingsScreen> {
         HapticFeedback.selectionClick();
         onTap();
       },
+    );
+  }
+
+  Widget _buildThemeSection(BuildContext context, ThemeProvider themeProvider) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = Colors.white.withValues(alpha: isDark ? 0.10 : 0.55);
+    final backgroundColor = Colors.white.withValues(
+      alpha: isDark ? 0.04 : 0.52,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Elige cómo quieres ver BiziMatch en tiempo real.',
+          style: TextStyle(
+            color: AppTheme.textSecondary,
+            fontSize: 13,
+            height: 1.35,
+          ),
+        ),
+        const SizedBox(height: 14),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: borderColor),
+          ),
+          child: SegmentedButton<ThemeMode>(
+            showSelectedIcon: false,
+            segments: const [
+              ButtonSegment<ThemeMode>(
+                value: ThemeMode.light,
+                icon: Text('☀️'),
+                label: Text('Claro'),
+              ),
+              ButtonSegment<ThemeMode>(
+                value: ThemeMode.dark,
+                icon: Text('🌙'),
+                label: Text('Oscuro'),
+              ),
+              ButtonSegment<ThemeMode>(
+                value: ThemeMode.system,
+                icon: Text('📱'),
+                label: Text('Sistema'),
+              ),
+            ],
+            selected: <ThemeMode>{themeProvider.themeMode},
+            style: ButtonStyle(
+              padding: WidgetStateProperty.all(
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              ),
+              textStyle: WidgetStateProperty.all(
+                const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              ),
+              foregroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return Colors.white;
+                }
+                return isDark ? Colors.white70 : const Color(0xFF475467);
+              }),
+              backgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return const Color(0xFF2ECC71);
+                }
+                return Colors.transparent;
+              }),
+              side: WidgetStateProperty.all(BorderSide.none),
+              shape: WidgetStateProperty.all(
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+            ),
+            onSelectionChanged: (selection) {
+              final selectedMode = selection.first;
+              HapticFeedback.selectionClick();
+              context.read<ThemeProvider>().toggleTheme(selectedMode);
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -957,6 +1135,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return;
     }
 
+    if (!mounted) {
+      return;
+    }
+
+    final handledByNewFlow = ModalRoute.of(context) != null;
+    if (handledByNewFlow) {
+      await _eliminarMiCuenta();
+      return;
+    }
+
     setState(() => _isBusy = true);
     try {
       final user = _auth.currentUser;
@@ -992,6 +1180,151 @@ class _SettingsScreenState extends State<SettingsScreen> {
         setState(() => _isBusy = false);
       }
     }
+  }
+
+  Future<void> _eliminarMiCuenta() async {
+    setState(() => _isBusy = true);
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        _showInfo('No hay sesiÃ³n activa.');
+        return;
+      }
+
+      await _firestore.collection('usuarios').doc(user.uid).delete();
+      final usersDoc = _firestore.collection('users').doc(user.uid);
+      final usersSnapshot = await usersDoc.get();
+      if (usersSnapshot.exists) {
+        await usersDoc.delete();
+      }
+      await user.delete();
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        _showInfo(
+          'Por seguridad, vuelve a iniciar sesión antes de eliminar la cuenta.',
+        );
+      } else {
+        _showInfo('No se pudo eliminar la cuenta: ${e.code}');
+      }
+    } on FirebaseException catch (e) {
+      _showInfo('No se pudo eliminar la cuenta: ${e.message ?? e.code}');
+    } catch (e) {
+      _showInfo('No se pudo eliminar la cuenta: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isBusy = false);
+      }
+    }
+  }
+
+  Future<void> _descargarMisDatos() async {
+    setState(() => _isBusy = true);
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        _showInfo('No hay sesiÃ³n activa.');
+        return;
+      }
+
+      final usuariosSnapshot = await _firestore
+          .collection('usuarios')
+          .doc(user.uid)
+          .get();
+      final usersSnapshot = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      final exportPayload = <String, dynamic>{
+        'exportedAt': DateTime.now().toIso8601String(),
+        'firebaseAuth': {
+          'uid': user.uid,
+          'email': user.email,
+          'displayName': user.displayName,
+          'phoneNumber': user.phoneNumber,
+          'emailVerified': user.emailVerified,
+          'isAnonymous': user.isAnonymous,
+          'creationTime': user.metadata.creationTime?.toIso8601String(),
+          'lastSignInTime': user.metadata.lastSignInTime?.toIso8601String(),
+        },
+        'firestore': {
+          'usuarios': _normalizeFirestoreValue(usuariosSnapshot.data()),
+          'users': _normalizeFirestoreValue(usersSnapshot.data()),
+        },
+      };
+
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}\\bizimatch_datos_${user.uid}.json');
+      const encoder = JsonEncoder.withIndent('  ');
+      await file.writeAsString(
+        encoder.convert(_normalizeFirestoreValue(exportPayload)),
+      );
+
+      await SharePlus.instance.share(
+        ShareParams(
+          files: <XFile>[XFile(file.path)],
+          text: 'Exportación RGPD de tus datos de BiziMatch.',
+          subject: 'Mis datos de BiziMatch',
+        ),
+      );
+
+      if (mounted) {
+        _showInfo('Tu exportación de datos está lista para compartir.');
+      }
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        _showInfo(
+          'Por seguridad, vuelve a iniciar sesión antes de descargar tus datos.',
+        );
+      } else {
+        _showInfo('No se pudieron descargar tus datos: ${e.code}');
+      }
+    } on FirebaseException catch (e) {
+      _showInfo(
+        'Error de Firebase al exportar tus datos: ${e.message ?? e.code}',
+      );
+    } catch (e) {
+      _showInfo('No se pudieron descargar tus datos: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isBusy = false);
+      }
+    }
+  }
+
+  dynamic _normalizeFirestoreValue(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate().toIso8601String();
+    }
+    if (value is GeoPoint) {
+      return <String, double>{
+        'latitude': value.latitude,
+        'longitude': value.longitude,
+      };
+    }
+    if (value is DocumentReference) {
+      return value.path;
+    }
+    if (value is Map) {
+      return value.map(
+        (key, nestedValue) =>
+            MapEntry(key.toString(), _normalizeFirestoreValue(nestedValue)),
+      );
+    }
+    if (value is Iterable) {
+      return value.map(_normalizeFirestoreValue).toList(growable: false);
+    }
+    return value;
   }
 
   Future<void> _poblarEspana() async {

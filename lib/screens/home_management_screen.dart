@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:printing/printing.dart';
+import 'package:showcaseview/showcaseview.dart';
 import 'dart:typed_data';
 
 import '../app_theme.dart';
@@ -15,8 +16,10 @@ import '../models/user_profile.dart';
 import '../screens/contract_url_preview_screen.dart';
 import '../services/home_service.dart';
 import '../services/demo_service.dart';
+import '../services/feature_tour_service.dart';
 import '../widgets/app_cached_network_image.dart';
 import '../widgets/expense_dashboard.dart';
+import '../widgets/feature_tour_action_button.dart';
 import '../widgets/glassmorphism.dart';
 
 class HomeManagementScreen extends StatefulWidget {
@@ -105,13 +108,43 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
           backgroundColor: AppTheme.primary,
           elevation: 0,
         ),
-        body: EmptyStateWidget(
-          icon: Icons.home_work_outlined,
-          title: 'Todavía no tienes casa compartida',
-          message:
-              'Completa una mudanza para activar Mi Casa y empezar a organizar el piso.',
-          actionLabel: 'Ir a descubrir',
-          onAction: () => Navigator.of(context).maybePop(),
+        body: Showcase(
+          key: FeatureTourService.instance.homeTasksExpensesKey,
+          title: 'Convive en paz',
+          description:
+              'Apunta los gastos compartidos y gana BiziPuntuak haciendo las tareas del hogar.',
+          titleTextStyle: const TextStyle(
+            color: Color(0xFF101828),
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+          ),
+          descTextStyle: const TextStyle(
+            color: Color(0xFF475467),
+            fontSize: 14,
+            height: 1.45,
+          ),
+          tooltipBackgroundColor: Colors.white,
+          tooltipPadding: const EdgeInsets.all(18),
+          tooltipActionConfig: const TooltipActionConfig(
+            alignment: MainAxisAlignment.spaceBetween,
+            position: TooltipActionPosition.inside,
+            gapBetweenContentAndAction: 14,
+          ),
+          tooltipBorderRadius: BorderRadius.circular(24),
+          targetPadding: const EdgeInsets.all(10),
+          targetBorderRadius: BorderRadius.circular(30),
+          overlayColor: Colors.black,
+          overlayOpacity: 0.72,
+          disableDefaultTargetGestures: true,
+          tooltipActions: _buildHomeTutorialActions(),
+          child: EmptyStateWidget(
+            icon: Icons.home_work_outlined,
+            title: 'Todavía no tienes casa compartida',
+            message:
+                'Completa una mudanza para activar Mi Casa y empezar a organizar el piso.',
+            actionLabel: 'Ir a descubrir',
+            onAction: () => Navigator.of(context).maybePop(),
+          ),
         ),
       );
     }
@@ -135,7 +168,37 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
           children: [
             _buildContratoVigenteCard(_idCasa!),
             const SizedBox(height: 16),
-            const ExpenseDashboard(),
+            Showcase(
+              key: FeatureTourService.instance.homeTasksExpensesKey,
+              title: 'Convive en paz',
+              description:
+                  'Apunta los gastos compartidos y gana BiziPuntuak haciendo las tareas del hogar.',
+              titleTextStyle: const TextStyle(
+                color: Color(0xFF101828),
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+              descTextStyle: const TextStyle(
+                color: Color(0xFF475467),
+                fontSize: 14,
+                height: 1.45,
+              ),
+              tooltipBackgroundColor: Colors.white,
+              tooltipPadding: const EdgeInsets.all(18),
+              tooltipActionConfig: const TooltipActionConfig(
+                alignment: MainAxisAlignment.spaceBetween,
+                position: TooltipActionPosition.inside,
+                gapBetweenContentAndAction: 14,
+              ),
+              tooltipBorderRadius: BorderRadius.circular(24),
+              targetPadding: const EdgeInsets.all(6),
+              targetBorderRadius: BorderRadius.circular(30),
+              overlayColor: Colors.black,
+              overlayOpacity: 0.72,
+              disableDefaultTargetGestures: true,
+              tooltipActions: _buildHomeTutorialActions(),
+              child: const ExpenseDashboard(),
+            ),
             const SizedBox(height: 16),
 
             // Dashboard de Ranking
@@ -303,6 +366,31 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
       );
     }
     return response.bodyBytes;
+  }
+
+  List<TooltipActionButton> _buildHomeTutorialActions() {
+    final featureTourService = FeatureTourService.instance;
+    return [
+      TooltipActionButton.custom(
+        button: FeatureTourActionButton(
+          label: 'Saltar',
+          onTap: () {
+            featureTourService.markMainTutorialSeen();
+            ShowcaseView.get().dismiss();
+          },
+        ),
+      ),
+      TooltipActionButton.custom(
+        button: FeatureTourActionButton(
+          label: 'Listo',
+          primary: true,
+          onTap: () {
+            featureTourService.markMainTutorialSeen();
+            ShowcaseView.get().dismiss();
+          },
+        ),
+      ),
+    ];
   }
 
   Widget _buildRankingDashboard(String idCasa, String myUid) {
@@ -657,12 +745,7 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
           details.data.asignadoA == myUid && !details.data.completada,
       onAcceptWithDetails: (details) {
         HapticFeedback.heavyImpact();
-        _completarTarea(
-          details.data,
-          idCasa,
-          myUid,
-          triggerHaptic: false,
-        );
+        _completarTarea(details.data, idCasa, myUid, triggerHaptic: false);
       },
       builder: (context, candidateData, rejectedData) {
         final isHovering = candidateData.isNotEmpty;
@@ -674,12 +757,16 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
             color: AppTheme.primary.withValues(alpha: isHovering ? 0.16 : 0.08),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: AppTheme.primary.withValues(alpha: isHovering ? 0.70 : 0.28),
+              color: AppTheme.primary.withValues(
+                alpha: isHovering ? 0.70 : 0.28,
+              ),
               width: isHovering ? 2 : 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.primary.withValues(alpha: isHovering ? 0.24 : 0.10),
+                color: AppTheme.primary.withValues(
+                  alpha: isHovering ? 0.24 : 0.10,
+                ),
                 blurRadius: isHovering ? 28 : 16,
                 spreadRadius: -8,
               ),
@@ -724,9 +811,9 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
               ),
               if (completadas.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                ...completadas.take(3).map(
-                      (tarea) => _buildTareaCard(tarea, idCasa, myUid),
-                    ),
+                ...completadas
+                    .take(3)
+                    .map((tarea) => _buildTareaCard(tarea, idCasa, myUid)),
               ],
             ],
           ),
@@ -987,7 +1074,37 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
             const SizedBox(height: 16),
 
             // Información de la casa demo
-            const ExpenseDashboard(),
+            Showcase(
+              key: FeatureTourService.instance.homeTasksExpensesKey,
+              title: 'Convive en paz',
+              description:
+                  'Apunta los gastos compartidos y gana BiziPuntuak haciendo las tareas del hogar.',
+              titleTextStyle: const TextStyle(
+                color: Color(0xFF101828),
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+              descTextStyle: const TextStyle(
+                color: Color(0xFF475467),
+                fontSize: 14,
+                height: 1.45,
+              ),
+              tooltipBackgroundColor: Colors.white,
+              tooltipPadding: const EdgeInsets.all(18),
+              tooltipActionConfig: const TooltipActionConfig(
+                alignment: MainAxisAlignment.spaceBetween,
+                position: TooltipActionPosition.inside,
+                gapBetweenContentAndAction: 14,
+              ),
+              tooltipBorderRadius: BorderRadius.circular(24),
+              targetPadding: const EdgeInsets.all(6),
+              targetBorderRadius: BorderRadius.circular(30),
+              overlayColor: Colors.black,
+              overlayOpacity: 0.72,
+              disableDefaultTargetGestures: true,
+              tooltipActions: _buildHomeTutorialActions(),
+              child: const ExpenseDashboard(),
+            ),
             const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),

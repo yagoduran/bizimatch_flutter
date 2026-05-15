@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:showcaseview/showcaseview.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../app_theme.dart';
 import '../services/demo_service.dart';
+import '../services/feature_tour_service.dart';
 import '../services/firestore_service.dart';
+import '../widgets/feature_tour_action_button.dart';
 import 'community_screen.dart';
 import 'discover_screen.dart';
 import 'home_management_screen.dart';
@@ -28,6 +31,8 @@ class _MainScaffoldState extends State<MainScaffold>
   int _loadingRevision = 0;
   late final TabController _tabController;
   final FirestoreService _firestoreService = FirestoreService();
+  final FeatureTourService _featureTourService = FeatureTourService.instance;
+  bool _startingTutorial = false;
 
   final _screens = const [
     DiscoverScreen(),
@@ -56,6 +61,17 @@ class _MainScaffoldState extends State<MainScaffold>
     DemoService.instance.isDemoMode.addListener(_syncDemoWakelock);
     _syncDemoWakelock();
     _verificarLikesRecibidos();
+    _featureTourService.replayRequests.addListener(_handleTutorialReplay);
+
+    ShowcaseView.register(
+      blurValue: 2.4,
+      overlayOpacity: 0.72,
+      onDismiss: _handleTutorialDismiss,
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _maybeStartTutorial();
+    });
   }
 
   Future<void> _syncDemoWakelock() async {
@@ -64,6 +80,81 @@ class _MainScaffoldState extends State<MainScaffold>
     } else {
       await WakelockPlus.disable();
     }
+  }
+
+  Future<void> _maybeStartTutorial({bool force = false}) async {
+    if (_startingTutorial || !mounted) {
+      return;
+    }
+
+    final shouldStart =
+        force || await _featureTourService.shouldAutoStartMainTutorial();
+    if (!shouldStart || !mounted) {
+      return;
+    }
+
+    _startingTutorial = true;
+    _selectScreen(0);
+    await Future<void>.delayed(const Duration(milliseconds: 450));
+    if (!mounted) {
+      _startingTutorial = false;
+      return;
+    }
+
+    ShowcaseView.get().startShowCase([
+      _featureTourService.discoverCardKey,
+      _featureTourService.chatsTabKey,
+      _featureTourService.homeTasksExpensesKey,
+    ]);
+    _startingTutorial = false;
+  }
+
+  void _handleTutorialReplay() {
+    _maybeStartTutorial(force: true);
+  }
+
+  void _handleTutorialDismiss(GlobalKey? key) {
+    if (key == _featureTourService.contractPdfButtonKey) {
+      _featureTourService.markContractTutorialSeen();
+      return;
+    }
+
+    final mainKeys = <GlobalKey>{
+      _featureTourService.discoverCardKey,
+      _featureTourService.chatsTabKey,
+      _featureTourService.homeTasksExpensesKey,
+    };
+    if (key == null || mainKeys.contains(key)) {
+      _featureTourService.markMainTutorialSeen();
+    }
+  }
+
+  List<TooltipActionButton> _buildChatsTooltipActions() {
+    return [
+      TooltipActionButton.custom(
+        button: FeatureTourActionButton(
+          label: 'Saltar',
+          onTap: () {
+            _featureTourService.markMainTutorialSeen();
+            ShowcaseView.get().dismiss();
+          },
+        ),
+      ),
+      TooltipActionButton.custom(
+        button: FeatureTourActionButton(
+          label: 'Siguiente',
+          primary: true,
+          onTap: () async {
+            _selectScreen(3);
+            await Future<void>.delayed(const Duration(milliseconds: 550));
+            if (!mounted) {
+              return;
+            }
+            ShowcaseView.get().next(force: true);
+          },
+        ),
+      ),
+    ];
   }
 
   bool _shouldFakeLoad(int index) => index == 1 || index == 3;
@@ -258,6 +349,8 @@ class _MainScaffoldState extends State<MainScaffold>
   @override
   void dispose() {
     DemoService.instance.isDemoMode.removeListener(_syncDemoWakelock);
+    _featureTourService.replayRequests.removeListener(_handleTutorialReplay);
+    ShowcaseView.get().unregister();
     WakelockPlus.disable();
     _tabController.dispose();
     super.dispose();
@@ -288,25 +381,81 @@ class _MainScaffoldState extends State<MainScaffold>
           }
           _selectScreen(index);
         },
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.travel_explore_rounded),
+            icon: Semantics(
+              button: true,
+              label: 'Explorar / Arakatu',
+              hint: 'Abre la pantalla para descubrir perfiles',
+              child: ExcludeSemantics(
+                child: Icon(Icons.travel_explore_rounded),
+              ),
+            ),
             label: 'Explorar',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.groups_rounded),
+            icon: Showcase(
+              key: _featureTourService.chatsTabKey,
+              title: 'Rompe el hielo con BiziBot',
+              description:
+                  'Nuestra IA analiza los perfiles y te da preguntas personalizadas para empezar a hablar sin vergüenza.',
+              titleTextStyle: const TextStyle(
+                color: Color(0xFF101828),
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+              descTextStyle: const TextStyle(
+                color: Color(0xFF475467),
+                fontSize: 14,
+                height: 1.45,
+              ),
+              tooltipBackgroundColor: Colors.white,
+              tooltipPadding: const EdgeInsets.all(18),
+              tooltipActionConfig: const TooltipActionConfig(
+                alignment: MainAxisAlignment.spaceBetween,
+                position: TooltipActionPosition.inside,
+                gapBetweenContentAndAction: 14,
+              ),
+              tooltipBorderRadius: BorderRadius.circular(24),
+              targetPadding: const EdgeInsets.all(8),
+              overlayColor: Colors.black,
+              overlayOpacity: 0.72,
+              disableDefaultTargetGestures: true,
+              tooltipActions: _buildChatsTooltipActions(),
+              child: Semantics(
+                button: true,
+                label: 'Vínculos y chats / Loturak eta txatak',
+                hint: 'Abre tus conversaciones y conexiones',
+                child: ExcludeSemantics(child: Icon(Icons.groups_rounded)),
+              ),
+            ),
             label: 'Vínculos',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.local_bar_outlined),
+            icon: Semantics(
+              button: true,
+              label: 'Comunidad / Komunitatea',
+              hint: 'Abre los planes y actividades compartidas',
+              child: ExcludeSemantics(child: Icon(Icons.local_bar_outlined)),
+            ),
             label: 'Comunidad',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.home_work_outlined),
+            icon: Semantics(
+              button: true,
+              label: 'Mi casa / Nire etxea',
+              hint: 'Gestiona tareas y gastos del hogar',
+              child: ExcludeSemantics(child: Icon(Icons.home_work_outlined)),
+            ),
             label: 'Casa',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.more_horiz_rounded),
+            icon: Semantics(
+              button: true,
+              label: 'Más opciones / Aukera gehiago',
+              hint: 'Abre perfil, mapa y ajustes',
+              child: ExcludeSemantics(child: Icon(Icons.more_horiz_rounded)),
+            ),
             label: 'Más',
           ),
         ],
