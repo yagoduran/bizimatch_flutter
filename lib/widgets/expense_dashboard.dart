@@ -5,6 +5,10 @@ import '../app_theme.dart';
 import '../services/demo_service.dart';
 import 'glassmorphism.dart';
 
+/// Gastuen dashboard txiki bat erakusten duen widget-a: pie chart, legenda eta transakzioak.
+///
+/// Helburua: hileroko gastuen banaketa eta azken transakzioak bistaratzea,
+/// demo moduan 'saldatu' aukerarekin interakzioa ahalbidetuz.
 class ExpenseDashboard extends StatelessWidget {
   const ExpenseDashboard({super.key});
 
@@ -29,9 +33,12 @@ class ExpenseDashboard extends StatelessWidget {
     final secondaryText =
         isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary;
 
+    // DemoService-eko `settledDemoExpenses`-i atxikitzen zaio ValueListenableBuilder bidez.
+    // Honek UI-a automatikoki eguneratuko du demo-transakzioen egoera aldatzean.
     return ValueListenableBuilder<Set<String>>(
       valueListenable: DemoService.instance.settledDemoExpenses,
       builder: (context, settledExpenses, _) {
+        // Demoko transakzio guztiak saldatuak dauden jakiteko kalkulua.
         final allSettled = _transactions.every(
           (item) => settledExpenses.contains(item.id),
         );
@@ -122,6 +129,7 @@ class ExpenseDashboard extends StatelessWidget {
                           }).toList(growable: false),
                         ),
                       ),
+                      // Pie chart eta erdiko total balioa elkarren gainean jartzen dira.
                       Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -175,12 +183,14 @@ class ExpenseDashboard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
+          // Botoi nagusia: demoko transakzio guztiak saldatu badira desaktibatuta egongo da.
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
               onPressed: allSettled
                   ? null
                   : () {
+                      // Botoia sakatzean, demo transakzio guztiak 'saldatu' bezala markatzen dira.
                       for (final item in _transactions) {
                         DemoService.instance.settleDemoExpense(item.id);
                       }
@@ -202,6 +212,11 @@ class ExpenseDashboard extends StatelessWidget {
   }
 }
 
+/// Pie chart-eko kolore bakoitzerako legenda errenkada bat.
+///
+/// Parametroak:
+/// - `slice`: Kolore eta label informazioa duen _ExpenseSlice.
+/// - `total`: Guztira kalkulatutako soma, ehunekoa kalkulatzeko erabiltzen da.
 class _LegendRow extends StatelessWidget {
   const _LegendRow({required this.slice, required this.total});
 
@@ -245,6 +260,11 @@ class _LegendRow extends StatelessWidget {
   }
 }
 
+/// Transakzio bakunaren errenkada: informazioa eta egoera (saldatuta ala ez).
+///
+/// Parametroak:
+/// - `item`: _TransactionItem objetua (id, title, subtitle, amount).
+/// - `settled`: Boolean adierazten du transakzioa saldatu den edo ez.
 class _TransactionRow extends StatelessWidget {
   const _TransactionRow({required this.item, required this.settled});
 
@@ -296,6 +316,7 @@ class _TransactionRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
+                  // Testu desberdina erakutsi saldatu egoeraren arabera.
                   settled ? 'Saldado en demo offline' : item.subtitle,
                   style: TextStyle(color: secondaryText, fontSize: 12),
                 ),

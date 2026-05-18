@@ -2,6 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../app_theme.dart';
 
+/// Ikono baten eta label bat duen badge txiki bat erakusten duen widget-a.
+///
+/// Helburua: txartel edo menu elementuetan erabil daitekeen dekorazio elementua erakustea,
+/// kolore gradientearekin eta testu estilizatuarekin.
+///
+/// Parametroak:
+/// - `icon`: Erakutsiko den `IconData`.
+/// - `label`: Azpiko testua (gehienez 2 lerro ikusgai).
+/// - `colors`: Gradiente kolore sorta; lehen kolorea ikonaren kolorea bezala erabiltzen da.
 class BadgeWidget extends StatelessWidget {
   const BadgeWidget({
     required this.icon,
@@ -16,8 +25,10 @@ class BadgeWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Testuingurua kontuan hartu: gaueko edo eguneko modua koloreak eta opakutasuna egokitzeko.
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary;
+    // Barruko zirkuluen betetzea modu desberdinean kalkulatzen da gaueko moduan.
     final fillColor = Colors.white.withValues(alpha: isDark ? 0.06 : 0.72);
 
     return SizedBox(

@@ -6,6 +6,15 @@ import 'package:shimmer/shimmer.dart';
 
 import '../app_theme.dart';
 
+/// Gardentasun estiloko (glassmorphism) txartel bat erakusten duen widget konposatua.
+///
+/// Helburua: barruko `child` edukiari atzeko blur eta gradiente ikusgarri batekin testuinguru argia/iluna ematea.
+///
+/// Parametroak:
+/// - `child`: Txartel barruan erakutsiko den widget-a.
+/// - `padding`, `margin`, `borderRadius`: Diseinu espaziala kontrolatzen dutenak.
+/// - `opacity`, `blur`: Gardentasun eta atzeko blur maila egokitzeko erabiltzen diren balioak.
+/// - `glowColor`: txartelaren glow efektuarako kolorea.
 class GlassCard extends StatelessWidget {
   const GlassCard({
     required this.child,
@@ -30,8 +39,10 @@ class GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Testuinguruaren arabera (dark/light) opacity eta koloreak egokitu.
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final glassOpacity = isDark ? opacity.clamp(0.05, 0.08) : opacity;
+    // Dekorazio globala (gradient, boxShadow) eta atzeko blur aplikatzen dira.
     return Container(
       margin: margin,
       decoration: BoxDecoration(
@@ -98,6 +109,12 @@ class GlassCard extends StatelessWidget {
   }
 }
 
+/// Ikono botoi bat, kolore gradientearekin eta 'glow' itxurarekin.
+///
+/// Parametro garrantzitsuak:
+/// - `icon`: erakutsiko den IconData.
+/// - `onPressed`: botoia sakatzen denean exekutatuko den `VoidCallback?`.
+/// - `tooltip`: aukeran, Tooltip mezu bat erakutsi daiteke.
 class GlowIconButton extends StatelessWidget {
   const GlowIconButton({
     required this.icon,
@@ -156,6 +173,7 @@ class GlowIconButton extends StatelessWidget {
       child: ExcludeSemantics(child: button),
     );
 
+    // Tooltip-a aukeran agertzen da; semantic informazioa erabiliz accessibility hobetzen da.
     if (tooltip == null) {
       return decoratedButton;
     }
@@ -163,6 +181,11 @@ class GlowIconButton extends StatelessWidget {
   }
 }
 
+/// Zerrenda edo txartel skeleton bat erakusten duen shimmer animazioarekin.
+///
+/// Parametroak:
+/// - `itemCount`: Zenbat elementu skeleton erakutsi.
+/// - `padding`: kanpoko espazioa.
 class ShimmerSkeleton extends StatefulWidget {
   const ShimmerSkeleton({
     super.key,
@@ -251,6 +274,8 @@ class _ShimmerSkeletonState extends State<ShimmerSkeleton>
   }
 }
 
+/// Shimmer lerro edo laukizuzen txiki bat marrazteko laguntzailea.
+/// `progress` animazioaren balioa erabiltzen du gradient-ak desplazatzeko.
 class _ShimmerBox extends StatelessWidget {
   const _ShimmerBox({
     required this.progress,
@@ -266,6 +291,7 @@ class _ShimmerBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // `alignment` kalkulua animazio-progresioaren arabera gradient-a desplazatzeko erabiltzen da.
     final alignment = Alignment(-1.4 + progress * 2.8, 0);
     return Container(
       width: width,
@@ -292,6 +318,7 @@ class _ShimmerBox extends StatelessWidget {
   }
 }
 
+/// Gradient transform bat, animazioaren arabera gradient-a horizontalki desplazatzen duena.
 class _GradientSlide extends GradientTransform {
   const _GradientSlide(this.slide);
 
@@ -303,6 +330,8 @@ class _GradientSlide extends GradientTransform {
   }
 }
 
+/// Animatu eta organiko itxurako atzeko plano dinamikoa margotzen duen widget-a.
+/// Barruan `child` jarriz, marrazkia eta edukia elkarren gainean agertzen dira.
 class AnimatedOrganicBackground extends StatefulWidget {
   const AnimatedOrganicBackground({required this.child, super.key});
 
@@ -354,6 +383,12 @@ class _AnimatedOrganicBackgroundState extends State<AnimatedOrganicBackground>
   }
 }
 
+/// Empty/placeholder egoeretarako txartel zentral bat erakusten duen widget-a.
+///
+/// Parametroak:
+/// - `title`, `message`: testu nagusia eta deskribapena.
+/// - `actionLabel` eta `onAction`: botoi nagusiaren etiketa eta callback-a.
+/// - `secondaryActionLabel` eta `onSecondaryAction`: aukeran ager daitezkeen bigarren mailako ekintzak.
 class EmptyStateWidget extends StatelessWidget {
   const EmptyStateWidget({
     required this.title,
@@ -376,6 +411,7 @@ class EmptyStateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Zentratutako txartela GlassCard erabiliz margotzen da, ikonografia eta botoiak barne.
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -469,6 +505,7 @@ class EmptyStateWidget extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               FilledButton(onPressed: onAction, child: Text(actionLabel)),
+              // Bigarren mailako ekintza aukeran ager daiteke; kontrolatu parametroak null ez diren.
               if (secondaryActionLabel != null &&
                   onSecondaryAction != null) ...[
                 const SizedBox(height: 10),
@@ -485,6 +522,7 @@ class EmptyStateWidget extends StatelessWidget {
   }
 }
 
+/// Orbit-bolo txiki dekoratiboa; ExcludeSemantics erabiliz irudi estetiko huts gisa tratatzen da.
 class _OrbitDot extends StatelessWidget {
   const _OrbitDot({required this.color});
 
@@ -512,6 +550,8 @@ class _OrbitDot extends StatelessWidget {
   }
 }
 
+/// Organiko eta mugikor itxurako atzeko planoa marrazten duen CustomPainter-a.
+/// `t` parametroaren arabera puntu blurred eta animatuak marrazten ditu.
 class _OrganicBackgroundPainter extends CustomPainter {
   const _OrganicBackgroundPainter(this.t);
 
@@ -519,6 +559,7 @@ class _OrganicBackgroundPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Oinarrizko gradientea margotu atzeko plano gisa.
     final bg = Paint()
       ..shader = const LinearGradient(
         begin: Alignment.topLeft,
@@ -527,6 +568,8 @@ class _OrganicBackgroundPainter extends CustomPainter {
       ).createShader(Offset.zero & size);
     canvas.drawRect(Offset.zero & size, bg);
 
+    // `blob` laguntzaile funtzioak gorputz blurred eta mugikorren dentsoak marrazten ditu,
+    // `t` fase animazioaren arabera desplazatzen dira.
     void blob(Color color, Offset origin, double radius, double phase) {
       final dx = math.sin((t + phase) * math.pi * 2) * 24;
       final dy = math.cos((t + phase) * math.pi * 2) * 20;
@@ -562,6 +605,8 @@ class _OrganicBackgroundPainter extends CustomPainter {
   }
 }
 
+/// Bortz kolor gradient-az inguratutako animatutako border bat ematen duen kontenedor dekoratiboa.
+/// `child` barruan jarrita, kanpoaldetik biraka dabilen rainbow efektua sortzen du.
 class AnimatedRainbowBorder extends StatefulWidget {
   const AnimatedRainbowBorder({
     required this.child,

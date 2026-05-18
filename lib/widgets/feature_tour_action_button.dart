@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 
+/// Botoi sinple eta estilizatua, feature tour edo tutorial pantailatan erabiltzeko.
+///
+/// Parametroak:
+/// - `label`: Botoian erakutsiko den testua.
+/// - `onTap`: `VoidCallback` gisa pasatzen den ekintza, erabiltzaileak botoia sakatzen duenean exekutatuko dena.
+///   Callback hau ez du widget-ak aldatzen; ordea, aplikazioaren egoera kanpoan alda daiteke.
+/// - `primary`: Boolean bat; true bada estilo nagusiagoa (kolore betearekin) aplikatzen da.
 class FeatureTourActionButton extends StatelessWidget {
   const FeatureTourActionButton({
     super.key,
@@ -23,6 +30,8 @@ class FeatureTourActionButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
+        // `onTap` callback-a hemen pass-through egiten da InkWell-era.
+        // Erabiltzailearen interakzioa kanpoko logikari pasatzen zaio.
         onTap: onTap,
         child: Ink(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
