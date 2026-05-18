@@ -24,7 +24,7 @@
 
     /* Page reset */
     *{box-sizing:border-box}
-    html,body{height:100%;margin:0;font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+    html,body{height:100%;margin:0;font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;overflow:hidden}
 
     /* Animated background gradient */
     body{
@@ -40,29 +40,29 @@
     @keyframes bgShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
 
     /* Presentation container: each slide is full viewport */
-    .presentation{position:relative;width:100vw;height:100vh;display:block}
-    .slide{position:absolute;inset:0;padding:6vw;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transform:translateY(30px);transition:opacity var(--slide-transition) ease,transform var(--slide-transition) ease;}
+    .presentation{position:relative;width:100vw;height:100vh;display:block;overflow:hidden}
+    .slide{position:absolute;inset:0;padding:clamp(16px,3vw,40px);display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transform:translateY(30px);transition:opacity var(--slide-transition) ease,transform var(--slide-transition) ease;overflow:hidden;min-height:0;min-width:0}
     .slide[aria-hidden="false"]{opacity:1;transform:translateY(0)}
 
     /* Glass card that holds slide content */
-    .card{width:100%;height:100%;border-radius:20px;padding:5vh 6vw;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--glass-border);box-shadow:0 18px 50px rgba(0,0,0,0.5);display:flex;flex-direction:column}
+    .card{width:100%;height:100%;border-radius:20px;padding:clamp(14px,2.5vh,28px) clamp(16px,3vw,40px);background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--glass-border);box-shadow:0 18px 50px rgba(0,0,0,0.5);display:flex;flex-direction:column;gap:clamp(10px,1.5vh,18px);overflow:hidden;min-height:0;min-width:0}
 
     /* Header row with logo */
-    .header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem}
+    .header{display:flex;align-items:center;justify-content:space-between;padding:.5rem .25rem;flex-shrink:0;gap:12px}
     .logo{font-weight:700;background:var(--accent-grad);-webkit-background-clip:text;background-clip:text;color:transparent;font-size:1rem;opacity:0.9}
     .logo.muted{opacity:0.14}
 
     /* Center content */
-    .center{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:1rem 2rem;overflow-y:auto;overflow-x:hidden}
-    h1.title{font-size:5rem;margin:0;line-height:1;color:var(--text);background:var(--accent-grad);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 8px 28px rgba(79,172,254,0.06)}
-    p.lead{color:var(--text-soft);font-size:1.15rem;margin-top:0.8rem}
-    .emoji{font-size:4.5rem;margin-bottom:0.6rem}
+    .center{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:clamp(8px,1.8vh,18px) clamp(8px,1.8vw,18px);overflow:hidden;min-height:0;min-width:0;gap:clamp(10px,1.4vh,16px)}
+    h1.title{font-size:clamp(2.8rem,6vw,5rem);margin:0;line-height:.95;color:var(--text);background:var(--accent-grad);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 8px 28px rgba(79,172,254,0.06)}
+    p.lead{color:var(--text-soft);font-size:clamp(.95rem,1.5vw,1.15rem);margin:0}
+    .emoji{font-size:clamp(2.8rem,5vw,4.5rem);margin:0}
 
     /* Separator */
     .sep{height:4px;width:160px;border-radius:999px;margin:18px auto;background:var(--accent-grad);box-shadow:0 6px 26px rgba(0,0,0,0.45)}
 
     /* Footer */
-    .meta{display:flex;justify-content:space-between;align-items:center;padding:1rem 1.5rem;color:var(--text-soft);font-size:0.95rem}
+    .meta{display:flex;justify-content:space-between;align-items:center;padding:.5rem .25rem;color:var(--text-soft);font-size:.92rem;flex-shrink:0}
 
     /* Navigation buttons */
     .nav{position:fixed;inset:0;pointer-events:none}
@@ -82,22 +82,28 @@
     .watermark{position:fixed;left:18px;top:18px;font-weight:700;background:var(--accent-grad);-webkit-background-clip:text;background-clip:text;color:transparent;opacity:0.16}
 
     /* Cards and grids for content (utility classes) */
-    .row{display:flex;gap:24px;align-items:stretch;min-height:0}
-    .col{flex:1;min-width:0;min-height:0}
-    .glass{background:var(--glass);border:1px solid var(--glass-border);padding:18px;border-radius:14px}
-    .card-title{font-weight:700;color:var(--text);font-size:1.05rem;margin-bottom:4px}
-    .card-text{color:var(--text-soft);font-size:0.85rem;line-height:1.3}
+    .row{display:flex;gap:clamp(10px,1.5vw,24px);align-items:center;justify-content:center;min-height:0;min-width:0;flex-wrap:wrap}
+    .col{flex:1 1 0;min-width:0;min-height:0;display:flex;flex-direction:column;justify-content:center;align-items:center}
+    .glass{background:var(--glass);border:1px solid var(--glass-border);padding:clamp(12px,1.5vh,18px);border-radius:14px;min-width:0;min-height:0;flex-shrink:1}
+    .split-row{align-items:center;justify-content:center;flex-wrap:nowrap}
+    .split-row > .col{flex:1 1 50%;min-width:300px}
+    .split-row > .text-col{align-items:flex-start}
+    .split-row > .image-col{display:flex;align-items:center;justify-content:center;overflow:hidden;min-width:300px}
+    .card-title{font-weight:700;color:var(--text);font-size:clamp(.95rem,1.3vw,1.05rem);margin-bottom:4px;line-height:1.2}
+    .card-text{color:var(--text-soft);font-size:clamp(.8rem,1.1vw,.92rem);line-height:1.35}
     ul{margin:8px 0;padding-left:20px;font-size:0.85rem}
 
     /* Specific small components */
-    .tech-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-    .stat-row{display:flex;gap:32px;justify-content:center}
-    .stat{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));padding:22px;border-radius:12px;min-width:160px}
-    .stat .num{font-size:3.2rem;font-weight:800;background:var(--accent-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .tech-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;width:100%}
+    .stat-row{display:flex;gap:clamp(12px,2vw,32px);justify-content:center;flex-wrap:wrap}
+    .stat{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));padding:clamp(14px,2vw,22px);border-radius:12px;min-width:160px;flex:1 1 160px;max-width:240px}
+    .stat .num{font-size:clamp(2.1rem,4vw,3.2rem);font-weight:800;background:var(--accent-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+    img{max-width:100%;max-height:45vh;width:auto;height:auto;object-fit:contain;flex-shrink:1;min-height:0;min-width:0}
 
     /* Responsive */
-    @media (max-width:1000px){h1.title{font-size:3.2rem}.tech-grid{grid-template-columns:repeat(2,1fr)}.row{flex-direction:column}}
-    @media (max-width:520px){.card{border-radius:12px;padding:4vw}.emoji{font-size:3rem}.nav button{padding:10px}}
+    @media (max-width:1000px){.tech-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.row{flex-direction:column}.stat-row{gap:14px}}
+    @media (max-width:520px){.card{border-radius:12px;padding:12px}.nav button{padding:10px}.header,.meta{padding:.25rem 0}}
 
   </style>
 </head>
@@ -125,17 +131,17 @@
     <section class="slide" data-index="1" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>❌ Arazoa</div></div>
-        <div class="center" style="align-items:flex-start;text-align:left;">
-          <div class="row" style="width:100%">
-            <div class="col glass" style="padding:10px">
+        <div class="center" style="align-items:center;text-align:left;">
+          <div class="row" style="width:100%;align-items:center">
+            <div class="col glass" style="padding:10px;align-items:flex-start">
               <div class="card-title">🔍 Bilaketa Hotza</div>
               <div class="card-text">Etxea aurkitzea da %10 soilik. Benetako astina deskonotzekin bizi hastean hasten da: zenbat ordaintzen duten ezagutu gabe, nola diren osoa ezagutu gabe, eta nortan sintitzen diren ere bai.</div>
             </div>
-            <div class="col glass" style="padding:10px">
+            <div class="col glass" style="padding:10px;align-items:flex-start">
               <div class="card-title">⚖️ Segurtasun Juridiko Falta</div>
               <div class="card-text">"Bapatean ituna egingo dugu". Baina zer gertatzen da kalean? Izenpetutakoa ez dago, eta orduan norena da betetzen du astina? Zetaz arduratuko da hondatzerik bada? Inor ez daki, inor ez du nahi eztabaidatzea.</div>
             </div>
-            <div class="col glass" style="padding:10px">
+            <div class="col glass" style="padding:10px;align-items:flex-start">
               <div class="card-title">🏠 Elkarbizitza Gatazkak</div>
               <div class="card-text">Garbiketa nori dagokio? Zenbat ordaindu behar du bakoitzak? Ostalariak etxean? Galderei erantzuna ez duten sekula gatazkak urtero etxea hausten dute. Baimena, atsegina eta antsietatea pixkanaka nahi daiteke.</div>
             </div>
@@ -150,12 +156,12 @@
     <section class="slide" data-index="2" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>✅ BiziMatch - Soluzio Integrala</div></div>
-        <div class="center" style="align-items:stretch;text-align:left;">
-          <div class="row" style="width:100%">
-            <div class="col" style="display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:1rem;text-align:left;">
+        <div class="center" style="align-items:center;text-align:left;">
+          <div class="row split-row" style="width:100%;align-items:center">
+            <div class="col text-col" style="display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:.75rem;text-align:left;flex:1 1 50%;min-width:300px">
               <h3 class="card-title">Erabiltzaileari laguntzen dion aplikazio mugikorra</h3>
               <p class="card-text">Etxebizitza bilatzen hasten denetik eguneroko elkarbizitza kudeatzen duen arte erabiltzaileari laguntzen dion plataforma mugikorra.</p>
-              <ul style="color:var(--text-soft)">
+              <ul style="color:var(--text-soft);margin:0">
                 <li>🔎 Bilaketa Atsegina: Zuk baino bateragarriak diren pertsonen artean bilatu</li>
                 <li>🤝 Konfianza: Antzeko ideien dituen lagunak topatu etxe aurretik</li>
                 <li>📄 Lasaitasuna: Legezko kontratuak automatikoki sortzea, paperik gabe</li>
@@ -164,8 +170,8 @@
                 <li>🎮 Kooperazio Biderkaria: Limpiezaren eta zereginak elkarrengandik saiatuko bat, ez diskusioa</li>
               </ul>
             </div>
-            <div class="col glass" style="min-width:280px;max-width:420px;height:calc(55vh + 48px);display:flex;align-items:center;justify-content:center;padding:24px;align-self:center;">
-              <img src="Descubrir.jpg" alt="BiziMatch aplikazioko aurkikuntza pantaila" style="max-height: 55vh; width: auto; max-width: 100%; object-fit: contain; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <div class="col glass image-col" style="flex:1 1 50%;display:flex;align-items:center;justify-content:center;padding:16px;align-self:center;min-width:300px">
+              <img src="Descubrir.jpg" alt="BiziMatch aplikazioko aurkikuntza pantaila" style="border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
             </div>
           </div>
         </div>
@@ -177,8 +183,8 @@
     <section class="slide" data-index="3" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>⚙️ Teknologia Erabiliak</div></div>
-        <div class="center" style="align-items:stretch">
-          <div class="tech-grid">
+        <div class="center" style="align-items:center">
+          <div class="tech-grid" style="align-items:center">
             <div class="glass"><div class="card-title">💙 Flutter & Dart</div><div class="card-text">Google-ren plataforma anitzeko framework-a. Android eta iOSerako UI natiboa kode-base bakarretik.</div></div>
             <div class="glass"><div class="card-title">🔥 Firebase</div><div class="card-text">Serverless backend-a: Firestore, Authentication eta Cloud Storage.</div></div>
             <div class="glass"><div class="card-title">🤖 OpenAI API</div><div class="card-text">BiziBot-erako IA: profilen analisia eta galderen sorkuntza.</div></div>
@@ -196,13 +202,13 @@
     <section class="slide" data-index="4" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>🔎 1. Match Sistema</div></div>
-        <div class="center" style="align-items:stretch">
-          <div class="row" style="width:100%">
-            <div class="col glass" style="height:calc(45vh + 48px);display:flex;flex-direction:row;gap:18px;align-items:center;justify-content:center;flex-wrap:nowrap;padding:24px;">
-              <img src="Descubrir.jpg" alt="Profilen aurkikuntza pantaila" style="height: 100%; max-height: 45vh; width: auto; object-fit: contain; border-radius: 16px;">
-              <img src="AnimacionMatch.jpg" alt="Match animazioaren pantaila" style="height: 100%; max-height: 45vh; width: auto; object-fit: contain; border-radius: 16px;">
+        <div class="center" style="align-items:center">
+          <div class="row split-row" style="width:100%;align-items:center">
+            <div class="col glass image-col" style="display:flex;flex-direction:row;gap:18px;align-items:center;justify-content:center;flex-wrap:wrap;padding:16px;min-width:300px">
+              <img src="Descubrir.jpg" alt="Profilen aurkikuntza pantaila" style="border-radius: 16px;flex:1 1 0;min-width:0;">
+              <img src="AnimacionMatch.jpg" alt="Match animazioaren pantaila" style="border-radius: 16px;flex:1 1 0;min-width:0;">
             </div>
-            <div class="col" style="display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:1rem;text-align:left;">
+            <div class="col text-col" style="display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:.85rem;text-align:left;flex:1 1 50%;min-width:300px">
               <div><strong>👆 Swipe Sistema</strong><div class="card-text">Profilak ohitura eta bizi-estiloen bateragarritasunaren arabera irristatzea.</div></div>
               <div><strong>👥 Eskuadroia Modua</strong><div class="card-text">2-3 pertsonako taldeek bat egin dezakete etxebizitza oso bat elkarrekin bilatzeko.</div></div>
               <div><strong>🎵 Audioa Profilean</strong><div class="card-text">Erabiltzaileek ahots-ohar bat gehitu dezakete profilean konfiantza handiagoa sortzeko.</div></div>
@@ -217,16 +223,16 @@
     <section class="slide" data-index="5" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>🤖 2. BiziBot - IA Laguntzailea</div></div>
-        <div class="center" style="align-items:stretch">
-          <div class="row" style="width:100%">
-            <div class="col" style="display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:1rem;text-align:left;">
+        <div class="center" style="align-items:center">
+          <div class="row split-row" style="width:100%;align-items:center">
+            <div class="col text-col" style="display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:.85rem;text-align:left;flex:1 1 50%;min-width:300px">
               <h3 class="card-title">Profilaren Analisia</h3>
               <p class="card-text">IAk beste erabiltzailearen biografia irakurtzen du eta izotza apurtzeko galdera bakarrak eta pertsonalizatuak sortzen ditu.</p>
-              <ul style="color:var(--text-soft)"><li>🧠 Profilaren analisia</li><li>💬 Elkarrizketa hasteko laguntza</li><li>⚡ OpenAI bidez gaitua</li></ul>
+              <ul style="color:var(--text-soft);margin:0"><li>🧠 Profilaren analisia</li><li>💬 Elkarrizketa hasteko laguntza</li><li>⚡ OpenAI bidez gaitua</li></ul>
             </div>
-            <div class="col glass" style="height:calc(45vh + 48px);display:flex;flex-direction:row;gap:18px;align-items:center;justify-content:center;flex-wrap:nowrap;padding:24px;">
-              <img src="PantallaComunidad.jpg" alt="Loturen eta komunitatearen pantaila" style="height: 100%; max-height: 45vh; width: auto; object-fit: contain; border-radius: 16px;">
-              <img src="DentroDelChat.jpg" alt="BiziBot txataren pantaila" style="height: 100%; max-height: 45vh; width: auto; object-fit: contain; border-radius: 16px;">
+            <div class="col glass image-col" style="flex:1 1 50%;display:flex;flex-direction:row;gap:18px;align-items:center;justify-content:center;flex-wrap:wrap;padding:16px;min-width:300px">
+              <img src="PantallaComunidad.jpg" alt="Loturen eta komunitatearen pantaila" style="border-radius: 16px;flex:1 1 0;min-width:0;">
+              <img src="DentroDelChat.jpg" alt="BiziBot txataren pantaila" style="border-radius: 16px;flex:1 1 0;min-width:0;">
             </div>
           </div>
         </div>
@@ -238,22 +244,22 @@
     <section class="slide" data-index="6" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>📄 3. Kudeaketa Legala</div></div>
-        <div class="center" style="align-items:stretch">
-          <div class="row" style="width:100%">
-            <div class="col glass" style="padding:10px">
+        <div class="center" style="align-items:center">
+          <div class="row split-row" style="width:100%;align-items:center">
+            <div class="col glass" style="padding:10px;align-items:flex-start">
               <div style="text-align:center;font-size:2rem">🤝</div>
               <div class="card-title">Elkarbizitza Ituna</div>
               <div class="card-text">Bizikideek etxeko arauak denbora errealean adosten dituzte: bisitak, garbiketa, maskotak eta zarata. Dena erregistratuta geratzen da.</div>
               <div style="margin-top:8px;color:#34d399">✓ Firestore sinkronizazioa denbora errealean</div>
             </div>
-            <div class="col glass" style="padding:10px">
+            <div class="col glass" style="padding:10px;align-items:flex-start">
               <div style="text-align:center;font-size:2rem">📋</div>
               <div class="card-title">Kontratu Sortzailea</div>
               <div class="card-text">Botoi bakarrarekin, BiziMatch-ek maizter guztien datuekin PDF kontratu legal bat sortzen du eta hodeian gordetzen du.</div>
               <div style="margin-top:8px;color:#06b6d4">✓ Cloud Storage-en gordeta</div>
             </div>
-            <div class="col glass" style="height:calc(55vh + 48px);display:flex;align-items:center;justify-content:center;padding:24px;align-self:center;">
-              <img src="MiCasaSinCasa.jpg" alt="Etxerik gabeko Nire Etxea pantaila" style="max-height: 55vh; width: auto; max-width: 100%; object-fit: contain; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <div class="col glass image-col" style="flex:1 1 50%;display:flex;align-items:center;justify-content:center;padding:16px;align-self:center;min-width:300px">
+              <img src="MiCasaSinCasa.jpg" alt="Etxerik gabeko Nire Etxea pantaila" style="border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
             </div>
           </div>
         </div>
@@ -265,9 +271,9 @@
     <section class="slide" data-index="7" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>🏠 4. Eguneroko Kudeaketa</div></div>
-        <div class="center" style="align-items:stretch;padding:1rem 2rem">
-          <div class="row" style="width:100%">
-            <div class="col" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-content:center">
+        <div class="center" style="align-items:center;padding:1rem 1.25rem">
+          <div class="row split-row" style="width:100%;align-items:center">
+            <div class="col text-col" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-content:center;flex:1 1 50%;min-width:300px">
                 <div class="glass" style="padding:10px">
                   <div class="card-title">💰 Gastuen Kalkulagailua</div>
                   <div class="card-text">Alokairua, argia, ura eta internet banatu, eta ordainketa bakoitza txatean partekatu.</div>
@@ -281,9 +287,9 @@
                   <div class="card-text">Hiriko plan sozialak: kafea, kirola eta irteerak etxetik harago.</div>
                 </div>
             </div>
-            <div class="col glass" style="height:calc(55vh + 48px);display:flex;flex-direction:row;gap:18px;align-items:center;justify-content:center;flex-wrap:nowrap;padding:24px;">
-              <img src="Perfil.jpg" alt="Erabiltzaile-profilaren pantaila" style="max-height: 55vh; width: auto; max-width: 100%; object-fit: contain; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-              <img src="MiCasaConCasa.jpg" alt="Nire Etxea etxearekin pantaila" style="max-height: 55vh; width: auto; max-width: 100%; object-fit: contain; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <div class="col glass image-col" style="flex:1 1 50%;display:flex;flex-direction:row;gap:18px;align-items:center;justify-content:center;flex-wrap:wrap;padding:16px;min-width:300px">
+              <img src="Perfil.jpg" alt="Erabiltzaile-profilaren pantaila" style="border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+              <img src="MiCasaConCasa.jpg" alt="Nire Etxea etxearekin pantaila" style="border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
             </div>
           </div>
         </div>
@@ -295,13 +301,13 @@
     <section class="slide" data-index="8" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>🏗️ Arkitektura Teknikoa</div></div>
-        <div class="center" style="align-items:stretch">
-          <div style="display:grid;grid-template-columns:1fr;gap:10px;justify-items:center">
-            <div class="glass" style="width:80%;text-align:center;border-left:6px solid var(--accent-a);padding:10px">Flutter App (Dart) - [Swipe UI] [Txat UI] [PDF Ikustailea] [Gamifikazioa]</div>
+        <div class="center" style="align-items:center">
+          <div style="display:grid;grid-template-columns:1fr;gap:10px;justify-items:center;width:100%;max-width:900px;margin:0 auto">
+            <div class="glass" style="width:100%;text-align:center;border-left:6px solid var(--accent-a);padding:10px">Flutter App (Dart) - [Swipe UI] [Txat UI] [PDF Ikustailea] [Gamifikazioa]</div>
             <div style="font-size:2rem;color:var(--accent-b)">↓</div>
-            <div class="glass" style="width:80%;text-align:center;border-left:6px solid #06b6d4;padding:10px">Firebase (Google Cloud) - [Firestore] [Auth] [Storage] [Crashlytics]</div>
+            <div class="glass" style="width:100%;text-align:center;border-left:6px solid #06b6d4;padding:10px">Firebase (Google Cloud) - [Firestore] [Auth] [Storage] [Crashlytics]</div>
             <div style="font-size:2rem;color:#a78bfa">↓</div>
-            <div class="glass" style="width:80%;text-align:center;border-left:6px solid #9f7aea;padding:10px">Kanpoko APIak - [OpenAI API] [PDF Library]</div>
+            <div class="glass" style="width:100%;text-align:center;border-left:6px solid #9f7aea;padding:10px">Kanpoko APIak - [OpenAI API] [PDF Library]</div>
           </div>
           <p style="margin-top:12px;color:var(--text-soft)">Serverless arkitektura: zerbitzari propiorik gabe, lehen erabiltzailetik eskalagarria.</p>
         </div>
@@ -313,9 +319,9 @@
     <section class="slide" data-index="9" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>📅 Planifikazioa - Proiektuaren Bidea</div></div>
-        <div class="center" style="align-items:stretch">
-          <div style="width:100%;background:linear-gradient(90deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));padding:14px;border-radius:12px">
-            <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;font-weight:700;color:var(--text)">
+        <div class="center" style="align-items:center">
+          <div style="width:100%;background:linear-gradient(90deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));padding:12px;border-radius:12px">
+            <div style="display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;font-weight:700;color:var(--text)">
               <div>1-2. ast. - Ikerketa + Figma</div>
               <div>3. ast. - Firebase + Auth</div>
               <div>4-5. ast. - Match + Profilak</div>
@@ -324,7 +330,7 @@
               <div>9-10. ast. - Probak + APK</div>
             </div>
           </div>
-          <div style="display:flex;gap:12px;margin-top:18px">
+          <div style="display:flex;gap:12px;margin-top:14px;flex-wrap:wrap">
             <div class="glass" style="flex:1"><div class="card-title">⚠️ Arazo Teknikoa</div><div class="card-text">Gradle + Java 17 bertsio-gatazka. Konponbidea: Kotlin DSL (.kts) migrazioa.</div></div>
             <div class="glass" style="flex:1"><div class="card-title">🛠️ Kudeaketa: Nextcloud Kanban</div><div class="card-text">Zereginak zutabeetan antolatuta: Egitekoak → Egiten → Berrikusten → Bukatutakoak.</div></div>
           </div>
@@ -337,13 +343,13 @@
     <section class="slide" data-index="10" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>🏆 Emaitzak</div></div>
-        <div class="center" style="align-items:center">
+        <div class="center" style="align-items:center;justify-content:center">
           <div class="stat-row">
             <div class="stat"><div class="num">20+</div><div style="color:var(--text-soft)">Pantaila funtzional</div></div>
             <div class="stat"><div class="num">7</div><div style="color:var(--text-soft)">Firestore bilduma</div></div>
             <div class="stat"><div class="num">5</div><div style="color:var(--text-soft)">Modulu nagusi</div></div>
           </div>
-          <div class="glass" style="width:80%;margin-top:18px;padding:14px;text-align:left">
+          <div class="glass" style="width:100%;max-width:900px;margin-top:18px;padding:14px;text-align:left">
             <div class="card-title">Lortutakoa</div>
             <ul class="card-text"><li>Android prototipo guztiz funtzionala</li><li>IA integratua (OpenAI) benetako aplikazio mugikorrean</li><li>PDF kontratu legalen sorkuntza automatikoa</li></ul>
           </div>
@@ -356,16 +362,16 @@
     <section class="slide" data-index="11" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>ZUZENEKO DEMOA</div></div>
-        <div class="center">
+        <div class="center" style="gap:12px">
           <h2 style="color:var(--text);margin:6px">Demo modua aktibatuta - internetik behar gabe</h2>
-          <div style="display:flex;gap:18px;margin-top:18px">
+          <div style="display:flex;gap:18px;margin-top:12px;flex-wrap:wrap;justify-content:center">
             <div class="glass" style="padding:18px">👤<div>Profilak</div></div>
             <div class="glass" style="padding:18px">🔄<div>Match-a</div></div>
             <div class="glass" style="padding:18px">💬<div>BiziBot</div></div>
             <div class="glass" style="padding:18px">📄<div>Kontratua</div></div>
             <div class="glass" style="padding:18px">🏠<div>Elkarbizitza</div></div>
           </div>
-          <div style="margin-top:22px;font-weight:700;color:var(--accent-a)">APK-a gailu errealean instalatuta - ZUZENEKO DEMOA</div>
+          <div style="margin-top:14px;font-weight:700;color:var(--accent-a);text-align:center">APK-a gailu errealean instalatuta - ZUZENEKO DEMOA</div>
         </div>
         <div class="meta"><div></div><div>Demoa</div></div>
       </div>
@@ -375,7 +381,7 @@
     <section class="slide" data-index="12" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>💰 Aurrekontua eta Ondorioak</div></div>
-        <div class="center" style="align-items:stretch">
+        <div class="center" style="align-items:center">
           <div style="display:flex;gap:14px">
             <div class="glass" style="flex:1">
               <div class="card-title">Kostuak (1. urtea)</div>
