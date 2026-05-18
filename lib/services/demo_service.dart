@@ -4,6 +4,11 @@ import 'package:flutter/material.dart';
 import '../models/user_profile.dart';
 import '../services/firestore_service.dart';
 
+/// DemoService: aplikazioaren demo modua eta demo-datuen kudeaketa arduratzen da.
+///
+/// Zer egiten duen:
+/// - Demo erabiltzaileak, txatak eta zereginak sortzen eta kudeatzen ditu.
+/// - `ValueNotifier` erabiliz UI-ri egoera jakinarazten dio.
 class DemoService {
   DemoService._();
   static final DemoService instance = DemoService._();
@@ -22,6 +27,8 @@ class DemoService {
   late List<ChatThread> demoThreads = _buildDemoThreads();
 
   void enableDemo(bool enabled) {
+    /// Demo modua aktibatu edo desaktibatzen du.
+    /// Parametroa: `enabled` — `true` aktibatzeko.
     isDemoMode.value = enabled;
     if (enabled && selectedDemoUser.value == null && demoProfiles.isNotEmpty) {
       selectedDemoUser.value = demoProfiles[0];
@@ -29,6 +36,8 @@ class DemoService {
   }
 
   void selectDemoUserByUid(String uid) {
+    /// Demo erabiltzaile bat UID bidez hautatzen du.
+    /// Hautatutako erabiltzaileak aldatzean txaken zerrenda berria sortzen da.
     final found = demoProfiles.firstWhere(
       (p) => p.uid == uid,
       orElse: () => demoProfiles.first,
@@ -42,6 +51,7 @@ class DemoService {
   }
 
   void resetDemoData() {
+    /// Demo datuak reset egiten ditu: txatak, zereginak eta gastuak garbitzen dira.
     demoThreads = <ChatThread>[];
     completedDemoTasks.value = <String>{'Pagar internet'};
     settledDemoExpenses.value = <String>{};
@@ -56,6 +66,7 @@ class DemoService {
   }
 
   void registerDemoChat(UserProfile user) {
+    /// Demo txat berri bat erregistratzen du erabiltzailearekin, badagoen ala ez egiaztatuz.
     final chatId = 'demo_chat_${user.uid}';
     final exists = demoThreads.any((thread) => thread.chatId == chatId);
     if (exists) {
@@ -75,6 +86,7 @@ class DemoService {
   }
 
   void completeDemoTask(String title) {
+    /// Demo zeregin bat markatu osatua izan dela.
     completedDemoTasks.value = <String>{...completedDemoTasks.value, title};
     resetRevision.value++;
   }
@@ -84,11 +96,13 @@ class DemoService {
   }
 
   void settleDemoExpense(String id) {
+    /// Demo gastu bat markatzen du ordainduta.
     settledDemoExpenses.value = <String>{...settledDemoExpenses.value, id};
     resetRevision.value++;
   }
 
   UserProfile _copyWithDemoPoints(UserProfile profile, int points) {
+    /// `UserProfile` kopiatzen du baina `biziPuntos` balioa demo puntuekin aldatuta.
     return UserProfile(
       uid: profile.uid,
       email: profile.email,
@@ -123,6 +137,7 @@ class DemoService {
   }
 
   static List<UserProfile> _buildDemoProfiles() {
+    // Demo profile adibideak eraikitzen ditu.
     return [
       UserProfile(
         uid: 'demo_1',

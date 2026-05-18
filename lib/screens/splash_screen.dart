@@ -10,6 +10,10 @@ import 'login_screen.dart';
 import 'main_scaffold.dart';
 import 'onboarding_screen.dart';
 
+/// SplashScreen: hasierako pantaila — sesio-egoera eta onboarding egiaztatzen ditu.
+///
+/// Arau praktikoa: 3 segundo itxaroten du eta aldi berean sesioa egiaztatzen
+/// du; demo-administratzaile saioa lehentasunez kudeatzen da.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -56,7 +60,7 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) {
       return;
     }
-
+    // Erabiltzailearen egoera aztertu eta helmuga egokia aukeratu.
     setState(() {
       _destination = user != null
           ? const MainScaffold()

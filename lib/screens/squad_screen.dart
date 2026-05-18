@@ -9,6 +9,10 @@ import '../screens/squad_housing_browser_screen.dart';
 import '../services/escuadron_service.dart';
 import '../widgets/app_cached_network_image.dart';
 
+/// SquadScreen: pantaila bat escuadrón-aren egoera kudeatzeko.
+///
+/// Erabiltzen du: kideen zerrenda erakusteko, preferentziak bistaratzen
+/// eta escuadrón bilatu/disolver egiteko aukerak emateko.
 class SquadScreen extends StatefulWidget {
   final String escuadronId;
 
@@ -353,9 +357,11 @@ class _SquadScreenState extends State<SquadScreen> {
       try {
         final doc = await _firestore.collection('usuarios').doc(uid).get();
         if (doc.exists) {
+          // Dokumentua badago, UserModel-era parse egiten dugu.
           members.add(UserModel.fromFirestore(doc.data() ?? {}, id: uid));
         }
       } catch (e) {
+        // Kargatze akatsen kasuan log bat eta jarraitu.
         print('Error loading member: $e');
       }
     }
@@ -363,7 +369,8 @@ class _SquadScreenState extends State<SquadScreen> {
   }
 
   bool _isOwnerOrLastMember(Escuadron escuadron, String myUid) {
-    // First member is considered owner, or if only one member left
+    // Lehenengo kidea jabea dela hartzen da. Gainera, kide bakarra gelditzen bada
+    // ahal du lider bakarrak disolba dezake edo utzi.
     return escuadron.listaMiembrosIds.isEmpty ||
         escuadron.listaMiembrosIds[0] == myUid ||
         escuadron.listaMiembrosIds.length == 1;
@@ -416,6 +423,7 @@ class _SquadScreenState extends State<SquadScreen> {
                 ),
               );
 
+              // Atzera edo pantaila nagusira itzultzen dugu.
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red[600]),

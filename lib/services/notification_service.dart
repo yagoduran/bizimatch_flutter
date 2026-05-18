@@ -6,6 +6,11 @@ import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
 class NotificationService {
+  /// NotificationService: lokalean eta FCM bidezko notifikazioen konfigurazioa kudeatzen du.
+  ///
+  /// Zer egiten duen:
+  /// - Flutter Local Notifications konfiguratu eta FCM tokenak sinkronizatzen ditu.
+  /// - Aurrealdeko mezuak eskuz erakutsi ditzake eta pendente notifikazioak gorde.
   NotificationService._();
 
   static final NotificationService instance = NotificationService._();
@@ -27,13 +32,10 @@ class NotificationService {
       );
 
   Future<void> initialize() async {
-    if (_initialized) {
-      return;
-    }
+    if (_initialized) return;
 
-    const androidSettings = AndroidInitializationSettings(
-      '@mipmap/ic_launcher',
-    );
+    // Local notifications eta timezone konfigurazioa prestatu.
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings();
     tz_data.initializeTimeZones();
 
@@ -47,8 +49,10 @@ class NotificationService {
         >();
     await androidImplementation?.createNotificationChannel(_chatChannel);
 
+    // Aurrealdeko mezuak lokalki erakusteko entzulea.
     FirebaseMessaging.onMessage.listen(_onForegroundMessage);
 
+    // FCM token aldaketak sinkronizatu erabiltzailearekin.
     _messaging.onTokenRefresh.listen((token) {
       _saveTokenForCurrentUser(token);
     });
@@ -105,7 +109,7 @@ class NotificationService {
     if (uid == null || token.trim().isEmpty) {
       return;
     }
-
+    // FCM token erabiltzailearen dokumentuan gordetzen da, sinkronizazio helburuarekin.
     await _firestore.collection('usuarios').doc(uid).set({
       'fcmToken': token,
       'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
@@ -136,8 +140,8 @@ class NotificationService {
     );
   }
 
-  // Estructura preparada para disparar notificaciones al receptor.
-  // El envío real debe hacerlo backend/Cloud Functions por seguridad.
+  // Nahi izanez gero, hemen prestatzen ditugu pendente notifikazioak bidaltzeko.
+  // Ohar: segurtasunagatik bidalketa errealak backend edo Cloud Functions-ek egin behar dituzte.
   Future<void> prepareChatNotification({
     required String receiverUid,
     required String senderUid,

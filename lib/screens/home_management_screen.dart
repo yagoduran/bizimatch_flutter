@@ -22,6 +22,7 @@ import '../widgets/expense_dashboard.dart';
 import '../widgets/feature_tour_action_button.dart';
 import '../widgets/glassmorphism.dart';
 
+/// HomeManagementScreen: "Mi Casa"-en kudeaketa — kontratuak, gastuak eta zereginen panela.
 class HomeManagementScreen extends StatefulWidget {
   const HomeManagementScreen({super.key});
 
@@ -71,6 +72,7 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
     setState(() {});
   }
 
+  /// Erabiltzailearen id_casa kargatzen du Firestore-tik eta egoerara ezartzen du.
   Future<void> _loadIdCasa() async {
     final myUid = _auth.currentUser?.uid;
     if (myUid == null) return;
@@ -220,6 +222,7 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
     );
   }
 
+  /// Kontratu egonkorra erakusten duen txartela: ikus-ataz, inprimatu eta partekatu aukerak.
   Widget _buildContratoVigenteCard(String idCasa) {
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: _firestore.collection('casas').doc(idCasa).snapshots(),
@@ -320,6 +323,7 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
     );
   }
 
+  /// PDF kontratua ikusteko pantaila irekitzeko helperra.
   Future<void> _verContrato(String url) async {
     await Navigator.push(
       context,
@@ -330,6 +334,7 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
     );
   }
 
+  /// Kontratuaren PDFa inprimatzeko erabilitako helper-a (Printing lib erabiliz).
   Future<void> _imprimirContrato(String url) async {
     try {
       final bytes = await _downloadPdfBytes(url);
@@ -342,6 +347,7 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
     }
   }
 
+  /// Kontratuaren PDFa partekatzeko helper-a (Printing.sharePdf erabiliz).
   Future<void> _compartirContrato(String url) async {
     try {
       final bytes = await _downloadPdfBytes(url);
@@ -358,6 +364,7 @@ class _HomeManagementScreenState extends State<HomeManagementScreen>
     }
   }
 
+  /// URL-etik PDF byte-ak deskargatzen ditu, HTTP GET erabiliz.
   Future<Uint8List> _downloadPdfBytes(String url) async {
     final response = await http.get(Uri.parse(url));
     if (response.statusCode != 200) {

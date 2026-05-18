@@ -3,6 +3,11 @@ import '../models/housing_model.dart';
 import '../models/escuadron_model.dart';
 import '../repositories/firestore_repository.dart';
 
+/// HousingService: etxebizitzen bilaketa, like eta sortze funtzionalitatea kudeatzen du.
+///
+/// Zer egiten duen:
+/// - Escuadron-aren beharrak kontuan hartuta etxebizitzak filtratzen ditu.
+/// - Jabetzako etxebizitzen sortzea eta erabiltzaileen interaction-ak eguneratzen ditu.
 class HousingService {
   static final HousingService instance = HousingService._internal();
   final FirestoreRepository _repo = FirestoreRepository.instance;
@@ -12,6 +17,7 @@ class HousingService {
 
   /// Obtiene viviendas completas filtradas para un escuadrón específico
   Future<List<Housing>> getHousingForSquad(Escuadron squad) async {
+    /// Escuadron baten arabera egokiak diren etxebizitzak itzultzen ditu.
     try {
       final prefs = squad.preferenciasComunas;
       var query = _firestore
@@ -23,12 +29,12 @@ class HousingService {
             isGreaterThanOrEqualTo: squad.miembrosCount,
           );
 
-      // Aplicar filtros de zona si existen preferencias
+      // Ezarritako prefentzietarako zona filtraketa aplikatu.
       if (prefs.zona != null && prefs.zona!.isNotEmpty) {
         query = query.where('zona', isEqualTo: prefs.zona);
       }
 
-      // Aplicar filtro de precio máximo
+      // Prezio maximoaren arabera filtraketa aplikatu.
       if (prefs.precioMaximo != null && prefs.precioMaximo! > 0) {
         query = query.where(
           'precioMensual',
@@ -47,6 +53,7 @@ class HousingService {
 
   /// Stream en tiempo real de viviendas para escuadrón
   Stream<List<Housing>> getHousingStreamForSquad(Escuadron squad) {
+    /// Escuadron-ari dagokion etxebizitzen stream-a itzultzen du (aldaketak realtime).
     try {
       final prefs = squad.preferenciasComunas;
       var query = _firestore
@@ -80,6 +87,7 @@ class HousingService {
 
   /// Da like a una vivienda desde un usuario
   Future<void> likeHousing(String housingId, String userId) async {
+    /// Erabiltzaileak etxebizitza bati like ematen dionean eguneraketa egiten du.
     try {
       await _firestore.collection('viviendas').doc(housingId).update({
         'likesDeUsuarios.$userId': true,
@@ -92,6 +100,7 @@ class HousingService {
 
   /// Quita like a una vivienda
   Future<void> unlikeHousing(String housingId, String userId) async {
+    /// Erabiltzaileak like kentzen duenean eguneraketak burutu.
     try {
       await _firestore.collection('viviendas').doc(housingId).update({
         'likesDeUsuarios.$userId': FieldValue.delete(),
@@ -107,6 +116,7 @@ class HousingService {
     String housingId,
     List<String> squadMemberIds,
   ) async {
+    /// Egiaztatu talde osoak like eman dion ala ez etxebizitzari.
     try {
       final doc = await _firestore.collection('viviendas').doc(housingId).get();
       if (!doc.exists) return false;
@@ -139,6 +149,7 @@ class HousingService {
     required String nombrePropietario,
     required String telefonoPropietario,
   }) async {
+    /// Propietarioek etxebizitza berri bat sortzeko erabiliko duten funtzioa.
     try {
       final docRef = _firestore.collection('viviendas').doc();
       final housing = Housing(
@@ -172,6 +183,7 @@ class HousingService {
 
   /// Obtiene una vivienda específica
   Future<Housing?> getHousing(String housingId) async {
+    /// ID bat emanda etxebizitzaren datuak itzultzen ditu.
     try {
       final doc = await _firestore.collection('viviendas').doc(housingId).get();
       if (doc.exists) {
@@ -186,6 +198,7 @@ class HousingService {
 
   /// Obtiene todas las viviendas completascompromisos (sin filtro de escuadrón)
   Future<List<Housing>> getAllActiveHousing() async {
+    /// Aktibo dauden eta `viviendasCompleta` diren etxebizitzen zerrenda bueltatzen du.
     try {
       final snap = await _firestore
           .collection('viviendas')

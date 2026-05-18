@@ -13,6 +13,9 @@ import '../services/notification_service.dart';
 import '../widgets/app_cached_network_image.dart';
 import 'main_scaffold.dart';
 
+/// RegisterScreen: erabiltzaileen erregistroa kudeatzen duen formularioa.
+///
+/// Argazkiak igotzeko eta solteko landu berezitasunak (piso datuak) kontrolatzen ditu.
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -102,6 +105,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
     } catch (_) {
       if (mounted) {
+        // Arazo bat gertatzen bada argazkiak igotzean, erabiltzaileari mezu bat erakutsi.
         _showError('No se pudieron subir las fotos del piso.');
       }
     } finally {
@@ -137,6 +141,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
     } catch (_) {
       if (mounted) {
+        // Argazkia igotzerakoan akatsak kudeatu eta mezua erakutsi.
         _showError('No se pudo subir la foto de perfil.');
       }
     } finally {
@@ -179,6 +184,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       return;
     }
+    // Formulario bidali aurretik egoera blokeatu eta spaghetti prozesu guztiak egin.
     setState(() => _loading = true);
     try {
       if (_pickedFile != null && _uploadedProfilePhotoUrl == null) {
@@ -199,6 +205,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         setState(() => _uploadingFloorPhotos = false);
       }
 
+      // Erregistratu Firebase Auth-en eta gero profila gordetzen dugu.
       final credential = await _authService.register(
         email: _emailCtrl.text.trim(),
         password: _passwordCtrl.text.trim(),

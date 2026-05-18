@@ -11,6 +11,11 @@ const List<String> kTiposMedalla = <String>[
   'Silencio',
 ];
 
+/// SwipeReward: erantzun egokia swipe-ek emandako sari-informazioa gordetzeko.
+///
+/// Zer egiten duen:
+/// - Swipe edo ekintza baten ondorioz eman diren puntu eta bonus-en xehetasunak encapsulatzen ditu.
+/// Parametro nagusiak: `pointsEarned`, `streakBonusAwarded`, `perfectWeekAwarded`.
 class SwipeReward {
   const SwipeReward({
     required this.pointsEarned,
@@ -29,6 +34,13 @@ class SwipeReward {
   final int perfectWeeks;
 }
 
+/// FirestoreService: aplikazioaren Firestore interakzio guztiak kudeatzen ditu.
+///
+/// Zer egiten duen:
+/// - `usuarios`, `chats` eta `interacciones` bezalako kolekzioekin irakurtzen eta idazten du.
+/// - Puntuazio mekanikak, match-acak, txat mezuak eta erabiltzaileen erregistro laguntzak egiten ditu.
+///
+/// Oharrak: Erabiltzen ditu `FirebaseFirestore` eta `FirebaseAuth` objektuak.
 class FirestoreService {
   FirestoreService({FirebaseFirestore? firestore, FirebaseAuth? auth})
     : _firestore = firestore ?? FirebaseFirestore.instance,
@@ -47,6 +59,11 @@ class FirestoreService {
       _firestore.collection('interacciones');
 
   Future<int> saveUserProfile(UserProfile profile) async {
+    /// Erabiltzaile profila gordetzen du eta bio osatuagatik bonus puntuak aplikatzen ditu.
+    ///
+    /// Parametroak:
+    /// - `profile`: `UserProfile` objektua, Firestore-era sinkronizatzeko.
+    /// Itzulera: zerbitzuak eman dituen puntu gehikuntza (int).
     final userRef = _users.doc(profile.uid);
     final existingDoc = await userRef.get();
     final existingData = existingDoc.data() ?? const <String, dynamic>{};
@@ -58,6 +75,7 @@ class FirestoreService {
     int pointsGained = 0;
     bool nextHasBioBonus = hasBioBonus;
     if (!hasBioBonus && _isBioCompleta(profile.bio)) {
+      // Bio osatua detektatu dugu; behin bakarrik ematen den bio-bonus-a aplikatu.
       pointsGained += 50;
       nextHasBioBonus = true;
       payload['lastPointsReason'] = 'bio';
@@ -90,6 +108,14 @@ class FirestoreService {
     required String reason,
     bool increaseDailySwipes = false,
   }) async {
+    /// Puntuazioak gehitzen ditu erabiltzaileari, transakzio seguru baten barruan.
+    ///
+    /// Parametroak:
+    /// - `uid`: puntu gehitu beharreko erabiltzailearen id.
+    /// - `amount`: oinarrizko puntuen kopurua.
+    /// - `reason`: zergatia, `lastPointsReason`-entzako.
+    /// - `increaseDailySwipes`: eguneroko swipe kopurua eguneratu behar den.
+    /// Itzulera: `SwipeReward` objektua, emandako informaziorekin.
     if (amount <= 0 || uid.trim().isEmpty) {
       return const SwipeReward(pointsEarned: 0);
     }
@@ -102,6 +128,7 @@ class FirestoreService {
     int streakDays = 0;
     int perfectWeeks = 0;
 
+    // Transakzio bat egiten dugu: eguneraketa atomikoa da, datu oldarkorrei aurre egiteko.
     await _firestore.runTransaction((tx) async {
       final snapshot = await tx.get(userRef);
       final data = snapshot.data() ?? const <String, dynamic>{};
@@ -109,6 +136,7 @@ class FirestoreService {
 
       final update = <String, dynamic>{};
 
+      // Eguneroko eta aste-oinarriko kalkuluetarako gaurko eguna eta aste-teklaren eraikitzea.
       final now = DateTime.now();
       final mm = now.month.toString().padLeft(2, '0');
       final dd = now.day.toString().padLeft(2, '0');
@@ -116,6 +144,7 @@ class FirestoreService {
       final weekKey = _weekKeyFromDate(now);
 
       if (increaseDailySwipes) {
+        // Egungo eguneroko swipes kopurua eguneratu map batean.
         final rawDaily = data['swipesDiarios'];
         final daily = rawDaily is Map<String, dynamic>
             ? Map<String, dynamic>.from(rawDaily)
@@ -124,15 +153,16 @@ class FirestoreService {
         daily[dayKey] = dayCount + 1;
         update['swipesDiarios'] = daily;
 
+        // Racha eta laguntza (shield) egoerak berreskuratu.
         final prevStreak = (data['rachaDias'] as num?)?.toInt() ?? 0;
         final prevDayKey = (data['rachaUltimoDia'] ?? '') as String;
         final prevWeekKey = (data['rachaComodinSemana'] ?? '') as String;
         final prevPerfectWeeks =
             (data['semanasPerfectas'] as num?)?.toInt() ?? 0;
         perfectWeeks = prevPerfectWeeks;
-        bool shieldAvailable =
-            (data['comodinRachaDisponible'] as bool?) ?? true;
+        bool shieldAvailable = (data['comodinRachaDisponible'] as bool?) ?? true;
 
+        // Aste berria hasten bada, aurreko asteko aktibitatearen arabera sari bereziak aplikatu.
         if (prevWeekKey != weekKey) {
           if (prevWeekKey.isNotEmpty) {
             final activeDaysPrevWeek = _countActiveDaysForWeek(
@@ -148,20 +178,24 @@ class FirestoreService {
             }
           }
 
+          // Aste berrirako shield aukera berrezarri eta aste-key eguneratu.
           shieldAvailable = true;
           update['rachaComodinSemana'] = weekKey;
           update['comodinRachaDisponible'] = true;
         }
 
         if (dayCount == 0) {
+          // Egun egunerako lehen swipe-a bada, racha logika aplikatu.
           final daysDiff = _daysBetween(prevDayKey, dayKey);
           if (daysDiff == 2 && shieldAvailable && prevStreak > 0) {
+            // Komodin erabiliz racha jarraitu behar den egoera.
             streakDays = prevStreak + 1;
             shieldAvailable = false;
             streakShieldUsed = true;
             update['comodinRachaDisponible'] = false;
             update['rachaComodinSemana'] = weekKey;
           } else {
+            // Racha normalaren kalkulua (jarraikortasun egiaztaketa).
             streakDays = _calcularSiguienteRacha(
               prevDayKey,
               dayKey,
@@ -180,9 +214,11 @@ class FirestoreService {
           streakDays = prevStreak;
         }
       } else {
+        // Swipes eguneratzeko beharrik ez badago, racha datuak datutik hartu.
         streakDays = (data['rachaDias'] as num?)?.toInt() ?? 0;
       }
 
+      // Puntu eguneraketak eta azken puntuaren metadatuak prestatu.
       update['biziPuntos'] = currentPoints + granted;
       update['lastPointsGain'] = granted;
       update['lastPointsReason'] = perfectWeekAwarded

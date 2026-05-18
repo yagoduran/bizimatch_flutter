@@ -10,6 +10,10 @@ import 'package:pdf/widgets.dart' as pw;
 
 import 'demo_service.dart';
 
+/// PdfService: kontratuak PDF formatuan sortu, gordetu eta ireki egiten ditu.
+///
+/// Zer egiten duen:
+/// - PDF bat eraiki `pdf` paketearekin eta Firebase Storage-era igo edo lokalki gorde demo moduan.
 class PdfService {
   PdfService._internal();
   static final PdfService instance = PdfService._internal();
@@ -27,6 +31,7 @@ class PdfService {
     required List<String> reglasPacto,
     required DateTime fechaGeneracion,
   }) async {
+    // PDF dokumentuaren eraikuntza: style eta orri konfigurazioa prestatu.
     final documento = pw.Document();
     final fontBase = pw.Font.times();
     final fontBold = pw.Font.timesBold();
@@ -142,6 +147,8 @@ class PdfService {
   }) async {
     final now = DateTime.now();
     final ts = now.millisecondsSinceEpoch;
+
+    // Demo moduan gauzak lokalki gordetzen ditugu eta irekitzen ditugu
     if (DemoService.instance.isDemoMode.value) {
       final directory = await getTemporaryDirectory();
       final file = File('${directory.path}/contrato_bizimatch_demo_$ts.pdf');
@@ -158,6 +165,7 @@ class PdfService {
       };
     }
 
+    // Produktzioan Firebase Storage erabili eta kontratua Firestore-en erreferentziatu.
     final path = 'contratos/$chatId/contrato_$ts.pdf';
 
     final ref = _storage.ref().child(path);

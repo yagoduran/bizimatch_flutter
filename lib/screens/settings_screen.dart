@@ -20,6 +20,10 @@ import '../services/notification_service.dart';
 import '../widgets/glassmorphism.dart';
 import 'login_screen.dart';
 
+/// SettingsScreen: aplikazioaren konfigurazio orokorrak eta ekintza-tresnak.
+///
+/// Erabiltzaileak kontuari, pribatutasunari, demoari eta datuen esportazioari
+/// lotutako konfigurazioak hemen kudeatzen dira.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -83,6 +87,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final doc = await _firestore.collection('usuarios').doc(user.uid).get();
       if (doc.exists && mounted) {
+        // Dokumentutik kargatu eta UI eguneratu; null segurtasunarekin.
         final data = doc.data();
         setState(() {
           _tienePiso = data?['tienePiso'] ?? false;
@@ -120,6 +125,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (_tienePiso) 'precioAlquilerPorPersona': int.parse(_precioAlquiler),
         if (!_tienePiso) 'precioAlquilerPorPersona': null,
       };
+      // Egiaztatu sarrera eta eguneratu erabiltzaile dokumentua Firestore-n.
       await _firestore.collection('usuarios').doc(user.uid).update(update);
       if (mounted) {
         _showInfo('Datos de vivienda actualizados.');
@@ -154,6 +160,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     }
 
+    // Reset demo local eta, posiblee del caso, datos Firestore de demo.
     if (mounted) {
       _showInfo('Demo reiniciada: mazo, chats y BiziPuntos a cero.');
     }
@@ -1263,6 +1270,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         },
       };
 
+      // Esportazio JSON bat prestatu eta partekatzeko fitxategi gisa gordeko dugu.
       final tempDir = await getTemporaryDirectory();
       final file = File('${tempDir.path}\\bizimatch_datos_${user.uid}.json');
       const encoder = JsonEncoder.withIndent('  ');

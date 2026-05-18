@@ -1,5 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// UserProfile: erabiltzaile baten profildun datu-ereduak definitzen ditu.
+///
+/// Erabiltzen da Firestore-en gordetako eremuak map-etik / map-era bihurtzeko.
 class UserProfile {
   const UserProfile({
     required this.uid,
@@ -64,6 +67,7 @@ class UserProfile {
   final Map<String, int>? medallasResumen;
 
   int get edad {
+    // Adina kalkulatzeko logika: urteetan kalkulatzen da eta jaioaren egunaren arabera zuzendu.
     final now = DateTime.now();
     int years = now.year - fechaNacimiento.year;
     final hasHadBirthday =
@@ -131,6 +135,7 @@ class UserProfile {
   }
 
   factory UserProfile.fromMap(Map<String, dynamic> map) {
+    // Fecha parsing: Timestamp edo String izan daiteke Firestore-erako eremu gisa.
     final dynamic rawFecha = map['fechaNacimiento'];
     DateTime fecha = DateTime(2000, 1, 1);
     if (rawFecha is Timestamp) {
@@ -177,6 +182,7 @@ class UserProfile {
 }
 
 class UserReview {
+  /// UserReview: erabiltzaile bati idatzitako errekonozimendu/resena modelatzen du.
   const UserReview({
     required this.id,
     required this.autorId,

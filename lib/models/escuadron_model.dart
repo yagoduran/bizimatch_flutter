@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// PreferenciasComunes: escuadrón-en partekaturiko irizpideak (prezio, zona).
 class PreferenciasComunes {
   final double? precioMaximo; // máximo precio de alquiler
   final String? zona; // zona preferida
@@ -22,6 +23,7 @@ class PreferenciasComunes {
   }
 }
 
+/// Escuadron: talde txiki baten (max 3) eredu nagusia, kideak eta preferentziak barne.
 class Escuadron {
   final String idEscuadron;
   final List<String> listaMiembrosIds; // máx 3
@@ -51,6 +53,7 @@ class Escuadron {
   }
 
   factory Escuadron.fromFirestore(DocumentSnapshot doc) {
+    // Firestore dokumentutik Escuadron objektua sortu.
     final data = doc.data() as Map<String, dynamic>;
     return Escuadron(
       idEscuadron: doc.id,

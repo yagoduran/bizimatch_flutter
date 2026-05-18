@@ -2,6 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/pact_model.dart';
 import '../repositories/firestore_repository.dart';
 
+/// PactService: txat-oinarritutako pact edo hitzarmen baten kudeaketa egiten du.
+///
+/// Zer egiten duen:
+/// - Pact dokumentuak sortu, lortu, eguneratu eta sinadura egoerak kudeatzen ditu.
 class PactService {
   static final PactService instance = PactService._internal();
   final FirestoreRepository _repo = FirestoreRepository.instance;
@@ -9,7 +13,7 @@ class PactService {
 
   PactService._internal();
 
-  /// Obtiene o crea un pacto para un chat específico
+  /// Pact-a lortzen du chatId-rengatik, edo sortzen du existitzen ez badago.
   Future<Pact> getOrCreatePact(String chatId) async {
     try {
       final docSnap = await _firestore.collection('pactos').doc(chatId).get();
@@ -18,7 +22,7 @@ class PactService {
         return Pact.fromFirestore(docSnap);
       }
 
-      // Si no existe, crear uno nuevo con reglas predefinidas
+        // Existitzen ez bada, hutseko pact bat sortu lehenetsitako arauekin.
       await _firestore
           .collection('pactos')
           .doc(chatId)
@@ -31,7 +35,7 @@ class PactService {
     }
   }
 
-  /// Stream en tiempo real del pacto
+  /// Pact baten aldaketak jarraitzeko stream-a itzultzen du.
   Stream<Pact> getPactStream(String chatId) {
     return _firestore
         .collection('pactos')
@@ -40,7 +44,7 @@ class PactService {
         .map((doc) => Pact.fromFirestore(doc));
   }
 
-  /// Actualiza una regla específica
+  /// Indize zehatz batean dagoen araua eguneratzen du.
   Future<void> actualizarRegla(
     String chatId,
     int indiceRegla,
@@ -66,7 +70,7 @@ class PactService {
     }
   }
 
-  /// Agrega una nueva regla personalizada
+  /// Araudi pertsonalizatua gehitzen du pact-era.
   Future<void> agregarReglaPersonalizada(
     String chatId,
     String tituloRegla,
@@ -89,7 +93,7 @@ class PactService {
     }
   }
 
-  /// Elimina una regla por su índice
+  /// Araudi bat ezabatzeko erabilitako funtzioa, indizearen arabera.
   Future<void> eliminarRegla(String chatId, int indiceRegla) async {
     try {
       final pactDoc = await _firestore.collection('pactos').doc(chatId).get();
@@ -108,7 +112,7 @@ class PactService {
     }
   }
 
-  /// Firma el pacto por parte del usuario actual
+  /// Ematen den erabiltzaileak pact-a sinatzen du; dokumentua sortzen edo eguneratzen du.
   Future<void> firmarPacto(String chatId, String uid) async {
     try {
       final pactDoc = await _firestore.collection('pactos').doc(chatId).get();
@@ -133,7 +137,7 @@ class PactService {
     }
   }
 
-  /// Obtiene el estado de firma actual
+  /// Egiaztatzen du `uid` erabiltzaileak jada sinatu duen ala ez.
   Future<bool> haPorFirmado(String chatId, String uid) async {
     try {
       final pactDoc = await _firestore.collection('pactos').doc(chatId).get();
@@ -149,7 +153,7 @@ class PactService {
     }
   }
 
-  /// Verifica si el pacto está cerrado (ambos han firmado)
+  /// Egiaztatzen du pact-a itxita dagoen (bi aldeak sinatu dituztenean).
   Future<bool> estaCerrado(String chatId) async {
     try {
       final pactDoc = await _firestore.collection('pactos').doc(chatId).get();
@@ -165,7 +169,7 @@ class PactService {
     }
   }
 
-  /// Obtiene el otro usuario que debe firmar
+  /// Pact-arekin lotuta dagoen beste sinatzailearen UID-a lortzen du (zurea izan ezik).
   Future<String?> obtenerOtroUsuarioFirmante(
     String chatId,
     String miUid,

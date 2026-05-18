@@ -8,6 +8,10 @@ import '../services/escuadron_service.dart';
 import '../services/housing_service.dart';
 import '../widgets/app_cached_network_image.dart';
 
+/// SquadHousingBrowserScreen: Escuadrónari zuzendutako etxebizitzen bilatzailea.
+///
+/// Erabilera nagusia: taldearen preferentziak kontuan hartuta aukeratutako
+/// etxebizitzen zerrenda erakustea eta kideen arteko adostasuna markatzea.
 class SquadHousingBrowserScreen extends StatefulWidget {
   final String squadId;
 
@@ -29,6 +33,7 @@ class _SquadHousingBrowserScreenState extends State<SquadHousingBrowserScreen> {
   @override
   void initState() {
     super.initState();
+    // UID propio eta squad stream-a hasieratu.
     _myUid = _auth.currentUser?.uid ?? '';
     _squadStream = _escuadronService.getEscuadronStream(widget.squadId);
   }
@@ -59,6 +64,7 @@ class _SquadHousingBrowserScreenState extends State<SquadHousingBrowserScreen> {
                 children: [
                   Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
                   SizedBox(height: 16),
+                  // Squad-ik ez badago erakutsi mezua.
                   Text('Escuadron no encontrado'),
                 ],
               ),
@@ -89,6 +95,7 @@ class _SquadHousingBrowserScreenState extends State<SquadHousingBrowserScreen> {
                       SizedBox(height: 16),
                       Text('No hay viviendas disponibles'),
                       SizedBox(height: 8),
+                      // Informazio laguntzailea: zenbat pertsonentzako bilatzen
                       Text(
                         'para ${squad.miembrosCount} personas en ${squad.preferenciasComunas.zona ?? 'tu zona'}',
                         style: TextStyle(color: Colors.grey[600]),
@@ -118,6 +125,7 @@ class _SquadHousingBrowserScreenState extends State<SquadHousingBrowserScreen> {
     Escuadron squad,
     BuildContext context,
   ) {
+    // Egiaztatu ea nire UID-ak like eman duen eta ea denbora guztiek adostuta dauden.
     final myLike = housing.usuarioLaDio(_myUid);
     final allLiked = squad.listaMiembrosIds.every(
       (uid) => housing.usuarioLaDio(uid),
@@ -267,6 +275,7 @@ class _SquadHousingBrowserScreenState extends State<SquadHousingBrowserScreen> {
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () async {
+                          // Like/Unlike egiten du: zerbitzuari dei egiten zaio.
                           HapticFeedback.lightImpact();
                           if (myLike) {
                             await _housingService.unlikeHousing(
@@ -279,6 +288,7 @@ class _SquadHousingBrowserScreenState extends State<SquadHousingBrowserScreen> {
                               _myUid,
                             );
                           }
+                          // Egoera berria erakusteko UI eguneratu.
                           setState(() {});
                         },
                         icon: Icon(

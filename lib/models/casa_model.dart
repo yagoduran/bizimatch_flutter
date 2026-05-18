@@ -1,5 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Casa: etxearen oinarrizko ereduak (id, kideak, sortze data, kokapena).
+///
+/// Erabiltzen da etxeen metadatuak Firestore-rekin map batean biltegiratzeko.
 class Casa {
   final String idCasa;
   final List<String> miembrosIds;
@@ -29,6 +32,7 @@ class Casa {
   }
 
   factory Casa.fromFirestore(Map<String, dynamic> data, {required String id}) {
+    // Firestore dokumentutik `Casa` objektua sortu.
     return Casa(
       idCasa: id,
       miembrosIds: List<String>.from(data['miembros_ids'] ?? []),

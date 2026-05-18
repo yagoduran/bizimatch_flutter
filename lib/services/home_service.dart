@@ -5,7 +5,11 @@ import '../models/casa_model.dart';
 import '../models/tarea_model.dart';
 import '../repositories/firestore_repository.dart';
 
-/// Servicio para gestionar casas, tareas y puntos gamificados
+/// HomeService: etxeen, zeregin eta puntuazio gamifikatuaren kudeaketa egiten du.
+///
+/// Zer egiten duen:
+/// - Etxeak sortu eta erabiltzaileen `id_casa` eguneratzen du.
+/// - Zereginak sortu, markatu eta puntuak aplikatzen ditu erabiltzaileei.
 class HomeService {
   HomeService._privateConstructor();
   static final HomeService _instance = HomeService._privateConstructor();
@@ -35,7 +39,7 @@ class HomeService {
 
       await docRef.set(casa.toMap());
 
-      // Actualizar perfil de cada miembro con id_casa
+      // Kide bakoitzaren profila eguneratu: id_casa id gehitu.
       for (final uid in miembrosIds) {
         await _firestore.collection('usuarios').doc(uid).update({
           'id_casa': idCasa,
@@ -51,6 +55,7 @@ class HomeService {
 
   /// Obtiene una casa por ID
   Future<Casa?> obtenerCasa(String idCasa) async {
+    /// `idCasa`-ari dagokion etxearen informazioa itzultzen du.
     try {
       final doc = await _firestore.collection('casas').doc(idCasa).get();
       if (!doc.exists) return null;
@@ -63,6 +68,7 @@ class HomeService {
 
   /// Stream en tiempo real de una casa
   Stream<Casa?> getCasaStream(String idCasa) {
+    /// Etxe baten aldaketak jarraitzeko stream-a itzultzen du.
     return _firestore.collection('casas').doc(idCasa).snapshots().map((doc) {
       if (!doc.exists) return null;
       return Casa.fromFirestore(doc.data() ?? {}, id: idCasa);
@@ -111,6 +117,7 @@ class HomeService {
 
   /// Obtiene todas las tareas de una casa
   Future<List<Tarea>> obtenerTareas(String idCasa) async {
+    /// Etxeko zeregin guztiak itzultzen ditu.
     try {
       final snapshot = await _firestore
           .collection('casas')
@@ -130,6 +137,7 @@ class HomeService {
 
   /// Stream en tiempo real de tareas
   Stream<List<Tarea>> getTareasStream(String idCasa) {
+    /// Zereginen stream-a itzultzen du etxe jakin baterako.
     return _firestore
         .collection('casas')
         .doc(idCasa)
@@ -151,7 +159,8 @@ class HomeService {
     required int puntos,
   }) async {
     try {
-      // Actualizar tarea
+      // Tarea markatu eta puntu eguneraketak egin datu-basean.
+      // 1) Tarea markatu completada
       await _firestore
           .collection('casas')
           .doc(idCasa)
@@ -169,6 +178,7 @@ class HomeService {
       final mesActual =
           '${ahora.year}-${ahora.month.toString().padLeft(2, '0')}';
 
+      // 2) Puntuazioen historiako dokumentua eguneratu edo sortu falta bada.
       await _firestore
           .collection('usuarios')
           .doc(uidUsuario)
@@ -179,7 +189,7 @@ class HomeService {
             'actualizado_en': Timestamp.now(),
           })
           .catchError((e) async {
-            // Si el documento no existe, crarlo
+            // Dokumentua ez badago, sortu hasierako sarrera.
             if (e.code == 'NOT_FOUND' || e.toString().contains('NotFound')) {
               await _firestore
                   .collection('usuarios')

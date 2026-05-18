@@ -1,6 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Auth zerbitzua: erabiltzailearen autentikazio kudeaketa egiten du.
+///
+/// Zer egiten duen:
+/// - Firebase Auth bidez login, register eta logout funtzioak eskaintzen ditu.
+/// - Demo admin saioak eta azken saioaren markatzea SharedPreferences-en gordetzen du.
+///
+/// Gako kontzeptuak: `FirebaseAuth`, `UserCredential`, `SharedPreferences`.
 class AuthService {
   AuthService({FirebaseAuth? auth}) : _auth = auth ?? FirebaseAuth.instance;
 
@@ -12,8 +19,10 @@ class AuthService {
 
   final FirebaseAuth _auth;
 
+  /// Stream bitartez aplikazioak jarraitu dezake autentikazio egoeraren aldaketak.
   Stream<User?> authStateChanges() => _auth.authStateChanges();
 
+  /// Oraineko erabiltzailea (edo `null`), `FirebaseAuth`-etik hartua.
   User? get currentUser => _auth.currentUser;
 
   Future<UserCredential> login({
@@ -24,6 +33,7 @@ class AuthService {
       email: email,
       password: password,
     );
+    // Saio markatzea: erabiltzailearen azken login unea gordetzen dugu.
     await _markSessionLogin();
     return credential;
   }
@@ -36,11 +46,13 @@ class AuthService {
       email: email,
       password: password,
     );
+    // Erregistro arrakastatsuaren ondoren saioaren markatzea egiten da.
     await _markSessionLogin();
     return credential;
   }
 
   Future<void> logout() async {
+    // Demo saioa ezabatu lehenik, gero Firebase-tik signOut.
     await clearDemoAdminSession();
     await _auth.signOut();
   }
@@ -55,6 +67,7 @@ class AuthService {
 
   Future<void> startDemoAdminSession() async {
     final prefs = await SharedPreferences.getInstance();
+    // Demo admin saioa aktibatu eta saio-markatzea egin.
     await prefs.setBool(_demoAdminSessionKey, true);
     await _markSessionLogin();
   }
@@ -75,14 +88,16 @@ class AuthService {
     if (lastLoginMs == null) {
       return false;
     }
-
+    // Aurreko saioaren timestamp berreskuratu eta gaurkoarekin konparatzen dugu.
     final lastLogin = DateTime.fromMillisecondsSinceEpoch(lastLoginMs);
     final now = DateTime.now();
+    // True itzultzen dugu azken saioa 30 egun baino gutxiagokoa bada.
     return now.difference(lastLogin).inDays < _sessionDays;
   }
 
   Future<void> _markSessionLogin() async {
     final prefs = await SharedPreferences.getInstance();
+    // Uneko denbora milisekundotan gorde, saioak iraungitze egiaztapenetarako.
     await prefs.setInt(_lastLoginAtKey, DateTime.now().millisecondsSinceEpoch);
   }
 }

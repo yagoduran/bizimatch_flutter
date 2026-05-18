@@ -18,6 +18,9 @@ import 'profile_detail_screen.dart';
 import 'settings_screen.dart';
 import '../widgets/glassmorphism.dart';
 
+/// MainScaffold: aplikazioaren oinarrizko nabigazio egitura (tabs eta behe-menua).
+///
+/// Barruan aurkitzen dira: Arakatu, Vínculos, Komunitatea, Nire etxea, Perfil eta mapa.
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
 
@@ -82,6 +85,7 @@ class _MainScaffoldState extends State<MainScaffold>
     }
   }
 
+  /// Tutorial automatikoa abiarazteko kontrola: beharrezkoa bada Showcase hasi.
   Future<void> _maybeStartTutorial({bool force = false}) async {
     if (_startingTutorial || !mounted) {
       return;
@@ -94,6 +98,7 @@ class _MainScaffoldState extends State<MainScaffold>
     }
 
     _startingTutorial = true;
+    // Pantaila lehenengora alda eta tutorial pausuz pausu erakutsi
     _selectScreen(0);
     await Future<void>.delayed(const Duration(milliseconds: 450));
     if (!mounted) {
@@ -166,6 +171,7 @@ class _MainScaffoldState extends State<MainScaffold>
     return 4;
   }
 
+  /// Pantaila aukeraketa: haptic feedback eta tab kontrola kudeatzen ditu.
   void _selectScreen(int index) {
     HapticFeedback.selectionClick();
     setState(() {
@@ -244,6 +250,7 @@ class _MainScaffoldState extends State<MainScaffold>
     );
   }
 
+  /// Likes ez irakurrien egiaztapena eta dialog-en eraketa abian jartzen du.
   Future<void> _verificarLikesRecibidos() async {
     try {
       // Pequeño delay para asegurar que el widget esté montado

@@ -1,5 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// UserModel: erabiltzailearen oinarrizko modeloa Firestore dokumentuetarako.
+///
+/// Zer egiten duen:
+/// - Firestore-erako `Map` bihurketa eta dokumentuetatik objektuak sortzeko helper-ak eskaintzen ditu.
 class UserModel {
   final String id;
   final String nombre;
@@ -53,6 +57,7 @@ class UserModel {
 
   // Calcular edad automáticamente
   int get edad {
+    // Adina kalkulatzeko utilitate sinplea.
     final ahora = DateTime.now();
     int edad = ahora.year - fechaNacimiento.year;
     if (ahora.month < fechaNacimiento.month ||

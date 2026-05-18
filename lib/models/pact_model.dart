@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Representa una regla dentro del Pacto de Convivencia
+/// Regla: pact-eko arau bakar baten eredu sinplea.
+///
+/// Atributuak: `titulo` eta `completado`.
+/// `toMap` eta `fromMap` erabil daitezke Firestore-rekin erraz maniobrar.
 class Regla {
   final String titulo;
   final bool completado;
@@ -29,7 +32,9 @@ class Regla {
   String toString() => 'Regla(titulo: $titulo, completado: $completado)';
 }
 
-/// Representa el Pacto de Convivencia entre dos usuarios
+/// Pact: bizikidetzarako hitzarmenaren eredu nagusia.
+///
+/// Barne-egitura: `reglas`, `estadoFirmas` eta egoera (itxita ala ez).
 class Pact {
   final String id; // chatId
   final List<Regla> reglas;
@@ -45,7 +50,7 @@ class Pact {
     this.fechaCreacion,
   });
 
-  /// Convierte el modelo a un mapa para guardar en Firestore
+  /// `Pact` objektua map bat bilakatzen du Firestore-era gordetzeko.
   Map<String, dynamic> toMap() {
     return {
       'reglas': reglas.map((r) => r.toMap()).toList(),
@@ -55,7 +60,7 @@ class Pact {
     };
   }
 
-  /// Crea una instancia de Pact desde un documento de Firestore
+  /// Firestore dokumentutik `Pact` objektua sortzen du.
   factory Pact.fromFirestore(DocumentSnapshot doc) {
     if (!doc.exists) {
       return Pact.empty(doc.id);
@@ -76,7 +81,7 @@ class Pact {
     );
   }
 
-  /// Crea un Pact vacío con reglas predefinidas
+  /// Hutseko `Pact` bat sortzen du arau predefinituekin.
   factory Pact.empty(String chatId) {
     return Pact(
       id: chatId,
@@ -92,7 +97,7 @@ class Pact {
     );
   }
 
-  /// Actualiza una regla existente o ne agrega una nueva
+  /// Araudi bat eguneratzen du index baten bidez edo lehengoratzea egiten du.
   Pact actualizarRegla(int index, Regla reglaActualizada) {
     final nuevasReglas = List<Regla>.from(reglas);
     if (index >= 0 && index < nuevasReglas.length) {
@@ -107,7 +112,7 @@ class Pact {
     );
   }
 
-  /// Agrega una nueva regla
+  /// Araudi berri bat gehitzen du pact-era.
   Pact agregarRegla(Regla regla) {
     return Pact(
       id: id,
@@ -118,7 +123,7 @@ class Pact {
     );
   }
 
-  /// Elimina una regla por su índice
+  /// Indize bidez arau bat ezabatzen du.
   Pact eliminarRegla(int index) {
     final nuevasReglas = List<Regla>.from(reglas);
     if (index >= 0 && index < nuevasReglas.length) {
@@ -133,11 +138,11 @@ class Pact {
     );
   }
 
-  /// Marca el pacto como firmado por un usuario
+  /// Erabiltzaile batek sinatzen duenean egoera eguneratzen du eta egiaztatzen du.
   Pact firmarPor(String uid) {
     final nuevoEstadoFirmas = Map<String, bool>.from(estadoFirmas);
     nuevoEstadoFirmas[uid] = true;
-
+    // Bi aldeak sinatu dituen egiaztatu eta `estaCerrado` aldagarria aktibatu.
     final ahora = estaCerrado == false && _ambosHanFirmado(nuevoEstadoFirmas);
 
     return Pact(
@@ -149,7 +154,7 @@ class Pact {
     );
   }
 
-  /// Verifica si ambos usuarios han firmado
+  /// Bi sinatzaileek sinatu duten egiaztatzen du (eta kopurua 2 dela egiaztatzen).
   bool _ambosHanFirmado(Map<String, bool> firmas) {
     return firmas.values.every((value) => value == true) && firmas.length == 2;
   }

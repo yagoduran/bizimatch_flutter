@@ -1,5 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Housing: etxebizitza (listing) bateko ereduaren definizioa.
+///
+/// Ezarpenak eta helper metodoak Firestore dokumentuetatik objektuetara bihurtzeko erabiliko dira.
 class Housing {
   final String id;
   final String titulo;
@@ -79,6 +82,7 @@ class Housing {
   }
 
   factory Housing.fromFirestore(DocumentSnapshot doc) {
+    // Firestore dokumentutik objektu bat sortu.
     final data = doc.data() as Map<String, dynamic>;
     return Housing(
       id: doc.id,

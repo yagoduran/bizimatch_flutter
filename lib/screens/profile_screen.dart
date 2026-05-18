@@ -17,6 +17,10 @@ import '../widgets/app_cached_network_image.dart';
 import '../widgets/badge_widget.dart';
 import 'login_screen.dart';
 
+/// ProfileScreen: erabiltzailearen profil osoa kudeatzeko ikuspegia.
+///
+/// Hemen erabiltzaileak bere argazkia, bio, nota de voz eta bestelako
+/// konfigurazioak kudeatu ditzake; baita resenyak eta medallak ere.
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -239,6 +243,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         medallasResumen: profile.medallasResumen,
         voiceBioUrl: profile.voiceBioUrl,
       );
+      // Zerbitzuari profila eguneratzeko dei bat egin eta itxaron.
       await _firestore.saveUserProfile(updated);
     } catch (_) {
       if (mounted) {
@@ -732,8 +737,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
+    // Temp fitxategi lokal bat sortu grabazioaren gordetzeko.
     final filePath =
-        '${Directory.systemTemp.path}/voice_bio_${profile.uid}_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      '${Directory.systemTemp.path}/voice_bio_${profile.uid}_${DateTime.now().millisecondsSinceEpoch}.m4a';
 
     try {
       await _audioRecorder.start(
@@ -749,6 +755,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return;
       }
 
+      // Hasieratu grabazio-estatistika eta timer-a.
       setState(() {
         _isRecordingVoice = true;
         _recordingSeconds = 0;
@@ -808,6 +815,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
+    // Fitxategia lehenik lokal gisa kontsideratu, gero saiatu igotzen.
     String savedVoiceUrl = filePath;
     bool uploadedToCloud = false;
     try {
@@ -833,6 +841,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       savedVoiceUrl = filePath;
     }
 
+    // Profila eguneratu azken audio URLarekin (edo lokalarekin fallback moduan).
     final updated = UserProfile(
       uid: profile.uid,
       email: profile.email,

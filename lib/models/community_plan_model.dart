@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'community_plan_type.dart';
 
+/// CommunityPlan: komunitateko ekitaldi edo plana modelatzen du.
+///
+/// Barne-eremuak: `titulo`, `descripcion`, `ciudad`, `fechaHora`, eta parte-hartzaileak.
 class CommunityPlan {
   const CommunityPlan({
     required this.id,
@@ -52,6 +55,7 @@ class CommunityPlan {
   factory CommunityPlan.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
   ) {
+    // Firestore dokumentutik CommunityPlan objektua sortu.
     final data = doc.data() ?? <String, dynamic>{};
     return CommunityPlan(
       id: doc.id,

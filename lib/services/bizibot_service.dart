@@ -2,7 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_profile.dart';
 import 'demo_service.dart';
 
-/// Servicio BiziBot: Genera frases de apertura inteligentes basadas en perfiles
+/// BiziBot zerbitzua: erabiltzaileen profilatik hasiera-mezu adimentsuak sortzen ditu.
+///
+/// Zer egiten duen:
+/// - Profilako `bio`, `intereses` eta bestelako metadatuetatik esaldi egokiak proposatzen ditu
+///   lehen kontakturako (introductions).
+/// - Demo moduan itzulpenak edo atzeraeraginak sinpleak dira.
 class BiziBotService {
   BiziBotService._privateConstructor();
   static final BiziBotService _instance = BiziBotService._privateConstructor();
@@ -93,7 +98,11 @@ class BiziBotService {
     'Apostar por nosotros podria ser increible',
   ];
 
-  /// Obtiene el perfil del usuario y genera sugerencias
+  /// Erabiltzailearen profilaren arabera 3 esaldi proposamen sortzen ditu.
+  ///
+  /// Parametroak:
+  /// - `otherUid`: helburu erabiltzailearen id.
+  /// Itzulera: `Future<List<String>>` — gehienez 3 esaldi proposamen.
   Future<List<String>> generarSugerencias(String otherUid) async {
     try {
       if (DemoService.instance.isDemoMode.value) {
@@ -119,6 +128,7 @@ class BiziBotService {
       final intereses = (data['intereses'] as List<dynamic>?) ?? [];
       final profile = _parseUserProfile(data);
 
+      // Bio, interes eta profile informazioa oinarri hartuta proposamenak generatu.
       return _generateSuggestions(bio, intereses, profile);
     } catch (e) {
       print('Error en BiziBot: $e');
@@ -126,7 +136,7 @@ class BiziBotService {
     }
   }
 
-  /// Genera sugerencias basadas en bio, intereses y perfil
+  /// Bio, interesa eta erabiltzaile profilaren arabera esaldiak sortzen ditu.
   List<String> _generateSuggestions(
     String bio,
     List<dynamic> intereses,
@@ -136,7 +146,7 @@ class BiziBotService {
     final searchText = '$bio ${intereses.join(" ")} ${profile.nombre}'
         .toLowerCase();
 
-    // Buscar palabras clave en la bio e intereses
+    // Bilatu keyword-ak bio eta intereses textuan.
     for (final entry in _keywordPhrases.entries) {
       if (searchText.contains(entry.key)) {
         suggestions.addAll(entry.value);
@@ -144,7 +154,7 @@ class BiziBotService {
       }
     }
 
-    // Si no hay suficientes sugerencias, añadir las genéricas
+    // Nahikoa proposamen ez bada lortu, gehitu fallback esaldi generikoak.
     if (suggestions.length < 3) {
       suggestions.addAll(_fallbackPhrases);
     }
@@ -152,7 +162,7 @@ class BiziBotService {
     return _getRandomPhrases(suggestions.toList(), 3);
   }
 
-  /// Obtiene N frases aleatorias de una lista
+  /// Ematen den zerrendatik `count` esaldi ausaz aukeratzen ditu.
   List<String> _getRandomPhrases(List<String> phrases, int count) {
     final random = <String>[];
     final available = List<String>.from(phrases);
@@ -162,7 +172,7 @@ class BiziBotService {
       random.add(available.removeAt(0));
     }
 
-    // Si hay menos frases de las solicitadas, completar con fallbacks
+    // Esaldiak ez badira nahikoak, fallback-ak erabiliz osatu zerrenda.
     while (random.length < count) {
       _fallbackPhrases.shuffle();
       random.add(_fallbackPhrases[0]);
@@ -171,7 +181,7 @@ class BiziBotService {
     return random;
   }
 
-  /// Parsea un mapa a UserProfile
+  /// Map bat `UserProfile` objektu bihurtzen du.
   UserProfile _parseUserProfile(Map<String, dynamic> data) {
     try {
       return UserProfile(
@@ -212,6 +222,7 @@ class BiziBotService {
         ),
       );
     } catch (e) {
+      // Parsing erroreak: log egin eta berriro bota, atzealdek egokitu dezan.
       print('Error parsing UserProfile: $e');
       rethrow;
     }

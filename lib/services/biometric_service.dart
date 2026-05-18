@@ -1,5 +1,10 @@
 import 'package:local_auth/local_auth.dart';
 
+/// BiometricService: gailuaren biometria bidezko autentikazioa kudeatzen du.
+///
+/// Zer egiten duen:
+/// - Gailuak biometria onartzen duen egiaztatzen du eta autentikazio eskaera egiten du.
+/// Parametroak: ez du parametrorik jasotzen. Itzulera: `Future<bool>` arrakasta adierazteko.
 class BiometricService {
   BiometricService({LocalAuthentication? localAuthentication})
     : _localAuthentication = localAuthentication ?? LocalAuthentication();
@@ -7,6 +12,9 @@ class BiometricService {
   final LocalAuthentication _localAuthentication;
 
   Future<bool> authenticate() async {
+    /// Gailuko biometria erabiliz erabiltzailearen identitatea baieztatzen du.
+    ///
+    /// Itzulera: `true` autentikazioa arrakastatsua bada, bestela `false`.
     try {
       final canCheckBiometrics = await _localAuthentication.canCheckBiometrics;
       final isDeviceSupported = await _localAuthentication.isDeviceSupported();
@@ -15,6 +23,7 @@ class BiometricService {
         return false;
       }
 
+      // Biometric prompt-a abian jartzen dugu, token edo sinadura helburuetarako.
       return await _localAuthentication.authenticate(
         localizedReason:
             'Confirma tu identidad para firmar y generar el contrato.',

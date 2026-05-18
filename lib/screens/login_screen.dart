@@ -9,6 +9,9 @@ import '../widgets/glassmorphism.dart';
 import 'main_scaffold.dart';
 import 'register_screen.dart';
 
+/// LoginScreen: Saio hasierako pantaila — erabiltzailearen sarrera kudeatzen du.
+///
+/// Edukietan: email/kontraseña sarrera, demo-admin sarbidea eta pasahitzaren berrespena.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -30,7 +33,9 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  /// Saio-prozesua: egiaztapen sinplea, demo-admin kontrolea eta helmugara nabigazioa.
   Future<void> _login() async {
+    // Ezkutuko geruza: ez berriezarri operazioak bitartean
     if (_isLoading) {
       return;
     }
@@ -38,6 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
+    // Erakutsi mezua baldin eta daturik gabe badago
     if (email.isEmpty || password.isEmpty) {
       _showInfo('Completa email y contraseña.');
       return;
@@ -46,6 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // Demo-admin kredentzialak baliozkoak badira, sarrera demo moduan egin
       if (_authService.isDemoAdminCredentials(
         email: email,
         password: password,
@@ -54,18 +61,23 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
+      // Kredentzialak erabiltzaile normala bezala prozesatu
       await _authService.login(email: email, password: password);
+
+      // Gorde/sinkronizatu FCM tokena zerbitzuarekin
       await NotificationService.instance.syncTokenForCurrentUser();
 
       if (!mounted) {
         return;
       }
 
+      // Saio arrakastatsua -> pantaila nagusira
       Navigator.pushReplacement(
         context,
         MaterialPageRoute<void>(builder: (_) => const MainScaffold()),
       );
     } on FirebaseAuthException catch (e) {
+      // Erregistro-akatsen kasuetan erabiltzaileari mezua
       _showInfo('Error al iniciar sesión: ${e.code}');
     } catch (_) {
       _showInfo('No se pudo iniciar sesión. Intenta nuevamente.');
@@ -76,6 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  /// Demo-admin saioa jartzen du eta demo-profila aukeratzen du.
   Future<void> _enterDemoAdmin() async {
     await _authService.startDemoAdminSession();
     DemoService.instance.enableDemo(true);
@@ -91,6 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  /// Pasahitzaren berrespena: erabiltzaileak emaila sartu eta esteka bidaltzen da.
   Future<void> _recuperarContrasena() async {
     final emailCtrl = TextEditingController(text: _emailController.text.trim());
 

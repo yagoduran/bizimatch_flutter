@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum TareaCategoria { limpieza, compras, pagos, reparaciones, otro }
 
+/// Tarea: etxeko zeregin bati lotutako eredu bat.
+///
+/// Atributuak: puntuazioa, asignatua den erabiltzailea, epea, kategoria eta abar.
 class Tarea {
   final String idTarea;
   final String idCasa;
@@ -48,6 +51,7 @@ class Tarea {
   }
 
   factory Tarea.fromFirestore(Map<String, dynamic> data, {required String id}) {
+    // Firestore dokumentutik `Tarea` objektua sortu, data parsing barne.
     return Tarea(
       idTarea: id,
       idCasa: data['id_casa'] as String? ?? '',

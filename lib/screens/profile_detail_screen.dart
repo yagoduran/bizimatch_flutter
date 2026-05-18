@@ -7,6 +7,10 @@ import '../models/user_profile.dart';
 import '../services/demo_service.dart';
 import '../widgets/app_cached_network_image.dart';
 
+/// ProfileDetailScreen: beste erabiltzaile baten profil xehea erakusten du.
+///
+/// Demo moduan gidatutako profilak kudeatzen ditu eta Firestore bidezko
+/// karga bat egiten du segurtasun tartearekin (timeout).
 class ProfileDetailScreen extends StatefulWidget {
   final String userUid;
   final String? heroTag;
@@ -37,6 +41,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
         );
       }
 
+      // Firestore-tik profil datuak kargatu, 10 segundoko timeoutarekin.
       final doc = await _firestore
           .collection('usuarios')
           .doc(widget.userUid)

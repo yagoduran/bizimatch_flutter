@@ -5,6 +5,11 @@ import '../models/community_plan_model.dart';
 import '../models/community_plan_type.dart';
 import '../repositories/firestore_repository.dart';
 
+/// CommunityService: komunitateko ekitaldi eta planen kudeaketa egiten du.
+///
+/// Zer egiten duen:
+/// - Komunitate planak sortu, zerrendatu eta mezularitza kudeatzen du.
+/// - `FirestoreRepository` erabiliz datuak irakurri/eguneratzen ditu.
 class CommunityService {
   CommunityService._internal();
   static final CommunityService instance = CommunityService._internal();
@@ -18,6 +23,8 @@ class CommunityService {
   String get currentUid => _auth.currentUser?.uid ?? '';
 
   Future<String> obtenerCiudadUsuario() async {
+    /// Erabiltzailearen hiria edo lehen aukeratutako kokapena itzultzen du.
+    /// Itzulera: hiria edo 'General' lehenetsi gabe.
     final uid = currentUid;
     if (uid.isEmpty) return 'General';
 
@@ -39,6 +46,7 @@ class CommunityService {
   }
 
   Stream<List<CommunityPlan>> planesPorCiudad(String ciudad) {
+    /// Ematen den hiriari dagokion komunitate-planen stream-a itzultzen du.
     return _planes
         .where('ciudad', isEqualTo: ciudad)
         .orderBy('fecha_hora')
@@ -51,6 +59,7 @@ class CommunityService {
   }
 
   Stream<List<String>> ciudadesDisponibles() {
+    /// Eskuragarri dauden hirien zerrenda itzultzen du, 'General' barne.
     return _planes.snapshots().map((snapshot) {
       final cities = <String>{'General'};
       for (final doc in snapshot.docs) {
@@ -72,6 +81,8 @@ class CommunityService {
     required CommunityPlanType tipoPlan,
     required String creadorNombre,
   }) async {
+    /// Komunitate-plana sortzen du eta Firestore-era gordetzen du.
+    /// Parametro nagusiak: `titulo`, `descripcion`, `ciudad`, `fechaHora`, `tipoPlan`.
     final uid = currentUid;
     if (uid.isEmpty) {
       throw Exception('Usuario no autenticado');
@@ -96,6 +107,7 @@ class CommunityService {
   }
 
   Future<void> toggleAsistencia(CommunityPlan plan) async {
+    /// Ematen den pertsonak plan batean dagoen ala ez aldatu (join/leave).
     final uid = currentUid;
     if (uid.isEmpty) return;
 
@@ -113,6 +125,7 @@ class CommunityService {
   }
 
   Stream<List<CommunityPlanMessage>> mensajesPlan(String planId) {
+    /// Plan jakin baten mezuen stream-a itzultzen du.
     return _planes
         .doc(planId)
         .collection('mensajes')
@@ -130,6 +143,8 @@ class CommunityService {
     required String texto,
     required String senderName,
   }) async {
+    /// Plan baten mezua sortu eta gorde.
+    /// - `texto` hutsik badago, ez du ezer egiten.
     final uid = currentUid;
     if (uid.isEmpty) return;
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// CommunityPlanType: komunitateko plan moten enum bat (Cañas, Deporte, Turismo, Otro).
 enum CommunityPlanType { canas, deporte, turismo, otro }
 
 extension CommunityPlanTypeX on CommunityPlanType {
