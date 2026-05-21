@@ -45,7 +45,6 @@
       -webkit-font-smoothing:antialiased;
       -moz-osx-font-smoothing:grayscale;
       position:relative;
-      cursor:none;
     }
 
     @keyframes bgShift{0%{background-position:0% 50%,0% 50%,0% 50%,0% 50%,0% 50%,0% 0%}100%{background-position:320px 160px,210px 120px,-260px 180px,180px -120px,-140px 260px,0% 0%}}
@@ -130,58 +129,6 @@
       background:radial-gradient(circle at var(--mouse-x) var(--mouse-y), rgba(79, 172, 254, 0.15) 0%, rgba(79, 172, 254, 0.10) 16%, rgba(0, 242, 254, 0.05) 30%, transparent 60%);
       mix-blend-mode:screen;
       transition:opacity 220ms ease;
-    }
-
-    .cursor-dot,
-    .cursor-ring{
-      position:fixed;
-      pointer-events:none;
-      border-radius:50%;
-      z-index:10000;
-      opacity:0;
-      transform:translate(var(--cursor-x, 0px), var(--cursor-y, 0px)) translate(-50%, -50%);
-      transition:opacity 180ms ease, transform 180ms ease, width 180ms ease, height 180ms ease, box-shadow 180ms ease, background-color 180ms ease, border-color 180ms ease;
-      will-change:transform,left,top;
-    }
-
-    .cursor-dot{
-      width:8px;
-      height:8px;
-      background:rgba(0,240,255,0.96);
-      box-shadow:0 0 10px rgba(0,240,255,0.95), 0 0 24px rgba(79,172,254,0.55);
-      mix-blend-mode:screen;
-    }
-
-    .cursor-ring{
-      width:28px;
-      height:28px;
-      border:1px solid rgba(0,240,255,0.45);
-      background:rgba(0,240,255,0.06);
-      box-shadow:0 0 18px rgba(0,240,255,0.18), inset 0 0 12px rgba(0,240,255,0.08);
-      -webkit-backdrop-filter:blur(2px);
-      backdrop-filter:blur(2px);
-      mix-blend-mode:screen;
-    }
-
-    .cursor-visible .cursor-dot,
-    .cursor-visible .cursor-ring{
-      opacity:1;
-    }
-
-    .cursor-hover .cursor-dot{
-      transform:translate(var(--cursor-x, 0px), var(--cursor-y, 0px)) translate(-50%, -50%) scale(1.55);
-      box-shadow:0 0 14px rgba(0,240,255,1), 0 0 34px rgba(79,172,254,0.8);
-    }
-
-    .cursor-hover .cursor-ring{
-      width:40px;
-      height:40px;
-      border-color:rgba(0,240,255,0.78);
-      box-shadow:0 0 26px rgba(0,240,255,0.28), inset 0 0 14px rgba(0,240,255,0.12);
-    }
-
-    body, button, img, .dot, .lightbox, .lightbox__img{
-      cursor:none;
     }
 
     .lightbox{
@@ -632,8 +579,6 @@
       </table>
     </div>
   </div>
-  <div class="cursor-ring" id="cursorRing" aria-hidden="true"></div>
-  <div class="cursor-dot" id="cursorDot" aria-hidden="true"></div>
   <div class="lightbox" id="lightbox" aria-hidden="true">
     <div class="lightbox__frame" id="lightboxFrame"></div>
   </div>
@@ -656,23 +601,61 @@
       </div>
     </section>
 
-    <!-- Slide 2: Arazoa -->
+    <!-- Slide 2: Aurkibidea -->
     <section class="slide" data-index="1" aria-hidden="true">
+      <div class="card">
+        <div class="header"><div class="logo">BiziMatch</div><div>📑 Aurkibidea</div></div>
+        <div class="center">
+          <h2 class="title" style="font-size:clamp(1.8rem, 3.5vw, 2.8rem); margin-bottom: 16px; width:100%; text-align:center;">📑 Aurkibidea</h2>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; width: 100%; max-width: 900px; margin-top: 18px;">
+            <div class="glass glass-pad-10" style="text-align: left; padding: 16px;">
+              <div class="card-title">1. Arazoa eta Testuingurua</div>
+              <div class="card-text">Gaur egungo elkarbizitzaren erronkak</div>
+            </div>
+            <div class="glass glass-pad-10" style="text-align: left; padding: 16px;">
+              <div class="card-title">2. Soluzio Integrala</div>
+              <div class="card-text">BiziMatch aplikazioaren ezaugarri nagusiak</div>
+            </div>
+            <div class="glass glass-pad-10" style="text-align: left; padding: 16px;">
+              <div class="card-title">3. Funtzionalitate Nabarmenak</div>
+              <div class="card-text">Match sistema, BiziBot IA eta kudeaketa legala</div>
+            </div>
+            <div class="glass glass-pad-10" style="text-align: left; padding: 16px;">
+              <div class="card-title">4. Arkitektura Teknikoa</div>
+              <div class="card-text">Erabilitako teknologiak eta egitura serverless-a</div>
+            </div>
+            <div class="glass glass-pad-10" style="text-align: left; padding: 16px;">
+              <div class="card-title">5. Planifikazioa eta Emaitzak</div>
+              <div class="card-text">Proiektuaren garapena, kostuak eta lortutako datuak</div>
+            </div>
+            <div class="glass glass-pad-10" style="text-align: left; padding: 16px;">
+              <div class="card-title">6. Zuzeneko Demoa</div>
+              <div class="card-text">Aplikazioaren funtzionamendua gailu errealean martxan</div>
+            </div>
+          </div>
+        </div>
+        <div class="meta"><div></div><div>Aurkibidea</div></div>
+      </div>
+    </section>
+
+    <!-- Slide 3: Arazoa -->
+    <section class="slide" data-index="2" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>❌ Arazoa</div></div>
         <div class="center center-left">
+          <h2 class="title" style="font-size:clamp(1.8rem, 3.5vw, 2.8rem); margin-bottom: 16px; width:100%; text-align:center;">❌ Zein da Arazoa?</h2>
           <div class="row full-width-center">
             <div class="col glass glass-pad-10">
               <div class="card-title">🔍 Bilaketa Hotza</div>
-              <div class="card-text">Etxea aurkitzea da %10 soilik. Benetako astina deskonotzekin bizi hastean hasten da: zenbat ordaintzen duten ezagutu gabe, nola diren osoa ezagutu gabe, eta nortan sintitzen diren ere bai.</div>
+              <div class="card-text">Etxea aurkitzea prozesuaren %10 baino ez da. Benetako arazoa ezezagunekin bizitzen hastean agertzen da: ez dakizu zehazki zenbat ordainduko duten, nolakoak diren edo nola moldatuko zareten.</div>
             </div>
             <div class="col glass glass-pad-10">
               <div class="card-title">⚖️ Segurtasun Juridiko Falta</div>
-              <div class="card-text">"Bapatean ituna egingo dugu". Baina zer gertatzen da kalean? Izenpetutakoa ez dago, eta orduan norena da betetzen du astina? Zetaz arduratuko da hondatzerik bada? Inor ez daki, inor ez du nahi eztabaidatzea.</div>
+              <div class="card-text">"Ahozko hitzarmena egingo dugu". Baina zer gertatzen da gero? Idatzizkorik ez badago, nork betetzen du hitzemandakoa? Nork hartzen du ardura zerbait apurtzen bada? Inork ez daki, eta inork ez du eztabaidatu nahi.</div>
             </div>
             <div class="col glass glass-pad-10">
               <div class="card-title">🏠 Elkarbizitza Gatazkak</div>
-              <div class="card-text">Garbiketa nori dagokio? Zenbat ordaindu behar du bakoitzak? Ostalariak etxean? Galderei erantzuna ez duten sekula gatazkak urtero etxea hausten dute. Baimena, atsegina eta antsietatea pixkanaka nahi daiteke.</div>
+              <div class="card-text">Garbiketa nori dagokio? Zenbat ordaindu behar du bakoitzak? Bisitariak ekar daitezke? Galdera hauek erantzunik ez badute, gatazkak sortzen dira eta elkarbizitza pikutara doa. Giro txarra eta antsietatea ohikoak bihurtzen dira.</div>
             </div>
           </div>
           <blockquote class="mt-28 quote-block">"PropTech merkatuak ez du elkarbizitzaren ziklo osoa estaltzen."</blockquote>
@@ -681,25 +664,40 @@
       </div>
     </section>
 
-    <!-- Slide 3: Soluzioa -->
-    <section class="slide" data-index="2" aria-hidden="true">
+    <!-- Slide 4: Soluzioa -->
+    <section class="slide" data-index="3" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>✅ BiziMatch - Soluzio Integrala</div></div>
-        <div class="center center-left">
-          <div class="row split-row full-width-center">
-            <div class="col text-col col-text-left">
-              <h3 class="card-title">Erabiltzaileari laguntzen dion aplikazio mugikorra</h3>
-              <p class="card-text">Etxebizitza bilatzen hasten denetik eguneroko elkarbizitza kudeatzen duen arte erabiltzaileari laguntzen dion plataforma mugikorra.</p>
-              <ul class="card-text list-reset">
-                <li>🔎 Bilaketa Atsegina: Zuk baino bateragarriak diren pertsonen artean bilatu</li>
-                <li>🤝 Konfianza: Antzeko ideien dituen lagunak topatu etxe aurretik</li>
-                <li>📄 Lasaitasuna: Legezko kontratuak automatikoki sortzea, paperik gabe</li>
-                <li>💰 Kontu garbiak: Gastuen banaketa zehatza eta gardena, ez inoiz borrokak</li>
-                <li>🤖 Babesa: IA laguntzailea zenbait galdera txarrenak erotzen duela</li>
-                <li>🎮 Kooperazio Biderkaria: Limpiezaren eta zereginak elkarrengandik saiatuko bat, ez diskusioa</li>
-              </ul>
+        <div class="center">
+          <h2 class="title" style="font-size:clamp(1.8rem, 3.5vw, 2.8rem); margin-bottom: 16px; width:100%; text-align:center;">✅ Soluzio Integrala</h2>
+          <div class="glass glass-max-900" style="margin: 0 auto; text-align:center;">
+            <h3 class="card-title" style="font-size: clamp(1.1rem, 1.8vw, 1.3rem); margin-bottom: 8px;">Erabiltzaileari prozesu osoan laguntzen dion aplikazioa</h3>
+            <p class="card-text" style="font-size: clamp(0.95rem, 1.3vw, 1.05rem);">Etxebizitza bilatzen denetik eguneroko elkarbizitza kudeatu arte, erabiltzaileari pauso guztietan laguntzen dion mugikorretarako plataforma.</p>
+          </div>
+          <div class="tech-grid mt-18" style="max-width: 1000px; margin: 18px auto 0;">
+            <div class="glass glass-pad-10">
+              <div class="card-title text-center">🔎 Bilaketa Erraza</div>
+              <div class="card-text text-center">Zurekin bateragarriak diren pertsonen artean bilatu</div>
             </div>
-            <div class="col glass image-col col-image-centered">
+            <div class="glass glass-pad-10">
+              <div class="card-title text-center">🤝 Konfiantza</div>
+              <div class="card-text text-center">Antzeko ohiturak dituzten kideak aurkitu elkarrekin bizitzen hasi aurretik</div>
+            </div>
+            <div class="glass glass-pad-10">
+              <div class="card-title text-center">📄 Lasaitasuna</div>
+              <div class="card-text text-center">Legezko kontratuak automatikoki sortu, paperik gabe</div>
+            </div>
+            <div class="glass glass-pad-10">
+              <div class="card-title text-center">💰 Kontu Garbiak</div>
+              <div class="card-text text-center">Gastuen banaketa zehatza eta gardena, eztabaidarik gabe</div>
+            </div>
+            <div class="glass glass-pad-10">
+              <div class="card-title text-center">🤖 Laguntza (IA)</div>
+              <div class="card-text text-center">BiziBot-ek elkarrizketak hasteko egoera deserosoak saihesten laguntzen du</div>
+            </div>
+            <div class="glass glass-pad-10">
+              <div class="card-title text-center">🎮 Gamifikazioa</div>
+              <div class="card-text text-center">Garbiketa eta zereginak jolas bihurtu, gatazkak saihestuz</div>
             </div>
           </div>
         </div>
@@ -707,11 +705,12 @@
       </div>
     </section>
 
-    <!-- Slide 4: Teknologia Erabiliak -->
-    <section class="slide" data-index="3" aria-hidden="true">
+    <!-- Slide 5: Teknologia Erabiliak -->
+    <section class="slide" data-index="4" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>⚙️ Teknologia Erabiliak</div></div>
         <div class="center">
+          <h2 class="title" style="font-size:clamp(1.8rem, 3.5vw, 2.8rem); margin-bottom: 16px; width:100%; text-align:center;">⚙️ Teknologia Erabiliak</h2>
           <div class="tech-grid tech-center">
             <div class="glass"><div class="card-title">💙 Flutter & Dart</div><div class="card-text">Google-ren plataforma anitzeko framework-a. Android eta iOSerako UI natiboa kode-base bakarretik.</div></div>
             <div class="glass"><div class="card-title">🔥 Firebase</div><div class="card-text">Serverless backend-a: Firestore, Authentication eta Cloud Storage.</div></div>
@@ -726,20 +725,21 @@
       </div>
     </section>
 
-    <!-- Slide 5: Match Sistema -->
-    <section class="slide" data-index="4" aria-hidden="true">
+    <!-- Slide 6: Match Sistema -->
+    <section class="slide" data-index="5" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>🔎 1. Match Sistema</div></div>
         <div class="center">
+          <h2 class="title" style="font-size:clamp(1.8rem, 3.5vw, 2.8rem); margin-bottom: 16px; width:100%; text-align:center;">🔎 1. Match Sistema</h2>
           <div class="row split-row full-width-center">
             <div class="col glass image-col col-image-row">
               <img src="Descubrir.jpg" alt="Profilen aurkikuntza pantaila" class="img-rounded img-flex-item">
               <img src="AnimacionMatch.jpg" alt="Match animazioaren pantaila" class="img-rounded img-flex-item">
             </div>
             <div class="col text-col col-text-left-85">
-              <div><strong>👆 Swipe Sistema</strong><div class="card-text">Profilak ohitura eta bizi-estiloen bateragarritasunaren arabera irristatzea.</div></div>
-              <div><strong>👥 Eskuadroia Modua</strong><div class="card-text">2-3 pertsonako taldeek bat egin dezakete etxebizitza oso bat elkarrekin bilatzeko.</div></div>
-              <div><strong>🎵 Audioa Profilean</strong><div class="card-text">Erabiltzaileek ahots-ohar bat gehitu dezakete profilean konfiantza handiagoa sortzeko.</div></div>
+              <div><strong>👆 Swipe Sistema</strong><div class="card-text">Profilak ohitura eta bizi-estiloen bateragarritasunaren arabera aukeratu (irristatuz).</div></div>
+              <div><strong>👥 Eskuadroi Modua</strong><div class="card-text">2-3 pertsonako taldeek bat egin dezakete etxebizitza oso bat elkarrekin bilatzeko.</div></div>
+              <div><strong>🎵 Audioa Profilean</strong><div class="card-text">Erabiltzaileek ahots-ohar bat gehi dezakete euren profilean, konfiantza eta gertutasuna sortzeko.</div></div>
             </div>
           </div>
         </div>
@@ -747,16 +747,17 @@
       </div>
     </section>
 
-    <!-- Slide 6: BiziBot IA -->
-    <section class="slide" data-index="5" aria-hidden="true">
+    <!-- Slide 7: BiziBot IA -->
+    <section class="slide" data-index="6" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>🤖 2. BiziBot - IA Laguntzailea</div></div>
         <div class="center center-justify">
+          <h2 class="title" style="font-size:clamp(1.8rem, 3.5vw, 2.8rem); margin-bottom: 16px; width:100%; text-align:center;">🤖 2. BiziBot: IA Laguntzailea</h2>
           <div class="row split-row full-width-center">
             <div class="col text-col col-text-left-85">
-              <h3 class="card-title">Profilaren Analisia</h3>
-              <p class="card-text">IAk beste erabiltzailearen biografia irakurtzen du eta izotza apurtzeko galdera bakarrak eta pertsonalizatuak sortzen ditu.</p>
-              <ul class="card-text list-reset"><li>🧠 Profilaren analisia</li><li>💬 Elkarrizketa hasteko laguntza</li><li>⚡ OpenAI bidez gaitua</li></ul>
+              <h3 class="card-title">Profilaren Analisi Adimentsua</h3>
+              <p class="card-text">IAk beste erabiltzailearen biografia eta interesak aztertzen ditu, eta izotza apurtzeko galdera originalak eta pertsonalizatuak sortzen ditu.</p>
+              <ul class="card-text list-reset"><li>🧠 Profilaren analisia</li><li>💬 Elkarrizketa hasteko laguntza</li><li>⚡ OpenAI bidez integratua</li></ul>
             </div>
             <div class="col glass image-col col-image-row">
               <img src="PantallaComunidad.jpg" alt="Loturen eta komunitatearen pantaila" class="img-rounded img-flex-item">
@@ -768,11 +769,12 @@
       </div>
     </section>
 
-    <!-- Slide 7: Kudeaketa Legala -->
-    <section class="slide" data-index="6" aria-hidden="true">
+    <!-- Slide 8: Kudeaketa Legala -->
+    <section class="slide" data-index="7" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>📄 3. Kudeaketa Legala</div></div>
         <div class="center">
+          <h2 class="title" style="font-size:clamp(1.8rem, 3.5vw, 2.8rem); margin-bottom: 16px; width:100%; text-align:center;">📄 3. Kudeaketa Legala</h2>
           <div class="row split-row full-width-center">
             <div class="col glass glass-pad-10">
               <div class="emoji-icon">🤝</div>
@@ -783,7 +785,7 @@
             <div class="col glass glass-pad-10">
               <div class="emoji-icon">📋</div>
               <div class="card-title">Kontratu Sortzailea</div>
-              <div class="card-text">Botoi bakarrarekin, BiziMatch-ek maizter guztien datuekin PDF kontratu legal bat sortzen du eta hodeian gordetzen du.</div>
+              <div class="card-text">Botoi bakar batekin, BiziMatch-ek maizter guztien datuak dituen legezko PDF kontratu bat sortu eta hodeian gordetzen du.</div>
               <div class="info-note">✓ Cloud Storage-en gordeta</div>
             </div>
             <div class="col glass image-col col-image-centered">
@@ -795,24 +797,25 @@
       </div>
     </section>
 
-    <!-- Slide 8: Eguneroko Kudeaketa -->
-    <section class="slide" data-index="7" aria-hidden="true">
+    <!-- Slide 9: Eguneroko Kudeaketa -->
+    <section class="slide" data-index="8" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>🏠 4. Eguneroko Kudeaketa</div></div>
         <div class="center center-pad">
+          <h2 class="title" style="font-size:clamp(1.8rem, 3.5vw, 2.8rem); margin-bottom: 16px; width:100%; text-align:center;">🏠 4. Eguneroko Kudeaketa</h2>
           <div class="row split-row full-width-center">
             <div class="col text-col grid-2col">
                 <div class="glass glass-pad-10">
                   <div class="card-title">💰 Gastuen Kalkulagailua</div>
-                  <div class="card-text">Alokairua, argia, ura eta internet banatu, eta ordainketa bakoitza txatean partekatu.</div>
+                  <div class="card-text">Alokairua, argia, ura eta internet modu errazean banatu, eta ordainketa bakoitzaren egoera txatean partekatu.</div>
                 </div>
                 <div class="glass glass-pad-10">
-                  <div class="card-title">🎮 Diskusiorik Gabe - Jokoa Baino Gehiago</div>
-                  <div class="card-text">'A nor le dagokio?' Ez gehiago. Zereginak itxaropena bezala banatu, eta puntuak irabazi. Limpieza bihurtzen da kirola, ez gatazka. Rankingak astean osoa parte-hartzea pizten du adina.</div>
+                  <div class="card-title">🎮 Eztabaidarik ez - Gamifikazioa</div>
+                  <div class="card-text">"Hau nori dagokio?" Ez gehiago. Zereginak modu bidezkoan banatu eta puntuak irabazi. Garbiketa jolas bihurtzen da, ez gatazka. Asteko ranking-ak guztien parte-hartzea bultzatzen du.</div>
                 </div>
                 <div class="glass glass-pad-10">
                   <div class="card-title">🌐 Komunitate Modua</div>
-                  <div class="card-text">Hiriko plan sozialak: kafea, kirola eta irteerak etxetik harago.</div>
+                  <div class="card-text">Hiriko plan sozialak eskuragarri: kafea hartu, kirola egin edo etxetik haratago irteerak antolatu.</div>
                 </div>
             </div>
             <div class="col glass image-col col-image-row">
@@ -825,11 +828,12 @@
       </div>
     </section>
 
-    <!-- Slide 9: Arkitektura Teknikoa -->
-    <section class="slide" data-index="8" aria-hidden="true">
+    <!-- Slide 10: Arkitektura Teknikoa -->
+    <section class="slide" data-index="9" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>🏗️ Arkitektura Teknikoa</div></div>
         <div class="center center-justify">
+          <h2 class="title" style="font-size:clamp(1.8rem, 3.5vw, 2.8rem); margin-bottom: 16px; width:100%; text-align:center;">🏗️ Arkitektura Teknikoa</h2>
           <div class="full-flex-grid">
             <div class="glass border-accent-a">Flutter App (Dart) - [Swipe UI] [Txat UI] [PDF Ikustailea] [Gamifikazioa]</div>
             <div class="arrow-down">↓</div>
@@ -843,11 +847,12 @@
       </div>
     </section>
 
-    <!-- Slide 10: Planifikazioa -->
-    <section class="slide" data-index="9" aria-hidden="true">
+    <!-- Slide 11: Planifikazioa -->
+    <section class="slide" data-index="10" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>📅 Planifikazioa - Proiektuaren Bidea</div></div>
         <div class="center center-justify">
+          <h2 class="title" style="font-size:clamp(1.8rem, 3.5vw, 2.8rem); margin-bottom: 16px; width:100%; text-align:center;">📅 Planifikazioa</h2>
           <div class="plan-box">
             <div class="plan-flex">
               <div>1-2. ast. - Ikerketa + Figma</div>
@@ -867,11 +872,12 @@
       </div>
     </section>
 
-    <!-- Slide 11: Emaitzak -->
-    <section class="slide" data-index="10" aria-hidden="true">
+    <!-- Slide 12: Emaitzak -->
+    <section class="slide" data-index="11" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>🏆 Emaitzak</div></div>
         <div class="center center-justify">
+          <h2 class="title" style="font-size:clamp(1.8rem, 3.5vw, 2.8rem); margin-bottom: 16px; width:100%; text-align:center;">🏆 Emaitzak</h2>
           <div class="stat-row">
             <div class="stat"><div class="num">20+</div><div class="stat-label">Pantaila funtzional</div></div>
             <div class="stat"><div class="num">7</div><div class="stat-label">Firestore bilduma</div></div>
@@ -886,12 +892,13 @@
       </div>
     </section>
 
-    <!-- Slide 12: Demoa -->
-    <section class="slide" data-index="11" aria-hidden="true">
+    <!-- Slide 13: Demoa -->
+    <section class="slide" data-index="12" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>ZUZENEKO DEMOA</div></div>
         <div class="center center-gap-12">
-          <h2 class="card-title h2-margin">Demo modua aktibatuta - internetik behar gabe</h2>
+          <h2 class="title" style="font-size:clamp(1.8rem, 3.5vw, 2.8rem); margin-bottom: 4px; width:100%; text-align:center;">📱 Zuzeneko Demoa</h2>
+          <h3 class="card-title h2-margin" style="font-size:1.1rem; color:var(--text-soft);">Demo modua aktibatuta - Internetik behar gabe</h3>
           <div class="demo-grid">
             <div class="glass demo-item">👤<div>Profilak</div></div>
             <div class="glass demo-item">🔄<div>Match-a</div></div>
@@ -905,11 +912,12 @@
       </div>
     </section>
 
-    <!-- Slide 13: Aurrekontua eta Ondorioak -->
-    <section class="slide" data-index="12" aria-hidden="true">
+    <!-- Slide 14: Aurrekontua eta Ondorioak -->
+    <section class="slide" data-index="13" aria-hidden="true">
       <div class="card">
         <div class="header"><div class="logo">BiziMatch</div><div>💰 Aurrekontua eta Ondorioak</div></div>
         <div class="center">
+          <h2 class="title" style="font-size:clamp(1.8rem, 3.5vw, 2.8rem); margin-bottom: 16px; width:100%; text-align:center;">💰 Aurrekontua eta Ondorioak</h2>
           <div class="flex-gap-14">
             <div class="glass flex-1">
               <div class="card-title card-title-text">Kostuak (1. urtea)</div>
@@ -917,7 +925,7 @@
             </div>
             <div class="glass flex-1">
               <div class="card-title card-title-text">Ondorioak - Erronka Errealaren Ebazpena</div>
-              <div class="card-text"><strong>BiziMatch produkto funtzional bat da jada:</strong> ez bakarrik TFG teoria, deskonotzekin bizi duten 10.000+ ikasleak erabili dezakeena. Diskusio batean eta kontratura egin ordez, automatizazioa eta jokoa guztia bihurtu dugu. Gastu gardena, zeregin duina, antsietatik aske. Eta hau da benetakoa: mila ikasle hauek orain daudela zain, eta aplikazio honek denei baitestutsi.</div>
+              <div class="card-text"><strong>BiziMatch jada produktu funtzional bat da:</strong> ez da TFG teoriko bat soilik, ezezagunekin bizi diren milaka ikaslek erabil dezaketena baizik. Eztabaiden eta ziurgabetasunaren ordez, automatizazioa eta gamifikazioa ekarri ditugu. Gastu gardenak, zereginen banaketa bidezkoa eta antsietaterik gabeko elkarbizitza. Hau da benetako helburua: ikasleen eguneroko arazoei irtenbide erreal bat eskaintzea.</div>
             </div>
           </div>
         </div>
@@ -925,8 +933,8 @@
       </div>
     </section>
 
-    <!-- Slide 14: Amaiera eta galderak -->
-    <section class="slide" data-index="13" aria-hidden="true">
+    <!-- Slide 15: Amaiera eta galderak -->
+    <section class="slide" data-index="14" aria-hidden="true">
       <div class="card">
         <div class="header"><div></div><div></div></div>
         <div class="center">
@@ -945,7 +953,7 @@
     </div>
 
     <div class="dots" id="dots"></div>
-    <div class="slide-num" id="slideNum">1 / 14</div>
+    <div class="slide-num" id="slideNum">1 / 15</div>
   </div>
 
   <script>
@@ -961,20 +969,11 @@
       const progressBarFill = document.getElementById('progressBarFill');
       const lightbox = document.getElementById('lightbox');
       const lightboxFrame = document.getElementById('lightboxFrame');
-      const cursorDot = document.getElementById('cursorDot');
-      const cursorRing = document.getElementById('cursorRing');
       const shortcutsModal = document.getElementById('shortcutsModal');
       let activeLightboxImg = null;
       let activeLightboxRect = null;
       let lightboxClosing = false;
       let shortcutsOpen = false;
-      let cursorVisible = false;
-      let cursorHover = false;
-      let targetCursorX = window.innerWidth / 2;
-      let targetCursorY = window.innerHeight / 2;
-      let cursorX = targetCursorX;
-      let cursorY = targetCursorY;
-      let cursorAnimationFrame = null;
       const rootStyles = document.documentElement.style;
       let ambientMouseX = window.innerWidth / 2;
       let ambientMouseY = window.innerHeight / 2;
@@ -991,34 +990,6 @@
         ambientMouseY = y;
         if(ambientMouseFrame !== null) return;
         ambientMouseFrame = window.requestAnimationFrame(updateAmbientSpotlight);
-      }
-
-      function updateCursorState(){
-        document.body.classList.toggle('cursor-visible', cursorVisible);
-        document.body.classList.toggle('cursor-hover', cursorHover);
-      }
-
-      function animateCursor(){
-        cursorX += (targetCursorX - cursorX) * 0.22;
-        cursorY += (targetCursorY - cursorY) * 0.22;
-        rootStyles.setProperty('--cursor-x', cursorX + 'px');
-        rootStyles.setProperty('--cursor-y', cursorY + 'px');
-        cursorAnimationFrame = window.requestAnimationFrame(animateCursor);
-      }
-
-      function setCursorPosition(x, y){
-        targetCursorX = x;
-        targetCursorY = y;
-        if(!cursorVisible){
-          cursorVisible = true;
-          updateCursorState();
-        }
-      }
-
-      function setCursorHover(state){
-        if(cursorHover === state) return;
-        cursorHover = state;
-        updateCursorState();
       }
 
       function updateShortcutsModal(state){
@@ -1039,37 +1010,15 @@
         updateShortcutsModal(!shortcutsOpen);
       }
 
-      function isInteractiveTarget(target){
-        return !!target.closest('button, .dot, img');
-      }
-
-      window.addEventListener('mousemove', (event)=>{
-        setCursorPosition(event.clientX, event.clientY);
-        setCursorHover(isInteractiveTarget(event.target));
-      }, { passive: true });
-
       document.body.addEventListener('mousemove', (event)=>{
         setAmbientSpotlight(event.clientX, event.clientY);
       }, { passive: true });
 
-      setAmbientSpotlight(targetCursorX, targetCursorY);
+      setAmbientSpotlight(ambientMouseX, ambientMouseY);
 
       shortcutsModal.addEventListener('click', (event)=>{
         if(event.target === shortcutsModal) closeShortcutsModal();
       });
-
-      window.addEventListener('mouseenter', (event)=>{
-        setCursorPosition(event.clientX, event.clientY);
-      });
-
-      window.addEventListener('mouseleave', ()=>{
-        cursorVisible = false;
-        updateCursorState();
-      });
-
-      if(!cursorAnimationFrame){
-        cursorAnimationFrame = window.requestAnimationFrame(animateCursor);
-      }
 
       // create dots
       slides.forEach((s,i)=>{
@@ -1176,16 +1125,6 @@
           surface.classList.add('is-tilting');
           updateTilt(event);
         });
-      });
-
-      document.querySelectorAll('button, .dot').forEach((element)=>{
-        element.addEventListener('mouseenter',()=>setCursorHover(true));
-        element.addEventListener('mouseleave',()=>setCursorHover(false));
-      });
-
-      document.querySelectorAll('.slide img').forEach((image)=>{
-        image.addEventListener('mouseenter',()=>setCursorHover(true));
-        image.addEventListener('mouseleave',()=>setCursorHover(false));
       });
 
       function update(){
