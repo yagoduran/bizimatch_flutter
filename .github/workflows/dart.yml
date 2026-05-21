@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./bizimatch_flutter
+        working-directory: bizimatch_flutter
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
