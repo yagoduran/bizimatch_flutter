@@ -164,18 +164,7 @@ class AppTheme {
           shadowColor: primary.withValues(alpha: 0.48),
           elevation: 10,
           splashFactory: InkRipple.splashFactory,
-          overlayColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.pressed)) {
-              return turquoise.withValues(alpha: 0.24);
-            }
-            if (states.contains(WidgetState.hovered)) {
-              return turquoise.withValues(alpha: 0.12);
-            }
-            if (states.contains(WidgetState.focused)) {
-              return indigo.withValues(alpha: 0.14);
-            }
-            return null;
-          }),
+          overlayColor: turquoise.withValues(alpha: 0.18),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -187,15 +176,7 @@ class AppTheme {
           foregroundColor: textPrimary,
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           splashFactory: InkRipple.splashFactory,
-          overlayColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.pressed)) {
-              return turquoise.withValues(alpha: 0.18);
-            }
-            if (states.contains(WidgetState.hovered)) {
-              return turquoise.withValues(alpha: 0.08);
-            }
-            return null;
-          }),
+          overlayColor: turquoise.withValues(alpha: 0.12),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -207,15 +188,7 @@ class AppTheme {
           ),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           splashFactory: InkRipple.splashFactory,
-          overlayColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.pressed)) {
-              return turquoise.withValues(alpha: 0.24);
-            }
-            if (states.contains(WidgetState.hovered)) {
-              return turquoise.withValues(alpha: 0.12);
-            }
-            return null;
-          }),
+          overlayColor: turquoise.withValues(alpha: 0.18),
         ),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(

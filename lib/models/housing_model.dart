@@ -51,9 +51,8 @@ class Housing {
     this.estaActiva = true,
     this.numInteresados = 0,
     Map<String, bool>? likesDeUsuarios,
-  }) : likesDeUsuarios = likesDeUsuarios ?? {};
-  Map<String, bool>? squadLikes,
-  Map<String, bool>? squadOwnerLikes,
+    Map<String, bool>? squadLikes,
+    Map<String, bool>? squadOwnerLikes,
   }) : likesDeUsuarios = likesDeUsuarios ?? {},
     squadLikes = squadLikes ?? {},
     squadOwnerLikes = squadOwnerLikes ?? {};
@@ -65,7 +64,7 @@ class Housing {
   bool ownerAproboSquad(String squadId) => squadOwnerLikes[squadId] ?? false;
 
   bool squadMatchListo(String squadId) =>
-    squadLaDio(squadId) && ownerAproboSquad(squadId);
+      squadLaDio(squadId) && ownerAproboSquad(squadId);
 
   int countLikes() => likesDeUsuarios.values.where((v) => v).length;
 
