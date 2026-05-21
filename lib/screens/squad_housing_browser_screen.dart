@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -27,7 +26,6 @@ class _SquadHousingBrowserScreenState extends State<SquadHousingBrowserScreen> {
   final EscuadronService _escuadronService = EscuadronService.instance;
   final HousingService _housingService = HousingService.instance;
   final SquadMatchService _squadMatchService = SquadMatchService();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   late Stream<Escuadron?> _squadStream;
 
