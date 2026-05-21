@@ -164,9 +164,6 @@ body::after{
   height:100%;
   object-fit:contain;
   cursor:zoom-out;
-  /* -webkit-user-drag is WebKit-only; keep it for Safari/Chrome. Add
-     vendor user-select for Firefox and standard user-select for others. */
-  -webkit-user-drag:none;
   -webkit-user-select:none;
   -moz-user-select:none;
   user-select:none;
