@@ -42,7 +42,7 @@ class AppTheme {
   static const Duration motionChatMessage = Duration(milliseconds: 160);
   static const Curve motionCurve = Curves.easeOutCubic;
   static const Curve motionCurveEmphasized = Curves.easeInOutCubic;
-  static const PageTransitionsTheme motionPageTransitions =
+  static final PageTransitionsTheme motionPageTransitions =
       PageTransitionsTheme(
         builders: {
           TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
