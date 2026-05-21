@@ -163,6 +163,19 @@ class AppTheme {
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           shadowColor: primary.withValues(alpha: 0.48),
           elevation: 10,
+          splashFactory: InkRipple.splashFactory,
+          overlayColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.pressed)) {
+              return turquoise.withValues(alpha: 0.24);
+            }
+            if (states.contains(WidgetState.hovered)) {
+              return turquoise.withValues(alpha: 0.12);
+            }
+            if (states.contains(WidgetState.focused)) {
+              return indigo.withValues(alpha: 0.14);
+            }
+            return null;
+          }),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -173,6 +186,16 @@ class AppTheme {
           ),
           foregroundColor: textPrimary,
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          splashFactory: InkRipple.splashFactory,
+          overlayColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.pressed)) {
+              return turquoise.withValues(alpha: 0.18);
+            }
+            if (states.contains(WidgetState.hovered)) {
+              return turquoise.withValues(alpha: 0.08);
+            }
+            return null;
+          }),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -183,6 +206,16 @@ class AppTheme {
             borderRadius: BorderRadius.circular(24),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          splashFactory: InkRipple.splashFactory,
+          overlayColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.pressed)) {
+              return turquoise.withValues(alpha: 0.24);
+            }
+            if (states.contains(WidgetState.hovered)) {
+              return turquoise.withValues(alpha: 0.12);
+            }
+            return null;
+          }),
         ),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(

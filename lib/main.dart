@@ -7,6 +7,28 @@ import 'providers/theme_provider.dart';
 import 'services/notification_service.dart';
 import 'screens/splash_screen.dart';
 
+class _BiziMatchScrollBehavior extends MaterialScrollBehavior {
+  const _BiziMatchScrollBehavior();
+
+  @override
+  Widget buildScrollbar(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    return child;
+  }
+
+  @override
+  Widget buildOverscrollIndicator(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    return child;
+  }
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
@@ -41,7 +63,22 @@ class BiziMatchApp extends StatelessWidget {
               maxScaleFactor: 1.25,
             ),
           ),
-          child: child ?? const SizedBox.shrink(),
+          child: ScrollConfiguration(
+            behavior: const _BiziMatchScrollBehavior(),
+            child: NotificationListener<ScrollStartNotification>(
+              onNotification: (_) {
+                FocusManager.instance.primaryFocus?.unfocus();
+                return false;
+              },
+              child: Listener(
+                behavior: HitTestBehavior.translucent,
+                onPointerDown: (_) {
+                  FocusManager.instance.primaryFocus?.unfocus();
+                },
+                child: child ?? const SizedBox.shrink(),
+              ),
+            ),
+          ),
         );
       },
       theme: baseTheme.copyWith(

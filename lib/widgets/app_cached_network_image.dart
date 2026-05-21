@@ -20,6 +20,7 @@ class AppCachedNetworkImage extends StatelessWidget {
     this.width,
     this.height,
     this.memCacheWidth = 500,
+    this.fadeInDuration = const Duration(milliseconds: 300),
   });
 
   final String imageUrl;
@@ -27,6 +28,7 @@ class AppCachedNetworkImage extends StatelessWidget {
   final double? width;
   final double? height;
   final int memCacheWidth;
+  final Duration fadeInDuration;
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +40,7 @@ class AppCachedNetworkImage extends StatelessWidget {
       width: width,
       height: height,
       memCacheWidth: memCacheWidth,
+      fadeInDuration: fadeInDuration,
     );
   }
 }
@@ -60,6 +63,7 @@ class PremiumImage extends StatelessWidget {
     this.height,
     this.borderRadius,
     this.memCacheWidth = 500,
+    this.fadeInDuration = const Duration(milliseconds: 300),
   });
 
   final String imageUrl;
@@ -68,6 +72,7 @@ class PremiumImage extends StatelessWidget {
   final double? height;
   final BorderRadius? borderRadius;
   final int memCacheWidth;
+  final Duration fadeInDuration;
 
   @override
   Widget build(BuildContext context) {
@@ -102,6 +107,8 @@ class PremiumImage extends StatelessWidget {
         width: width,
         height: height,
         memCacheWidth: memCacheWidth,
+        fadeInDuration: fadeInDuration,
+        fadeOutDuration: const Duration(milliseconds: 120),
         placeholder: (context, url) => const _ImageShimmerPlaceholder(),
         errorWidget: (context, url, error) => const _EmeraldErrorPlaceholder(),
       );
@@ -158,6 +165,7 @@ class AppCachedAvatar extends StatelessWidget {
             fit: BoxFit.cover,
             width: size,
             height: size,
+            fadeInDuration: const Duration(milliseconds: 300),
           ),
         ),
       ),
@@ -173,9 +181,23 @@ class _ImageShimmerPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Shimmer.fromColors(
-      baseColor: const Color(0xFFD9E6DF),
+      baseColor: const Color(0xFFD7E2DC),
       highlightColor: const Color(0xFFF7FBF9),
-      child: Container(color: Colors.white),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withValues(alpha: 0.8),
+              Colors.white,
+              Colors.white.withValues(alpha: 0.8),
+            ],
+            stops: const [0.0, 0.5, 1.0],
+          ),
+        ),
+        child: const SizedBox.expand(),
+      ),
     );
   }
 }

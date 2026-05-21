@@ -190,6 +190,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                   }
 
                   return ListView.builder(
+                    itemExtent: 104,
                     itemCount: threads.length,
                     itemBuilder: (context, index) {
                       final thread = threads[index];

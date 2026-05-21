@@ -2433,15 +2433,15 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                               child: CircleAvatar(
                                 radius: 28,
                                 backgroundColor: Colors.white,
-                                backgroundImage:
-                                    profileAvatarUrl.startsWith('assets/')
-                                    ? AssetImage(profileAvatarUrl)
-                                    : (profileAvatarUrl.startsWith('/')
-                                              ? FileImage(
-                                                  File(profileAvatarUrl),
-                                                )
-                                              : NetworkImage(profileAvatarUrl))
-                                          as ImageProvider,
+                                child: SizedBox(
+                                  width: 56,
+                                  height: 56,
+                                  child: AppCachedAvatar(
+                                    imageUrl: profileAvatarUrl,
+                                    radius: 28,
+                                    backgroundColor: Colors.white,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -2897,22 +2897,16 @@ class _DemoMatchOverlayState extends State<_DemoMatchOverlay>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      CircleAvatar(
+                      AppCachedAvatar(
+                        imageUrl: me?.fotoPerfil ?? '',
                         radius: 48,
-                        backgroundImage: me != null
-                            ? (me.fotoPerfil.startsWith('assets/')
-                                      ? AssetImage(me.fotoPerfil)
-                                      : NetworkImage(me.fotoPerfil))
-                                  as ImageProvider
-                            : const AssetImage('assets/images/logo.png'),
+                        backgroundColor: const Color(0xFFF3F5F4),
                       ),
                       const SizedBox(width: 18),
-                      CircleAvatar(
+                      AppCachedAvatar(
+                        imageUrl: widget.other.fotoPerfil,
                         radius: 48,
-                        backgroundImage:
-                            widget.other.fotoPerfil.startsWith('assets/')
-                            ? AssetImage(widget.other.fotoPerfil)
-                            : NetworkImage(widget.other.fotoPerfil),
+                        backgroundColor: const Color(0xFFF3F5F4),
                       ),
                     ],
                   ),
