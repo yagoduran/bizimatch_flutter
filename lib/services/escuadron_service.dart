@@ -9,6 +9,8 @@ import '../models/escuadron_model.dart';
 class EscuadronService {
   static final EscuadronService instance = EscuadronService._internal();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  CollectionReference<Map<String, dynamic>> get _squads =>
+      _firestore.collection('squads');
 
   EscuadronService._internal();
 
@@ -27,12 +29,15 @@ class EscuadronService {
         PreferenciasComunes(precioMaximo: precioMaximo, zona: zona),
       );
 
-      await docRef.set(escuadronConPrefs.toMap());
+      final payload = escuadronConPrefs.toMap();
+      await docRef.set(payload);
+      await _squads.doc(docRef.id).set(payload);
 
       // Erabiltzaile bakoitzaren dokumentua eguneratu, idEscuadronActual gehituz.
       for (final uid in miembrosIds) {
         await _firestore.collection('usuarios').doc(uid).update({
           'idEscuadronActual': docRef.id,
+          'squadId': docRef.id,
         });
       }
 
@@ -46,12 +51,16 @@ class EscuadronService {
   /// Ematen den `escuadronId`-ari dagokion `Escuadron` objektua itzultzen du.
   Future<Escuadron?> obtenerEscuadron(String escuadronId) async {
     try {
-      final doc = await _firestore
+      final doc = await _squads.doc(escuadronId).get();
+      if (doc.exists) {
+        return Escuadron.fromFirestore(doc);
+      }
+      final legacyDoc = await _firestore
           .collection('escuadrones')
           .doc(escuadronId)
           .get();
-      if (doc.exists) {
-        return Escuadron.fromFirestore(doc);
+      if (legacyDoc.exists) {
+        return Escuadron.fromFirestore(legacyDoc);
       }
       return null;
     } catch (e) {
@@ -62,9 +71,8 @@ class EscuadronService {
 
   /// Escuadron baten aldaketa jarraitzen duen stream-a itzultzen du.
   Stream<Escuadron?> getEscuadronStream(String escuadronId) {
-    return _firestore
-        .collection('escuadrones')
-        .doc(escuadronId)
+    return _squads
+      .doc(escuadronId)
         .snapshots()
         .map((doc) => doc.exists ? Escuadron.fromFirestore(doc) : null);
   }
@@ -78,13 +86,15 @@ class EscuadronService {
           !escuadron.listaMiembrosIds.contains(nuevoUid)) {
         final escuadronActualizado = escuadron.anadirMiembro(nuevoUid);
 
-        await _firestore.collection('escuadrones').doc(escuadronId).update({
+        await _squads.doc(escuadronId).update({
           'listaMiembrosIds': escuadronActualizado.listaMiembrosIds,
+          'members': escuadronActualizado.listaMiembrosIds,
         });
 
         // Erabiltzailearen dokumentuan taldearen id-a gorde.
         await _firestore.collection('usuarios').doc(nuevoUid).update({
           'idEscuadronActual': escuadronId,
+          'squadId': escuadronId,
         });
       }
     } catch (e) {
@@ -103,14 +113,16 @@ class EscuadronService {
           // Si no hay miembros, disolver el escuadrón
           await disolverEscuadron(escuadronId);
         } else {
-          await _firestore.collection('escuadrones').doc(escuadronId).update({
+          await _squads.doc(escuadronId).update({
             'listaMiembrosIds': escuadronActualizado.listaMiembrosIds,
+            'members': escuadronActualizado.listaMiembrosIds,
           });
         }
 
         // Erabiltzailearen idEscuadronActual ezabatu.
         await _firestore.collection('usuarios').doc(uidARemover).update({
           'idEscuadronActual': FieldValue.delete(),
+          'squadId': FieldValue.delete(),
         });
       }
     } catch (e) {
@@ -125,7 +137,7 @@ class EscuadronService {
     String? zona,
   ) async {
     try {
-      await _firestore.collection('escuadrones').doc(escuadronId).update({
+      await _squads.doc(escuadronId).update({
         'preferenciasComunas': PreferenciasComunes(
           precioMaximo: precioMaximo,
           zona: zona,
@@ -145,13 +157,16 @@ class EscuadronService {
         for (final uid in escuadron.listaMiembrosIds) {
           await _firestore.collection('usuarios').doc(uid).update({
             'idEscuadronActual': FieldValue.delete(),
+            'squadId': FieldValue.delete(),
           });
         }
 
         // Desactivar el escuadrón
-        await _firestore.collection('escuadrones').doc(escuadronId).update({
+        await _squads.doc(escuadronId).update({
           'estaActivo': false,
           'listaMiembrosIds': [],
+          'members': [],
+          'isActive': false,
         });
       }
     } catch (e) {
@@ -163,7 +178,9 @@ class EscuadronService {
   Future<Escuadron?> obtenerEscuadronActual(String uid) async {
     try {
       final userDoc = await _firestore.collection('usuarios').doc(uid).get();
-      final escuadronId = userDoc.data()?['idEscuadronActual'] as String?;
+        final escuadronId =
+          (userDoc.data()?['idEscuadronActual'] as String?) ??
+          (userDoc.data()?['squadId'] as String?);
 
       if (escuadronId != null) {
         return await obtenerEscuadron(escuadronId);
@@ -180,7 +197,9 @@ class EscuadronService {
     return _firestore.collection('usuarios').doc(uid).snapshots().asyncExpand((
       userDoc,
     ) {
-      final escuadronId = userDoc.data()?['idEscuadronActual'] as String?;
+        final escuadronId =
+          (userDoc.data()?['idEscuadronActual'] as String?) ??
+          (userDoc.data()?['squadId'] as String?);
       if (escuadronId != null) {
         return getEscuadronStream(escuadronId);
       }

@@ -15,6 +15,7 @@ import 'package:showcaseview/showcaseview.dart';
 import '../app_theme.dart';
 import '../services/demo_service.dart';
 import '../services/feature_tour_service.dart';
+import '../screens/squad_housing_browser_screen.dart';
 import 'demo_chat_screen.dart';
 import '../models/user_model.dart';
 import '../models/user_profile.dart';
@@ -68,6 +69,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   Duration _voicePosition = Duration.zero;
   Duration _voiceDuration = Duration.zero;
   final Map<String, Duration> _voiceDurationsByUid = <String, Duration>{};
+  bool _didOpenSquadBrowser = false;
 
   // Squad Mode
   bool _buscarCompaeros = false;
@@ -248,6 +250,25 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         return;
       }
       setState(() => _myProfile = profile);
+      final squadId = profile?.squadId?.trim() ?? '';
+      if (squadId.isNotEmpty && !_buscarCompaeros) {
+        _discoverSub?.cancel();
+        if (!_didOpenSquadBrowser) {
+          _didOpenSquadBrowser = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) {
+              return;
+            }
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => SquadHousingBrowserScreen(squadId: squadId),
+              ),
+            );
+          });
+        }
+        return;
+      }
+      _didOpenSquadBrowser = false;
       _scheduleNextProfilePrecache();
     });
 

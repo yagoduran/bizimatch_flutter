@@ -31,6 +31,11 @@ class Escuadron {
   final bool estaActivo;
   final DateTime fechaCreacion;
 
+  String get id => idEscuadron;
+  List<String> get members => listaMiembrosIds;
+  bool get isActive => estaActivo;
+  DateTime get createdAt => fechaCreacion;
+
   Escuadron({
     required this.idEscuadron,
     required this.listaMiembrosIds,
@@ -44,6 +49,10 @@ class Escuadron {
 
   Map<String, dynamic> toMap() {
     return {
+      'id': idEscuadron,
+      'members': listaMiembrosIds,
+      'isActive': estaActivo,
+      'createdAt': fechaCreacion,
       'idEscuadron': idEscuadron,
       'listaMiembrosIds': listaMiembrosIds,
       'preferenciasComunas': preferenciasComunas.toMap(),
@@ -55,16 +64,21 @@ class Escuadron {
   factory Escuadron.fromFirestore(DocumentSnapshot doc) {
     // Firestore dokumentutik Escuadron objektua sortu.
     final data = doc.data() as Map<String, dynamic>;
+    final members = List<String>.from(
+      data['members'] ?? data['listaMiembrosIds'] ?? const <String>[],
+    );
     return Escuadron(
       idEscuadron: doc.id,
-      listaMiembrosIds: List<String>.from(data['listaMiembrosIds'] ?? []),
+      listaMiembrosIds: members,
       preferenciasComunas: PreferenciasComunes.fromMap(
         (data['preferenciasComunas'] as Map<String, dynamic>?) ??
             {'precioMaximo': null, 'zona': null},
       ),
-      estaActivo: data['estaActivo'] ?? true,
+      estaActivo: (data['isActive'] ?? data['estaActivo'] ?? true) as bool,
       fechaCreacion:
-          (data['fechaCreacion'] as Timestamp?)?.toDate() ?? DateTime.now(),
+          (data['createdAt'] as Timestamp?)?.toDate() ??
+          (data['fechaCreacion'] as Timestamp?)?.toDate() ??
+          DateTime.now(),
     );
   }
 

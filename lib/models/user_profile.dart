@@ -34,6 +34,7 @@ class UserProfile {
     this.semanasPerfectas,
     this.totalResenas,
     this.medallasResumen,
+    this.squadId,
   });
 
   final String uid;
@@ -65,6 +66,7 @@ class UserProfile {
   final int? semanasPerfectas;
   final int? totalResenas;
   final Map<String, int>? medallasResumen;
+  final String? squadId;
 
   int get edad {
     // Adina kalkulatzeko logika: urteetan kalkulatzen da eta jaioaren egunaren arabera zuzendu.
@@ -131,6 +133,10 @@ class UserProfile {
       map['medallasResumen'] = medallasResumen;
     }
 
+    if (squadId != null) {
+      map['squadId'] = squadId;
+    }
+
     return map;
   }
 
@@ -177,6 +183,7 @@ class UserProfile {
       medallasResumen: (map['medallasResumen'] as Map<String, dynamic>?)?.map(
         (key, value) => MapEntry(key, (value as num?)?.toInt() ?? 0),
       ),
+      squadId: (map['squadId'] ?? map['idEscuadronActual']) as String?,
     );
   }
 }

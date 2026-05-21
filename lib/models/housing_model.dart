@@ -26,6 +26,8 @@ class Housing {
   final int numInteresados; // Cuántos usuarios le han dado like
   final Map<String, bool>
   likesDeUsuarios; // {uid: true/false} para rastrear likes
+  final Map<String, bool> squadLikes;
+  final Map<String, bool> squadOwnerLikes;
 
   Housing({
     required this.id,
@@ -50,8 +52,20 @@ class Housing {
     this.numInteresados = 0,
     Map<String, bool>? likesDeUsuarios,
   }) : likesDeUsuarios = likesDeUsuarios ?? {};
+  Map<String, bool>? squadLikes,
+  Map<String, bool>? squadOwnerLikes,
+  }) : likesDeUsuarios = likesDeUsuarios ?? {},
+    squadLikes = squadLikes ?? {},
+    squadOwnerLikes = squadOwnerLikes ?? {};
 
   bool usuarioLaDio(String uid) => likesDeUsuarios[uid] ?? false;
+
+  bool squadLaDio(String squadId) => squadLikes[squadId] ?? false;
+
+  bool ownerAproboSquad(String squadId) => squadOwnerLikes[squadId] ?? false;
+
+  bool squadMatchListo(String squadId) =>
+    squadLaDio(squadId) && ownerAproboSquad(squadId);
 
   int countLikes() => likesDeUsuarios.values.where((v) => v).length;
 
@@ -78,6 +92,8 @@ class Housing {
       'estaActiva': estaActiva,
       'numInteresados': numInteresados,
       'likesDeUsuarios': likesDeUsuarios,
+      'squadLikes': squadLikes,
+      'squadOwnerLikes': squadOwnerLikes,
     };
   }
 
@@ -107,6 +123,8 @@ class Housing {
       estaActiva: data['estaActiva'] ?? true,
       numInteresados: (data['numInteresados'] as num?)?.toInt() ?? 0,
       likesDeUsuarios: Map<String, bool>.from(data['likesDeUsuarios'] ?? {}),
+      squadLikes: Map<String, bool>.from(data['squadLikes'] ?? {}),
+      squadOwnerLikes: Map<String, bool>.from(data['squadOwnerLikes'] ?? {}),
     );
   }
 }

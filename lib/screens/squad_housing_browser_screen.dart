@@ -6,6 +6,7 @@ import '../models/escuadron_model.dart';
 import '../models/housing_model.dart';
 import '../services/escuadron_service.dart';
 import '../services/housing_service.dart';
+import '../services/squad_match_service.dart';
 import '../widgets/app_cached_network_image.dart';
 
 /// SquadHousingBrowserScreen: Escuadrónari zuzendutako etxebizitzen bilatzailea.
@@ -25,16 +26,15 @@ class SquadHousingBrowserScreen extends StatefulWidget {
 class _SquadHousingBrowserScreenState extends State<SquadHousingBrowserScreen> {
   final EscuadronService _escuadronService = EscuadronService.instance;
   final HousingService _housingService = HousingService.instance;
+  final SquadMatchService _squadMatchService = SquadMatchService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   late Stream<Escuadron?> _squadStream;
-  late String _myUid;
 
   @override
   void initState() {
     super.initState();
-    // UID propio eta squad stream-a hasieratu.
-    _myUid = _auth.currentUser?.uid ?? '';
+    // Squad stream-a hasieratu.
     _squadStream = _escuadronService.getEscuadronStream(widget.squadId);
   }
 
@@ -125,11 +125,8 @@ class _SquadHousingBrowserScreenState extends State<SquadHousingBrowserScreen> {
     Escuadron squad,
     BuildContext context,
   ) {
-    // Egiaztatu ea nire UID-ak like eman duen eta ea denbora guztiek adostuta dauden.
-    final myLike = housing.usuarioLaDio(_myUid);
-    final allLiked = squad.listaMiembrosIds.every(
-      (uid) => housing.usuarioLaDio(uid),
-    );
+    final squadLiked = housing.squadLaDio(squad.idEscuadron);
+    final allLiked = housing.squadMatchListo(squad.idEscuadron);
 
     return Container(
       margin: EdgeInsets.only(bottom: 16),
@@ -275,31 +272,45 @@ class _SquadHousingBrowserScreenState extends State<SquadHousingBrowserScreen> {
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () async {
-                          // Like/Unlike egiten du: zerbitzuari dei egiten zaio.
                           HapticFeedback.lightImpact();
-                          if (myLike) {
-                            await _housingService.unlikeHousing(
-                              housing.id,
-                              _myUid,
+                          try {
+                            final result = await _squadMatchService
+                                .recordSquadSwipe(
+                                  squadId: squad.idEscuadron,
+                                  houseId: housing.id,
+                                  liked: !squadLiked,
+                                );
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  result.isMatch
+                                      ? 'Match de escuadrón conseguido.'
+                                      : (squadLiked
+                                            ? 'Voto retirado del escuadrón.'
+                                            : 'Voto del escuadrón guardado.'),
+                                ),
+                              ),
                             );
-                          } else {
-                            await _housingService.likeHousing(
-                              housing.id,
-                              _myUid,
+                          } catch (e) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error al guardar swipe: $e'),
+                              ),
                             );
                           }
-                          // Egoera berria erakusteko UI eguneratu.
                           setState(() {});
                         },
                         icon: Icon(
-                          myLike ? Icons.favorite : Icons.favorite_border,
+                          squadLiked ? Icons.favorite : Icons.favorite_border,
                         ),
-                        label: Text(myLike ? 'Me gusta' : 'Marcar'),
+                        label: Text(squadLiked ? 'Marcado' : 'Marcar'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: myLike
+                          backgroundColor: squadLiked
                               ? Color(0xFF10B981)
                               : Colors.grey[300],
-                          foregroundColor: myLike
+                          foregroundColor: squadLiked
                               ? Colors.white
                               : Colors.grey[700],
                         ),
@@ -342,9 +353,9 @@ class _SquadHousingBrowserScreenState extends State<SquadHousingBrowserScreen> {
   }
 
   Widget _buildSquadProgress(Escuadron squad, Housing housing) {
-    final memberLikes = squad.listaMiembrosIds
-        .where((uid) => housing.usuarioLaDio(uid))
-        .length;
+    final memberLikes = housing.squadLaDio(squad.idEscuadron)
+      ? squad.miembrosCount
+      : 0;
 
     return Container(
       padding: EdgeInsets.all(8),
@@ -358,7 +369,9 @@ class _SquadHousingBrowserScreenState extends State<SquadHousingBrowserScreen> {
           SizedBox(width: 8),
           Expanded(
             child: LinearProgressIndicator(
-              value: memberLikes / squad.miembrosCount,
+              value: squad.miembrosCount == 0
+                  ? 0
+                  : memberLikes / squad.miembrosCount,
               backgroundColor: Color(0xFFD4EEE1),
               valueColor: AlwaysStoppedAnimation(Color(0xFF10B981)),
               minHeight: 6,
