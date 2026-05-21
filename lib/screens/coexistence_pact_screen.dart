@@ -5,9 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:showcaseview/showcaseview.dart';
 
 import '../models/pact_model.dart';
-import '../screens/contract_preview_screen.dart';
+import '../screens/contract_url_preview_screen.dart';
 import '../services/biometric_service.dart';
 import '../services/feature_tour_service.dart';
+import '../services/pdf_service.dart';
 import '../services/pact_service.dart';
 import '../widgets/feature_tour_action_button.dart';
 
@@ -31,6 +32,7 @@ class _CoexistencePactScreenState extends State<CoexistencePactScreen> {
   final PactService _pactService = PactService.instance;
   final BiometricService _biometricService = BiometricService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final PdfService _pdfService = PdfService.instance;
   final TextEditingController _reglaController = TextEditingController();
   late final String _myUid;
   bool _isSigning = false;
@@ -190,35 +192,51 @@ class _CoexistencePactScreenState extends State<CoexistencePactScreen> {
 
       if (!mounted) return;
 
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ContractPreviewScreen(
-            chatId: widget.chatId,
-            uidParteA: _myUid,
-            uidParteB: widget.otherUid,
-            nombreParteA: (nombreA != null && nombreA.isNotEmpty)
-                ? nombreA
-                : 'Usuario A',
-            dniParteA: (dniA != null && dniA.isNotEmpty)
-                ? dniA
-                : _simularDni(_myUid),
-            nombreParteB: (nombreB != null && nombreB.isNotEmpty)
-                ? nombreB
-                : widget.otherName,
-            dniParteB: (dniB != null && dniB.isNotEmpty)
-                ? dniB
-                : _simularDni(widget.otherUid),
-            direccionInmueble:
-                (direccion != null && direccion.trim().isNotEmpty)
-                ? direccion
-                : 'Direccion pendiente de confirmar',
-            rentaMensual: precio,
-            reglasPacto: pact.reglas.map((r) => r.titulo).toList(),
-            idCasa: idCasa,
-          ),
+      final result = await _pdfService.generarYGuardarContrato(
+        chatId: widget.chatId,
+        uidParteA: _myUid,
+        uidParteB: widget.otherUid,
+        nombreParteA: (nombreA != null && nombreA.isNotEmpty)
+            ? nombreA
+            : 'Usuario A',
+        dniParteA: (dniA != null && dniA.isNotEmpty)
+            ? dniA
+            : _simularDni(_myUid),
+        nombreParteB: (nombreB != null && nombreB.isNotEmpty)
+            ? nombreB
+            : widget.otherName,
+        dniParteB: (dniB != null && dniB.isNotEmpty)
+            ? dniB
+            : _simularDni(widget.otherUid),
+        direccionInmueble:
+            (direccion != null && direccion.trim().isNotEmpty)
+            ? direccion
+            : 'Direccion pendiente de confirmar',
+        rentaMensual: precio,
+        reglasPacto: pact.reglas.map((r) => r.titulo).toList(),
+        fechaGeneracion: DateTime.now(),
+        idCasa: idCasa,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Contrato generado y guardado correctamente.'),
         ),
       );
+
+      if (!result.isDemoMode && result.contractUrl.trim().isNotEmpty) {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ContractUrlPreviewScreen(
+              pdfUrl: result.contractUrl,
+              title: 'Contrato Oficial',
+            ),
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

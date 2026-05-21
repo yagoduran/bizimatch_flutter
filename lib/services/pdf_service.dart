@@ -10,6 +10,22 @@ import 'package:pdf/widgets.dart' as pw;
 
 import 'demo_service.dart';
 
+class ContractPdfResult {
+  const ContractPdfResult({
+    required this.pdfBytes,
+    required this.localFile,
+    required this.contractUrl,
+    required this.storagePath,
+    required this.isDemoMode,
+  });
+
+  final Uint8List pdfBytes;
+  final File localFile;
+  final String contractUrl;
+  final String storagePath;
+  final bool isDemoMode;
+}
+
 /// PdfService: kontratuak PDF formatuan sortu, gordetu eta ireki egiten ditu.
 ///
 /// Zer egiten duen:
@@ -33,8 +49,8 @@ class PdfService {
   }) async {
     // PDF dokumentuaren eraikuntza: style eta orri konfigurazioa prestatu.
     final documento = pw.Document();
-    final fontBase = pw.Font.times();
-    final fontBold = pw.Font.timesBold();
+    final fontBase = pw.Font.helvetica();
+    final fontBold = pw.Font.helveticaBold();
 
     documento.addPage(
       pw.MultiPage(
@@ -131,6 +147,56 @@ class PdfService {
     return documento.save();
   }
 
+  Future<ContractPdfResult> generarYGuardarContrato({
+    required String chatId,
+    required String uidParteA,
+    required String uidParteB,
+    required String nombreParteA,
+    required String nombreParteB,
+    required String dniParteA,
+    required String dniParteB,
+    required String direccionInmueble,
+    required double rentaMensual,
+    required List<String> reglasPacto,
+    required DateTime fechaGeneracion,
+    String? idCasa,
+  }) async {
+    final pdfBytes = await generarContratoPDF(
+      nombreParteA: nombreParteA,
+      dniParteA: dniParteA,
+      nombreParteB: nombreParteB,
+      dniParteB: dniParteB,
+      direccionInmueble: direccionInmueble,
+      rentaMensual: rentaMensual,
+      reglasPacto: reglasPacto,
+      fechaGeneracion: fechaGeneracion,
+    );
+
+    final result = await guardarReferenciaContrato(
+      pdfBytes: pdfBytes,
+      chatId: chatId,
+      uidParteA: uidParteA,
+      uidParteB: uidParteB,
+      nombreParteA: nombreParteA,
+      nombreParteB: nombreParteB,
+      dniParteA: dniParteA,
+      dniParteB: dniParteB,
+      direccionInmueble: direccionInmueble,
+      rentaMensual: rentaMensual,
+      reglasPacto: reglasPacto,
+      idCasa: idCasa,
+    );
+
+    return ContractPdfResult(
+      pdfBytes: pdfBytes,
+      localFile: File(result['local_file_path'] as String),
+      contractUrl: (result['contractUrl'] as String?) ??
+          (result['pdf_url'] as String? ?? ''),
+      storagePath: (result['storage_path'] as String?) ?? '',
+      isDemoMode: result['demo_local'] == true,
+    );
+  }
+
   Future<Map<String, dynamic>> guardarReferenciaContrato({
     required Uint8List pdfBytes,
     required String chatId,
@@ -146,18 +212,21 @@ class PdfService {
     String? idCasa,
   }) async {
     final now = DateTime.now();
-    final ts = now.millisecondsSinceEpoch;
+    final agreementId = chatId.trim();
+    final storagePath = 'contracts/elkarbizitza_ituna_$agreementId.pdf';
+    final localFile = await _writePdfToTempFile(
+      pdfBytes: pdfBytes,
+      agreementId: agreementId,
+    );
 
-    // Demo moduan gauzak lokalki gordetzen ditugu eta irekitzen ditugu
     if (DemoService.instance.isDemoMode.value) {
-      final directory = await getTemporaryDirectory();
-      final file = File('${directory.path}/contrato_bizimatch_demo_$ts.pdf');
-      await file.writeAsBytes(pdfBytes, flush: true);
-      await OpenFilex.open(file.path);
+      await OpenFilex.open(localFile.path);
 
       return {
-        'pdf_url': file.path,
-        'storage_path': file.path,
+        'contractUrl': localFile.path,
+        'pdf_url': localFile.path,
+        'storage_path': localFile.path,
+        'local_file_path': localFile.path,
         'chat_id': chatId,
         'id_casa': idCasa,
         'generado_en': now.toIso8601String(),
@@ -165,23 +234,28 @@ class PdfService {
       };
     }
 
-    // Produktzioan Firebase Storage erabili eta kontratua Firestore-en erreferentziatu.
-    final path = 'contratos/$chatId/contrato_$ts.pdf';
+    final ref = _storage.ref().child(storagePath);
 
-    final ref = _storage.ref().child(path);
-    final uploadTask = await ref.putData(
-      pdfBytes,
-      SettableMetadata(
-        contentType: 'application/pdf',
-        customMetadata: {
-          'chatId': chatId,
-          'uidParteA': uidParteA,
-          'uidParteB': uidParteB,
-        },
-      ),
-    );
-
-    final url = await uploadTask.ref.getDownloadURL();
+    String downloadUrl;
+    try {
+      final uploadTask = await ref.putFile(
+        localFile,
+        SettableMetadata(
+          contentType: 'application/pdf',
+          customMetadata: {
+            'chatId': chatId,
+            'uidParteA': uidParteA,
+            'uidParteB': uidParteB,
+            'agreementId': agreementId,
+          },
+        ),
+      );
+      downloadUrl = await uploadTask.ref.getDownloadURL();
+    } on FirebaseException catch (e) {
+      throw Exception(
+        'No se pudo subir el contrato a Firebase Storage: ${e.message ?? e.code}',
+      );
+    }
 
     final data = <String, dynamic>{
       'chat_id': chatId,
@@ -195,39 +269,69 @@ class PdfService {
       'direccion_inmueble': direccionInmueble,
       'renta_mensual': rentaMensual,
       'reglas_pacto': reglasPacto,
-      'storage_path': path,
-      'pdf_url': url,
+      'storage_path': storagePath,
+      'contractUrl': downloadUrl,
+      'pdf_url': downloadUrl,
+      'generated_at': Timestamp.fromDate(now),
       'generado_en': Timestamp.fromDate(now),
       'actualizado_en': FieldValue.serverTimestamp(),
     };
 
-    final contratoDoc = _firestore.collection('contratos').doc(chatId);
-    await contratoDoc.set(data, SetOptions(merge: true));
-    await contratoDoc.collection('versiones').add(data);
+    try {
+      final contratoDoc = _firestore.collection('contratos').doc(chatId);
+      await contratoDoc.set(data, SetOptions(merge: true));
+      await contratoDoc.collection('versiones').add(data);
 
-    if (idCasa != null && idCasa.trim().isNotEmpty) {
-      final casaDoc = _firestore.collection('casas').doc(idCasa);
-      await casaDoc.set({
-        'contrato_actual_chat_id': chatId,
-        'contrato_actual_url': url,
-        'contrato_actualizado_en': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      if (idCasa != null && idCasa.trim().isNotEmpty) {
+        final casaDoc = _firestore.collection('casas').doc(idCasa);
+        await casaDoc.set({
+          'contrato_actual_chat_id': chatId,
+          'contrato_actual_url': downloadUrl,
+          'contractUrl': downloadUrl,
+          'contrato_actualizado_en': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
 
-      await casaDoc.collection('contratos').doc(chatId).set({
-        'chat_id': chatId,
-        'pdf_url': url,
-        'storage_path': path,
-        'generado_en': Timestamp.fromDate(now),
-      }, SetOptions(merge: true));
+        await casaDoc.collection('contratos').doc(chatId).set({
+          'chat_id': chatId,
+          'pdf_url': downloadUrl,
+          'contractUrl': downloadUrl,
+          'storage_path': storagePath,
+          'generated_at': Timestamp.fromDate(now),
+        }, SetOptions(merge: true));
+      }
+    } on FirebaseException catch (e) {
+      throw Exception(
+        'No se pudo actualizar Firestore con el contrato: ${e.message ?? e.code}',
+      );
     }
 
     return {
-      'pdf_url': url,
-      'storage_path': path,
+      'contractUrl': downloadUrl,
+      'pdf_url': downloadUrl,
+      'storage_path': storagePath,
+      'local_file_path': localFile.path,
       'chat_id': chatId,
       'id_casa': idCasa,
       'generado_en': now.toIso8601String(),
+      'demo_local': false,
     };
+  }
+
+  Future<File> _writePdfToTempFile({
+    required Uint8List pdfBytes,
+    required String agreementId,
+  }) async {
+    final directory = await getTemporaryDirectory();
+    final contractsDir = Directory('${directory.path}/contracts');
+    if (!await contractsDir.exists()) {
+      await contractsDir.create(recursive: true);
+    }
+
+    final file = File(
+      '${contractsDir.path}/elkarbizitza_ituna_$agreementId.pdf',
+    );
+    await file.writeAsBytes(pdfBytes, flush: true);
+    return file;
   }
 
   pw.Widget _buildHeader(pw.Font fontBold) {
