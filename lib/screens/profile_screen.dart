@@ -1202,7 +1202,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     clipBehavior: Clip.none,
                     children: [
                       InkWell(
-                        onTap: isDemo ? null : () => _pickProfilePhoto(profile),
+                        onTap: _uploadingProfilePhoto
+                            ? null
+                            : () => _pickProfilePhoto(profile),
                         borderRadius: BorderRadius.circular(58),
                         child: Hero(
                           tag: 'photo_${profile.uid}',
@@ -1244,7 +1246,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         right: -4,
                         bottom: -4,
                         child: InkWell(
-                          onTap: isDemo ? null : () => _editarPerfil(profile),
+                          onTap: _uploadingProfilePhoto
+                              ? null
+                              : () => _editarPerfil(profile),
                           borderRadius: BorderRadius.circular(18),
                           child: Container(
                             width: 36,

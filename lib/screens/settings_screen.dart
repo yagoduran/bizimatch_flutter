@@ -149,8 +149,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     try {
-      await user.updateEmail(newEmail);
-      _showInfo('Email actualizado.');
+      await user.verifyBeforeUpdateEmail(newEmail);
+      _showInfo('Te enviamos un correo para confirmar el nuevo email.');
     } on FirebaseAuthException catch (e) {
       _showInfo('No fue posible actualizar el correo: ${e.code}');
     }

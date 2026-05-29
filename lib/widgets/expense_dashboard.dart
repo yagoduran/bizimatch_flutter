@@ -32,7 +32,8 @@ class ExpenseDashboard extends StatelessWidget {
     final secondaryText =
         isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary;
 
-    final allSettled = true;
+    final settledExpenses = <String>{};
+    final allSettled = settledExpenses.length == _transactions.length;
     return GlassCard(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(18),

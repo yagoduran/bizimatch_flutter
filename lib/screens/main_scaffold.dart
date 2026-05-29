@@ -1,8 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:showcaseview/showcaseview.dart';
 
-import '../app_theme.dart';
 import '../services/feature_tour_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/admob_banner.dart';
@@ -12,14 +12,11 @@ import 'discover_screen.dart';
 import 'home_management_screen.dart';
 import 'map_screen.dart';
 import 'matches_screen.dart';
-import 'profile_screen.dart';
 import 'profile_detail_screen.dart';
+import 'profile_screen.dart';
 import 'settings_screen.dart';
-import '../widgets/glassmorphism.dart';
 
-/// MainScaffold: aplikazioaren oinarrizko nabigazio egitura (tabs eta behe-menua).
-///
-/// Barruan aurkitzen dira: Arakatu, Vínculos, Komunitatea, Nire etxea, Perfil eta mapa.
+/// MainScaffold: aplikazioaren oinarrizko nabigazio egitura.
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
 
@@ -29,29 +26,30 @@ class MainScaffold extends StatefulWidget {
 
 class _MainScaffoldState extends State<MainScaffold>
     with SingleTickerProviderStateMixin {
-  int _currentIndex = 0;
-  int _loadingRevision = 0;
-  late final TabController _tabController;
+  static const int _tabCount = 4;
+
   final FirestoreService _firestoreService = FirestoreService();
   final FeatureTourService _featureTourService = FeatureTourService.instance;
+
+  late final TabController _tabController;
+  StreamSubscription<List<String>>? _likesSubscription;
+
+  int _currentIndex = 0;
   bool _startingTutorial = false;
 
-  final _screens = const [
+  final List<Widget> _screens = const [
     DiscoverScreen(),
     MatchesScreen(),
     CommunityScreen(),
     HomeManagementScreen(),
-    ProfileScreen(),
-    MapScreen(),
-    SettingsScreen(),
   ];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _screens.length, vsync: this);
+    _tabController = TabController(length: _tabCount, vsync: this);
     _tabController.addListener(() {
-      if (_tabController.indexIsChanging) {
+      if (_tabController.indexIsChanging || !mounted) {
         return;
       }
       setState(() {
@@ -73,7 +71,6 @@ class _MainScaffoldState extends State<MainScaffold>
     });
   }
 
-  /// Tutorial automatikoa abiarazteko kontrola: beharrezkoa bada Showcase hasi.
   Future<void> _maybeStartTutorial({bool force = false}) async {
     if (_startingTutorial || !mounted) {
       return;
@@ -86,7 +83,6 @@ class _MainScaffoldState extends State<MainScaffold>
     }
 
     _startingTutorial = true;
-    // Pantaila lehenengora alda eta tutorial pausuz pausu erakutsi
     _selectScreen(0);
     await Future<void>.delayed(const Duration(milliseconds: 450));
     if (!mounted) {
@@ -122,150 +118,23 @@ class _MainScaffoldState extends State<MainScaffold>
     }
   }
 
-  List<TooltipActionButton> _buildChatsTooltipActions() {
-    return [
-      TooltipActionButton.custom(
-        button: FeatureTourActionButton(
-          label: 'Saltar',
-          onTap: () {
-            _featureTourService.markMainTutorialSeen();
-            ShowcaseView.get().dismiss();
-          },
-        ),
-      ),
-      TooltipActionButton.custom(
-        button: FeatureTourActionButton(
-          label: 'Siguiente',
-          primary: true,
-          onTap: () async {
-            _selectScreen(3);
-            await Future<void>.delayed(const Duration(milliseconds: 550));
-            if (!mounted) {
-              return;
-            }
-            ShowcaseView.get().next(force: true);
-          },
-          bottomNavigationBar: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const AdmobBanner(),
-              BottomNavigationBar(
-                currentIndex: _bottomIndexFor(_currentIndex),
-                showUnselectedLabels: false,
-                selectedFontSize: 12,
-                unselectedFontSize: 0,
-                onTap: (index) {
-                  if (index == 4) {
-                    _openMoreMenu();
-                    return;
-                  }
-                  _selectScreen(index);
-                },
-                items: [
-                  BottomNavigationBarItem(
-                    icon: Semantics(
-                      button: true,
-                      label: 'Explorar / Arakatu',
-                      hint: 'Abre la pantalla para descubrir perfiles',
-                      child: ExcludeSemantics(
-                        child: Icon(Icons.travel_explore_rounded),
-                      ),
-                    ),
-                    label: 'Explorar',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Showcase(
-                      key: _featureTourService.chatsTabKey,
-                      title: 'Rompe el hielo con BiziBot',
-                      description:
-                          'Nuestra IA analiza los perfiles y te da preguntas personalizadas para empezar a hablar sin vergüenza.',
-                      titleTextStyle: const TextStyle(
-                        color: Color(0xFF101828),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                      descTextStyle: const TextStyle(
-                        color: Color(0xFF475467),
-                        fontSize: 14,
-                        height: 1.45,
-                      ),
-                      tooltipBackgroundColor: Colors.white,
-                      tooltipPadding: const EdgeInsets.all(18),
-                      tooltipActionConfig: const TooltipActionConfig(
-                        alignment: MainAxisAlignment.spaceBetween,
-                        position: TooltipActionPosition.inside,
-                        gapBetweenContentAndAction: 14,
-                      ),
-                      tooltipBorderRadius: BorderRadius.circular(24),
-                      targetPadding: const EdgeInsets.all(8),
-                      overlayColor: Colors.black,
-                      overlayOpacity: 0.72,
-                      disableDefaultTargetGestures: true,
-                      tooltipActions: [
-                        TooltipActionButton.custom(
-                          button: FeatureTourActionButton(
-                            label: 'Saltar',
-                            onTap: () {
-                              _featureTourService.markMainTutorialSeen();
-                              ShowcaseView.get().dismiss();
-                            },
-                          ),
-                        ),
-                        TooltipActionButton.custom(
-                          button: FeatureTourActionButton(
-                            label: 'Siguiente',
-                            primary: true,
-                            onTap: () => ShowcaseView.get().next(force: true),
-                          ),
-                        ),
-                      ],
-                      child: const Icon(Icons.chat_bubble_rounded),
-                    ),
-                    label: 'Vínculos',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.groups_rounded),
-                    label: 'Comunidad',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.home_rounded),
-                    label: 'Mi casa',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.person_rounded),
-                    label: 'Perfil',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.map_rounded),
-                    label: 'Mapa',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.settings_rounded),
-                    label: 'Ajustes',
-                  ),
-                ],
-              ),
-            ],
-    try {
-      // Pequeño delay para asegurar que el widget esté montado
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      if (!mounted) return;
-
-      // Obtener los primeros likes no leídos
-      final likesStream = _firestoreService.obtenerLikesNoLeidos();
-      likesStream.listen((likesFromIds) {
-        if (likesFromIds.isNotEmpty && mounted) {
-          _mostrarDialogLikesRecibidos(likesFromIds.first);
+  void _verificarLikesRecibidos() {
+    _likesSubscription?.cancel();
+    _likesSubscription = _firestoreService.obtenerLikesNoLeidos().listen(
+      (likesFromIds) {
+        if (!mounted || likesFromIds.isEmpty) {
+          return;
         }
-      });
-    } catch (e) {
-      debugPrint('Error verificando likes: $e');
-    }
+        _mostrarDialogLikesRecibidos(likesFromIds.first);
+      },
+      onError: (error) {
+        debugPrint('Error verificando likes: $error');
+      },
+    );
   }
 
   void _mostrarDialogLikesRecibidos(String likerUid) {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -323,8 +192,7 @@ class _MainScaffoldState extends State<MainScaffold>
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                                ProfileDetailScreen(userUid: likerUid),
+                            builder: (_) => ProfileDetailScreen(userUid: likerUid),
                           ),
                         );
                       },
@@ -347,8 +215,209 @@ class _MainScaffoldState extends State<MainScaffold>
     );
   }
 
+  void _selectScreen(int index) {
+    if (index < 0 || index >= _tabCount || _currentIndex == index) {
+      return;
+    }
+
+    setState(() {
+      _currentIndex = index;
+    });
+    _tabController.animateTo(index);
+  }
+
+  int _bottomIndexFor(int tabIndex) => tabIndex.clamp(0, _tabCount - 1);
+
+  Future<void> _openMoreMenu() async {
+    final selectedIndex = await showModalBottomSheet<int>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return SafeArea(
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.person_rounded),
+                  title: const Text('Perfil'),
+                  subtitle: const Text('Editar información personal'),
+                  onTap: () => Navigator.pop(context, 0),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.map_rounded),
+                  title: const Text('Mapa'),
+                  subtitle: const Text('Ver usuarios y lugares cercanos'),
+                  onTap: () => Navigator.pop(context, 1),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.settings_rounded),
+                  title: const Text('Ajustes'),
+                  subtitle: const Text('Privacidad, notificaciones y ayuda'),
+                  onTap: () => Navigator.pop(context, 2),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted || selectedIndex == null) {
+      return;
+    }
+
+    switch (selectedIndex) {
+      case 0:
+        await Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const ProfileScreen()),
+        );
+        break;
+      case 1:
+        await Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const MapScreen()),
+        );
+        break;
+      case 2:
+        await Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+        );
+        break;
+    }
+  }
+
+  List<TooltipActionButton> _buildChatsTooltipActions() {
+    return [
+      TooltipActionButton.custom(
+        button: FeatureTourActionButton(
+          label: 'Saltar',
+          onTap: () {
+            _featureTourService.markMainTutorialSeen();
+            ShowcaseView.get().dismiss();
+          },
+        ),
+      ),
+      TooltipActionButton.custom(
+        button: FeatureTourActionButton(
+          label: 'Siguiente',
+          primary: true,
+          onTap: () => ShowcaseView.get().next(force: true),
+        ),
+      ),
+    ];
+  }
+
+  Widget _buildBottomNavigation() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AdmobBanner(),
+        BottomNavigationBar(
+          currentIndex: _bottomIndexFor(_currentIndex),
+          showUnselectedLabels: false,
+          selectedFontSize: 12,
+          unselectedFontSize: 0,
+          onTap: (index) {
+            if (index == 4) {
+              _openMoreMenu();
+              return;
+            }
+            _selectScreen(index);
+          },
+          items: [
+            BottomNavigationBarItem(
+              icon: Semantics(
+                button: true,
+                label: 'Explorar / Arakatu',
+                hint: 'Abre la pantalla para descubrir perfiles',
+                child: const ExcludeSemantics(
+                  child: Icon(Icons.travel_explore_rounded),
+                ),
+              ),
+              label: 'Explorar',
+            ),
+            BottomNavigationBarItem(
+              icon: Showcase(
+                key: _featureTourService.chatsTabKey,
+                title: 'Rompe el hielo con BiziBot',
+                description:
+                    'Nuestra IA analiza los perfiles y te da preguntas personalizadas para empezar a hablar sin vergüenza.',
+                titleTextStyle: const TextStyle(
+                  color: Color(0xFF101828),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+                descTextStyle: const TextStyle(
+                  color: Color(0xFF475467),
+                  fontSize: 14,
+                  height: 1.45,
+                ),
+                tooltipBackgroundColor: Colors.white,
+                tooltipPadding: const EdgeInsets.all(18),
+                tooltipActionConfig: const TooltipActionConfig(
+                  alignment: MainAxisAlignment.spaceBetween,
+                  position: TooltipActionPosition.inside,
+                  gapBetweenContentAndAction: 14,
+                ),
+                tooltipBorderRadius: BorderRadius.circular(24),
+                targetPadding: const EdgeInsets.all(8),
+                overlayColor: Colors.black,
+                overlayOpacity: 0.72,
+                disableDefaultTargetGestures: true,
+                tooltipActions: _buildChatsTooltipActions(),
+                child: Semantics(
+                  button: true,
+                  label: 'Vínculos y chats / Loturak eta txatak',
+                  hint: 'Abre tus conversaciones y conexiones',
+                  child: ExcludeSemantics(
+                    child: Icon(Icons.chat_bubble_rounded),
+                  ),
+                ),
+              ),
+              label: 'Vínculos',
+            ),
+            BottomNavigationBarItem(
+              icon: Semantics(
+                button: true,
+                label: 'Comunidad / Komunitatea',
+                hint: 'Abre los planes y actividades compartidas',
+                child: ExcludeSemantics(child: Icon(Icons.groups_rounded)),
+              ),
+              label: 'Comunidad',
+            ),
+            BottomNavigationBarItem(
+              icon: Semantics(
+                button: true,
+                label: 'Mi casa / Nire etxea',
+                hint: 'Gestiona tareas y gastos del hogar',
+                child: ExcludeSemantics(child: Icon(Icons.home_rounded)),
+              ),
+              label: 'Casa',
+            ),
+            BottomNavigationBarItem(
+              icon: Semantics(
+                button: true,
+                label: 'Más opciones / Aukera gehiago',
+                hint: 'Abre perfil, mapa y ajustes',
+                child: ExcludeSemantics(child: Icon(Icons.more_horiz_rounded)),
+              ),
+              label: 'Más',
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   void dispose() {
+    _likesSubscription?.cancel();
     _featureTourService.replayRequests.removeListener(_handleTutorialReplay);
     ShowcaseView.get().unregister();
     _tabController.dispose();
@@ -364,140 +433,24 @@ class _MainScaffoldState extends State<MainScaffold>
             ? const NeverScrollableScrollPhysics()
             : const BouncingScrollPhysics(),
         children: [
-          for (var i = 0; i < _screens.length; i++)
-            _buildTabBody(_screens[i], i),
+          for (var i = 0; i < _screens.length; i++) _buildTabBody(_screens[i], i),
         ],
       ),
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const AdmobBanner(),
-          BottomNavigationBar(
-            currentIndex: _bottomIndexFor(_currentIndex),
-            showUnselectedLabels: false,
-            selectedFontSize: 12,
-            unselectedFontSize: 0,
-            onTap: (index) {
-              if (index == 4) {
-                _openMoreMenu();
-                return;
-              }
-              _selectScreen(index);
-            },
-            items: [
-              BottomNavigationBarItem(
-                icon: Semantics(
-                  button: true,
-                  label: 'Explorar / Arakatu',
-                  hint: 'Abre la pantalla para descubrir perfiles',
-                  child: ExcludeSemantics(
-                    child: Icon(Icons.travel_explore_rounded),
-                  ),
-                ),
-                label: 'Explorar',
-              ),
-              BottomNavigationBarItem(
-                icon: Showcase(
-                  key: _featureTourService.chatsTabKey,
-                  title: 'Rompe el hielo con BiziBot',
-                  description:
-                      'Nuestra IA analiza los perfiles y te da preguntas personalizadas para empezar a hablar sin vergüenza.',
-                  titleTextStyle: const TextStyle(
-                    color: Color(0xFF101828),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                  descTextStyle: const TextStyle(
-                    color: Color(0xFF475467),
-                    fontSize: 14,
-                    height: 1.45,
-                  ),
-                  tooltipBackgroundColor: Colors.white,
-                  tooltipPadding: const EdgeInsets.all(18),
-                  tooltipActionConfig: const TooltipActionConfig(
-                    alignment: MainAxisAlignment.spaceBetween,
-                    position: TooltipActionPosition.inside,
-                    gapBetweenContentAndAction: 14,
-                  ),
-                  tooltipBorderRadius: BorderRadius.circular(24),
-                  targetPadding: const EdgeInsets.all(8),
-                  overlayColor: Colors.black,
-                  overlayOpacity: 0.72,
-                  disableDefaultTargetGestures: true,
-                  tooltipActions: _buildChatsTooltipActions(),
-                  child: Semantics(
-                    button: true,
-                    label: 'Vínculos y chats / Loturak eta txatak',
-                    hint: 'Abre tus conversaciones y conexiones',
-                    child: ExcludeSemantics(child: Icon(Icons.groups_rounded)),
-                  ),
-                ),
-                label: 'Vínculos',
-              ),
-              BottomNavigationBarItem(
-                icon: Semantics(
-                  button: true,
-                  label: 'Comunidad / Komunitatea',
-                  hint: 'Abre los planes y actividades compartidas',
-                  child: ExcludeSemantics(child: Icon(Icons.local_bar_outlined)),
-                ),
-                label: 'Comunidad',
-              ),
-              BottomNavigationBarItem(
-                icon: Semantics(
-                  button: true,
-                  label: 'Mi casa / Nire etxea',
-                  hint: 'Gestiona tareas y gastos del hogar',
-                  child: ExcludeSemantics(child: Icon(Icons.home_work_outlined)),
-                ),
-                label: 'Casa',
-              ),
-              BottomNavigationBarItem(
-                icon: Semantics(
-                  button: true,
-                  label: 'Más opciones / Aukera gehiago',
-                  hint: 'Abre perfil, mapa y ajustes',
-                  child: ExcludeSemantics(child: Icon(Icons.more_horiz_rounded)),
-                ),
-                label: 'Más',
-              ),
-            ],
-          ),
-        ],
-      ),
+      bottomNavigationBar: _buildBottomNavigation(),
     );
   }
-}
 
-class _MoreMenuTile extends StatelessWidget {
-  const _MoreMenuTile({
-    required this.index,
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
+  Widget _buildTabBody(Widget screen, int index) {
+    if (index == 0) {
+      return screen;
+    }
 
-  final int index;
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: AppTheme.primary.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Icon(icon, color: AppTheme.primary),
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      child: KeyedSubtree(
+        key: ValueKey<int>(index),
+        child: screen,
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
-      subtitle: Text(subtitle),
-      trailing: const Icon(Icons.chevron_right_rounded),
-      onTap: () => Navigator.pop(context, index),
     );
   }
 }
