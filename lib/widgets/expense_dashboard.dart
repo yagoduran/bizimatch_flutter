@@ -2,7 +2,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../app_theme.dart';
-import '../services/demo_service.dart';
 import 'glassmorphism.dart';
 
 /// Gastuen dashboard txiki bat erakusten duen widget-a: pie chart, legenda eta transakzioak.
@@ -33,22 +32,14 @@ class ExpenseDashboard extends StatelessWidget {
     final secondaryText =
         isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary;
 
-    // DemoService-eko `settledDemoExpenses`-i atxikitzen zaio ValueListenableBuilder bidez.
-    // Honek UI-a automatikoki eguneratuko du demo-transakzioen egoera aldatzean.
-    return ValueListenableBuilder<Set<String>>(
-      valueListenable: DemoService.instance.settledDemoExpenses,
-      builder: (context, settledExpenses, _) {
-        // Demoko transakzio guztiak saldatuak dauden jakiteko kalkulua.
-        final allSettled = _transactions.every(
-          (item) => settledExpenses.contains(item.id),
-        );
-        return GlassCard(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          padding: const EdgeInsets.all(18),
-          borderRadius: 26,
-          opacity: isDark ? 0.08 : 0.16,
-          glowColor: AppTheme.primary,
-          child: Column(
+    final allSettled = true;
+    return GlassCard(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(18),
+      borderRadius: 26,
+      opacity: isDark ? 0.08 : 0.16,
+      glowColor: AppTheme.primary,
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -183,18 +174,10 @@ class ExpenseDashboard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          // Botoi nagusia: demoko transakzio guztiak saldatu badira desaktibatuta egongo da.
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: allSettled
-                  ? null
-                  : () {
-                      // Botoia sakatzean, demo transakzio guztiak 'saldatu' bezala markatzen dira.
-                      for (final item in _transactions) {
-                        DemoService.instance.settleDemoExpense(item.id);
-                      }
-                    },
+              onPressed: allSettled ? null : () {},
               icon: Icon(
                 allSettled
                     ? Icons.check_circle_rounded
@@ -206,8 +189,6 @@ class ExpenseDashboard extends StatelessWidget {
           ),
         ],
       ),
-        );
-      },
     );
   }
 }

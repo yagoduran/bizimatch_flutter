@@ -14,10 +14,8 @@ import 'package:lottie/lottie.dart';
 import 'package:showcaseview/showcaseview.dart';
 
 import '../app_theme.dart';
-import '../services/demo_service.dart';
 import '../services/feature_tour_service.dart';
 import '../screens/squad_housing_browser_screen.dart';
-import 'demo_chat_screen.dart';
 import '../models/user_model.dart';
 import '../models/user_profile.dart';
 import '../services/escuadron_service.dart';
@@ -132,11 +130,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   @override
   void initState() {
     super.initState();
-    if (DemoService.instance.isDemoMode.value) {
-      _activateDemoProfiles();
-    } else {
-      _subscribeToFirestoreProfiles();
-    }
+    _subscribeToFirestoreProfiles();
 
     _swipeOutController =
         AnimationController(vsync: this, duration: AppTheme.motionDiscoverSwipe)
@@ -186,16 +180,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       duration: const Duration(milliseconds: 900),
     )..repeat();
 
-    // Listen to demo mode toggle to switch data source
-    DemoService.instance.isDemoMode.addListener(() {
-      final demoOn = DemoService.instance.isDemoMode.value;
-      if (demoOn) {
-        _activateDemoProfiles();
-      } else {
-        _subscribeToFirestoreProfiles();
-      }
-    });
-    DemoService.instance.resetRevision.addListener(_onDemoReset);
     _preloadNativeAd();
 
     _audioStateSub = _audioPlayer.onPlayerStateChanged.listen((state) {
@@ -239,26 +223,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         _voicePosition = Duration.zero;
       });
     });
-  }
-
-  void _activateDemoProfiles() {
-    _myProfileSub?.cancel();
-    _discoverSub?.cancel();
-    final demoMe =
-        DemoService.instance.selectedDemoUser.value ??
-        DemoService.instance.demoProfiles.first;
-    _myProfile = demoMe;
-    _allProfiles = DemoService.instance.demoProfiles
-        .where((profile) => profile.uid != demoMe.uid)
-        .toList();
-    _filteredProfiles = _filtrar(_allProfiles);
-    _activeIndex = 0;
-    _swipeCount = 0;
-    _loading = false;
-    if (mounted) {
-      setState(() {});
-    }
-    _preloadNativeAd();
   }
 
   void _subscribeToFirestoreProfiles() {
@@ -417,66 +381,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     _scheduleNextProfilePrecache();
   }
 
-  void _onDemoReset() {
-    if (!mounted || !DemoService.instance.isDemoMode.value) {
-      return;
-    }
-
-    final demoMe = DemoService.instance.selectedDemoUser.value;
-    setState(() {
-      _myProfile = demoMe;
-      _allProfiles = DemoService.instance.demoProfiles
-          .where((p) => p.uid != demoMe?.uid)
-          .toList(growable: false);
-      _filteredProfiles = _filtrar(_allProfiles);
-      _activeIndex = 0;
-      _swipeCount = 0;
-      _dragOffset = Offset.zero;
-      _pendingApprovedUid = null;
-      _loading = false;
-    });
-    _scheduleNextProfilePrecache();
-  }
-
   Future<void> _guardarSwipeYDetectarMatch(String toUid, String tipo) async {
     try {
-      // If demo mode is active, avoid any Firebase calls and use local demo logic
-      if (DemoService.instance.isDemoMode.value) {
-        if (tipo == 'like') {
-          HapticFeedback.lightImpact();
-          // Treat demo_1 as a forced match for demo presentation
-          if (toUid.isNotEmpty) {
-            final target = DemoService.instance.demoProfiles.firstWhere(
-              (p) => p.uid == toUid,
-              orElse: () => DemoService.instance.demoProfiles.first,
-            );
-            if (mounted) {
-              DemoService.instance.registerDemoChat(target);
-              HapticFeedback.lightImpact();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Has dado like — ¡es un Vínculo!'),
-                ),
-              );
-              _showDemoMatchOverlay(target);
-            }
-          } else {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Has dado like (Modo Demo).')),
-              );
-            }
-          }
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Dislike registrado (Modo Demo).')),
-            );
-          }
-        }
-        return;
-      }
-
       final reward = await _firestoreService.guardarSwipe(
         toUid: toUid,
         tipo: tipo,
@@ -712,37 +618,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     );
   }
 
-  void _showDemoMatchOverlay(UserProfile targetUser) {
-    showGeneralDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      barrierLabel: 'demo-match',
-      barrierColor: Colors.black.withOpacity(0.5),
-      transitionDuration: const Duration(milliseconds: 360),
-      pageBuilder: (dialogContext, animation, secondaryAnimation) {
-        return _DemoMatchOverlay(
-          me: _myProfile,
-          other: targetUser,
-          onSendMessage: () {
-            Navigator.pop(dialogContext);
-            Navigator.push(
-              context,
-              MaterialPageRoute<void>(
-                builder: (_) => DemoChatScreen(otherUser: targetUser),
-              ),
-            );
-          },
-        );
-      },
-      transitionBuilder: (context, animation, secondaryAnimation, child) {
-        return FadeTransition(
-          opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
-          child: child,
-        );
-      },
-    );
-  }
-
   List<TooltipActionButton> _buildDiscoverTooltipActions() {
     final featureTourService = FeatureTourService.instance;
     return [
@@ -781,7 +656,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   @override
   void dispose() {
-    DemoService.instance.resetRevision.removeListener(_onDemoReset);
     unawaited(_stopVoicePlayback(clearSelection: true));
     _myProfileSub?.cancel();
     _discoverSub?.cancel();
@@ -3069,133 +2943,6 @@ class _MatchCelebrationOverlay extends StatefulWidget {
   @override
   State<_MatchCelebrationOverlay> createState() =>
       _MatchCelebrationOverlayState();
-}
-
-class _DemoMatchOverlay extends StatefulWidget {
-  const _DemoMatchOverlay({
-    required this.me,
-    required this.other,
-    required this.onSendMessage,
-  });
-
-  final UserProfile? me;
-  final UserProfile other;
-  final VoidCallback onSendMessage;
-
-  @override
-  State<_DemoMatchOverlay> createState() => _DemoMatchOverlayState();
-}
-
-class _DemoMatchOverlayState extends State<_DemoMatchOverlay>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _anim;
-
-  @override
-  void initState() {
-    super.initState();
-    _anim = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _anim.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final me = widget.me;
-    return Material(
-      color: Colors.transparent,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: Container(color: Colors.black.withOpacity(0.46)),
-          ),
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      AppCachedAvatar(
-                        imageUrl: me?.fotoPerfil ?? '',
-                        radius: 48,
-                        backgroundColor: const Color(0xFFF3F5F4),
-                      ),
-                      const SizedBox(width: 18),
-                      AppCachedAvatar(
-                        imageUrl: widget.other.fotoPerfil,
-                        radius: 48,
-                        backgroundColor: const Color(0xFFF3F5F4),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  AnimatedBuilder(
-                    animation: _anim,
-                    builder: (context, child) {
-                      final t = _anim.value;
-                      final scale = 1.0 + 0.06 * t;
-                      return Transform.scale(scale: scale, child: child);
-                    },
-                    child: const Text(
-                      "¡IT'S A MATCH!",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 36,
-                        fontWeight: FontWeight.w900,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black45,
-                            blurRadius: 8,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    '¡Han conectado! Ahora podéis hablar para coordinar la visita.',
-                    style: TextStyle(color: Color(0xE6FFFFFF)),
-                  ),
-                  const SizedBox(height: 18),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF10B981),
-                        ),
-                        child: const Text('Cerrar'),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton(
-                        onPressed: widget.onSendMessage,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF10B981),
-                        ),
-                        child: const Text('Enviar mensaje'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _MatchCelebrationOverlayState extends State<_MatchCelebrationOverlay>

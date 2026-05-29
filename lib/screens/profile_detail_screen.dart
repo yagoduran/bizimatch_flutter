@@ -4,13 +4,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../models/user_profile.dart';
-import '../services/demo_service.dart';
 import '../widgets/app_cached_network_image.dart';
 
 /// ProfileDetailScreen: beste erabiltzaile baten profil xehea erakusten du.
 ///
-/// Demo moduan gidatutako profilak kudeatzen ditu eta Firestore bidezko
-/// karga bat egiten du segurtasun tartearekin (timeout).
+/// Firestore bidezko karga bat egiten du segurtasun tartearekin (timeout).
 class ProfileDetailScreen extends StatefulWidget {
   final String userUid;
   final String? heroTag;
@@ -33,14 +31,6 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
 
   Future<UserProfile?> _fetchUserProfile() async {
     try {
-      if (DemoService.instance.isDemoMode.value &&
-          widget.userUid.startsWith('demo')) {
-        return DemoService.instance.demoProfiles.firstWhere(
-          (profile) => profile.uid == widget.userUid,
-          orElse: () => DemoService.instance.demoProfiles.first,
-        );
-      }
-
       // Firestore-tik profil datuak kargatu, 10 segundoko timeoutarekin.
       final doc = await _firestore
           .collection('usuarios')
@@ -62,7 +52,6 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
     }
   }
 
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Perfil'), elevation: 0),

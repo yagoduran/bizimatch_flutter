@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import '../models/community_plan_model.dart';
 import '../models/community_plan_type.dart';
 import '../services/community_service.dart';
-import '../services/demo_service.dart';
 import 'community_plan_chat_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
@@ -35,10 +34,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
   }
 
   Future<void> _initCity() async {
-    if (DemoService.instance.isDemoMode.value) {
-      setState(() => _selectedCity = 'General');
-      return;
-    }
     final city = await _communityService.obtenerCiudadUsuario();
     if (!mounted) return;
     setState(() => _selectedCity = city);
@@ -87,9 +82,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
         ],
       ),
       body: StreamBuilder<List<CommunityPlan>>(
-        stream: DemoService.instance.isDemoMode.value
-            ? Stream<List<CommunityPlan>>.value(_demoPlans(city))
-            : _communityService.planesPorCiudad(city),
+        stream: _communityService.planesPorCiudad(city),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(
@@ -185,40 +178,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
         label: const Text('Crear Plan'),
       ),
     );
-  }
-
-  List<CommunityPlan> _demoPlans(String city) {
-    final now = DateTime.now();
-    return [
-      CommunityPlan(
-        id: 'demo_plan_1',
-        titulo: 'Ca├â┬▒as para romper el hielo',
-        descripcion:
-            'Quedada informal para conocer futuros compa├â┬▒eros de piso por el centro.',
-        creadorId: 'demo_1',
-        creadorNombre: 'Daniel Ruiz',
-        ciudad: city,
-        fechaHora: now.add(const Duration(days: 1, hours: 2)),
-        tipoPlan: CommunityPlanType.canas,
-        asistentesIds: const ['demo_1', 'demo_2', 'demo_5'],
-        chatActivo: true,
-        chatPlanId: 'demo_plan_chat_1',
-      ),
-      CommunityPlan(
-        id: 'demo_plan_2',
-        titulo: 'Tour de pisos por Chamber├â┬¡',
-        descripcion:
-            'Ruta corta para visitar zonas, comparar precios y compartir impresiones.',
-        creadorId: 'demo_4',
-        creadorNombre: 'Iker Salazar',
-        ciudad: city,
-        fechaHora: now.add(const Duration(days: 3, hours: 5)),
-        tipoPlan: CommunityPlanType.turismo,
-        asistentesIds: const ['demo_4', 'demo_7'],
-        chatActivo: true,
-        chatPlanId: 'demo_plan_chat_2',
-      ),
-    ];
   }
 
   List<CommunityPlan> _filteredPlans(List<CommunityPlan> plans) {
@@ -341,26 +300,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 child: ElevatedButton.icon(
                   onPressed: () async {
                     HapticFeedback.mediumImpact();
-                    // If demo mode, toggle locally and update UI immediately
-                    if (DemoService.instance.isDemoMode.value) {
-                      final uid = myUid;
-                      setState(() {
-                        if (plan.asistentesIds.contains(uid)) {
-                          plan.asistentesIds.remove(uid);
-                        } else {
-                          plan.asistentesIds.add(uid);
-                        }
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(plan.asistentesIds.contains(uid)
-                              ? 'Te has apuntado al plan Ô£à'
-                              : 'Te has dado de baja del plan'),
-                        ),
-                      );
-                      return;
-                    }
-
                     await _communityService.toggleAsistencia(plan);
                   },
                   style: ElevatedButton.styleFrom(

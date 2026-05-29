@@ -3,12 +3,9 @@ import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-
-import 'demo_service.dart';
 
 class ContractPdfResult {
   const ContractPdfResult({
@@ -16,20 +13,18 @@ class ContractPdfResult {
     required this.localFile,
     required this.contractUrl,
     required this.storagePath,
-    required this.isDemoMode,
   });
 
   final Uint8List pdfBytes;
   final File localFile;
   final String contractUrl;
   final String storagePath;
-  final bool isDemoMode;
 }
 
 /// PdfService: kontratuak PDF formatuan sortu, gordetu eta ireki egiten ditu.
 ///
 /// Zer egiten duen:
-/// - PDF bat eraiki `pdf` paketearekin eta Firebase Storage-era igo edo lokalki gorde demo moduan.
+  /// - PDF bat eraiki `pdf` paketearekin eta Firebase Storage-era igo.
 class PdfService {
   PdfService._internal();
   static final PdfService instance = PdfService._internal();
@@ -193,7 +188,6 @@ class PdfService {
       contractUrl: (result['contractUrl'] as String?) ??
           (result['pdf_url'] as String? ?? ''),
       storagePath: (result['storage_path'] as String?) ?? '',
-      isDemoMode: result['demo_local'] == true,
     );
   }
 
@@ -218,21 +212,6 @@ class PdfService {
       pdfBytes: pdfBytes,
       agreementId: agreementId,
     );
-
-    if (DemoService.instance.isDemoMode.value) {
-      await OpenFilex.open(localFile.path);
-
-      return {
-        'contractUrl': localFile.path,
-        'pdf_url': localFile.path,
-        'storage_path': localFile.path,
-        'local_file_path': localFile.path,
-        'chat_id': chatId,
-        'id_casa': idCasa,
-        'generado_en': now.toIso8601String(),
-        'demo_local': true,
-      };
-    }
 
     final ref = _storage.ref().child(storagePath);
 
@@ -313,7 +292,6 @@ class PdfService {
       'chat_id': chatId,
       'id_casa': idCasa,
       'generado_en': now.toIso8601String(),
-      'demo_local': false,
     };
   }
 

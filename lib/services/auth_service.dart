@@ -5,16 +5,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 ///
 /// Zer egiten duen:
 /// - Firebase Auth bidez login, register eta logout funtzioak eskaintzen ditu.
-/// - Demo admin saioak eta azken saioaren markatzea SharedPreferences-en gordetzen du.
+/// - Azken saioaren markatzea SharedPreferences-en gordetzen du.
 ///
 /// Gako kontzeptuak: `FirebaseAuth`, `UserCredential`, `SharedPreferences`.
 class AuthService {
   AuthService({FirebaseAuth? auth}) : _auth = auth ?? FirebaseAuth.instance;
 
   static const String _lastLoginAtKey = 'last_login_at';
-  static const String demoAdminEmail = 'admin@bizimatch.demo';
-  static const String demoAdminPassword = 'demo2026';
-  static const String _demoAdminSessionKey = 'demo_admin_session';
   static const int _sessionDays = 30;
 
   final FirebaseAuth _auth;
@@ -52,34 +49,7 @@ class AuthService {
   }
 
   Future<void> logout() async {
-    // Demo saioa ezabatu lehenik, gero Firebase-tik signOut.
-    await clearDemoAdminSession();
     await _auth.signOut();
-  }
-
-  bool isDemoAdminCredentials({
-    required String email,
-    required String password,
-  }) {
-    return email.trim().toLowerCase() == demoAdminEmail &&
-        password.trim() == demoAdminPassword;
-  }
-
-  Future<void> startDemoAdminSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    // Demo admin saioa aktibatu eta saio-markatzea egin.
-    await prefs.setBool(_demoAdminSessionKey, true);
-    await _markSessionLogin();
-  }
-
-  Future<bool> hasDemoAdminSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_demoAdminSessionKey) ?? false;
-  }
-
-  Future<void> clearDemoAdminSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_demoAdminSessionKey);
   }
 
   Future<bool> hasSessionWithin30Days() async {

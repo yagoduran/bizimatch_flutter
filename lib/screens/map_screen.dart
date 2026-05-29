@@ -11,7 +11,6 @@ import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
 import '../models/user_profile.dart';
-import '../services/demo_service.dart';
 import '../widgets/app_cached_network_image.dart';
 import 'profile_detail_screen.dart';
 
@@ -42,13 +41,7 @@ class _MapScreenState extends State<MapScreen> {
   void initState() {
     super.initState();
     _mapController = MapController();
-    if (DemoService.instance.isDemoMode.value) {
-      _usersWithPiso = DemoService.instance.demoProfiles
-          .where((user) => user.tienePiso)
-          .toList(growable: false);
-    } else {
-      _loadMarkersFromFirestore();
-    }
+    _loadMarkersFromFirestore();
   }
 
   void _loadMarkersFromFirestore() {
@@ -125,13 +118,7 @@ class _MapScreenState extends State<MapScreen> {
       }
     });
 
-    final isDemo = DemoService.instance.isDemoMode.value;
-    if (isDemo) {
-      await Future<void>.delayed(const Duration(milliseconds: 350));
-    }
-    final pois = isDemo
-        ? const <ServicePoi>[]
-        : await _fetchNearbyServicesFromOverpass(housePosition);
+    final pois = await _fetchNearbyServicesFromOverpass(housePosition);
     final resolvedPois = pois.isNotEmpty
         ? pois
         : _buildMockNearbyServices(housePosition);
@@ -147,7 +134,7 @@ class _MapScreenState extends State<MapScreen> {
       }
     });
 
-    if (mounted && pois.isEmpty && !isDemo) {
+    if (mounted && pois.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -392,8 +379,6 @@ out body;
       ),
       body: Stack(
         children: [
-          if (DemoService.instance.isDemoMode.value)
-            Positioned.fill(child: _buildDemoMapBackground()),
           // FlutterMap con CartoDB Positron
           FlutterMap(
             mapController: _mapController,
@@ -403,13 +388,12 @@ out body;
               onTap: (tapPosition, latLng) => _clearSelection(),
             ),
             children: [
-              if (!DemoService.instance.isDemoMode.value)
-                TileLayer(
-                  urlTemplate:
-                      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-                  subdomains: const ['a', 'b', 'c'],
-                  userAgentPackageName: 'com.bizimatch.app',
-                ),
+              TileLayer(
+                urlTemplate:
+                    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                subdomains: const ['a', 'b', 'c'],
+                userAgentPackageName: 'com.bizimatch.app',
+              ),
               // Marcadores personalizados (gotas de agua)
               MarkerLayer(
                 markers: _usersWithPiso.map((user) {

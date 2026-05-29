@@ -9,8 +9,6 @@ import '../services/firestore_service.dart';
 import '../widgets/app_cached_network_image.dart';
 import '../widgets/glassmorphism.dart';
 import 'chat_detail_screen.dart';
-import '../services/demo_service.dart';
-import 'demo_chat_screen.dart';
 import 'profile_detail_screen.dart';
 
 class MatchesScreen extends StatefulWidget {
@@ -25,36 +23,19 @@ class _MatchesScreenState extends State<MatchesScreen> {
   final Map<String, Future<UserProfile?>> _userCache =
       <String, Future<UserProfile?>>{};
   late final Stream<List<ChatThread>> _threadsStream;
-  int _demoRevision = 0;
 
   @override
   void initState() {
     super.initState();
     _threadsStream = _firestore.chatThreads();
-    DemoService.instance.resetRevision.addListener(_onDemoReset);
-  }
-
-  void _onDemoReset() {
-    if (!mounted) {
-      return;
-    }
-    setState(() => _demoRevision = DemoService.instance.resetRevision.value);
   }
 
   @override
   void dispose() {
-    DemoService.instance.resetRevision.removeListener(_onDemoReset);
     super.dispose();
   }
 
   Future<UserProfile?> _userFuture(String uid) {
-    if (DemoService.instance.isDemoMode.value && uid.startsWith('demo')) {
-      final demo = DemoService.instance.demoProfiles.firstWhere(
-        (p) => p.uid == uid,
-        orElse: () => DemoService.instance.demoProfiles.first,
-      );
-      return Future.value(demo);
-    }
     return _userCache.putIfAbsent(uid, () => _firestore.getUserById(uid));
   }
 
@@ -66,19 +47,6 @@ class _MatchesScreenState extends State<MatchesScreen> {
     String avatarUrl,
   ) async {
     HapticFeedback.selectionClick();
-    if (DemoService.instance.isDemoMode.value && otherUid.startsWith('demo')) {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => DemoChatScreen(
-            otherUser: DemoService.instance.demoProfiles.firstWhere(
-              (p) => p.uid == otherUid,
-            ),
-          ),
-        ),
-      );
-      return;
-    }
     await Navigator.push(
       context,
       PageRouteBuilder<void>(
@@ -131,12 +99,8 @@ class _MatchesScreenState extends State<MatchesScreen> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final threadsStream = DemoService.instance.isDemoMode.value
-        ? Stream<List<ChatThread>>.value(DemoService.instance.demoThreads)
-        : _threadsStream;
-    final myUid = DemoService.instance.isDemoMode.value
-        ? 'demo_me'
-        : FirebaseAuth.instance.currentUser?.uid ?? '';
+    final threadsStream = _threadsStream;
+    final myUid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     return SafeArea(
       child: Padding(
@@ -163,7 +127,6 @@ class _MatchesScreenState extends State<MatchesScreen> {
             const SizedBox(height: 12),
             Expanded(
               child: StreamBuilder<List<ChatThread>>(
-                key: ValueKey<int>(_demoRevision),
                 stream: threadsStream,
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {

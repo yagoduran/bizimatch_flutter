@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:showcaseview/showcaseview.dart';
-import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../app_theme.dart';
-import '../services/demo_service.dart';
 import '../services/feature_tour_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/admob_banner.dart';
@@ -61,9 +59,6 @@ class _MainScaffoldState extends State<MainScaffold>
       });
     });
 
-    // Verificar likes no leídos al iniciar
-    DemoService.instance.isDemoMode.addListener(_syncDemoWakelock);
-    _syncDemoWakelock();
     _verificarLikesRecibidos();
     _featureTourService.replayRequests.addListener(_handleTutorialReplay);
 
@@ -76,14 +71,6 @@ class _MainScaffoldState extends State<MainScaffold>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _maybeStartTutorial();
     });
-  }
-
-  Future<void> _syncDemoWakelock() async {
-    if (DemoService.instance.isDemoMode.value) {
-      await WakelockPlus.enable();
-    } else {
-      await WakelockPlus.disable();
-    }
   }
 
   /// Tutorial automatikoa abiarazteko kontrola: beharrezkoa bada Showcase hasi.
@@ -362,10 +349,8 @@ class _MainScaffoldState extends State<MainScaffold>
 
   @override
   void dispose() {
-    DemoService.instance.isDemoMode.removeListener(_syncDemoWakelock);
     _featureTourService.replayRequests.removeListener(_handleTutorialReplay);
     ShowcaseView.get().unregister();
-    WakelockPlus.disable();
     _tabController.dispose();
     super.dispose();
   }

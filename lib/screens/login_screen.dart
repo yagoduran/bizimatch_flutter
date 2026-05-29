@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 
 import '../app_theme.dart';
 import '../services/auth_service.dart';
-import '../services/demo_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/glassmorphism.dart';
 import 'main_scaffold.dart';
@@ -33,7 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  /// Saio-prozesua: egiaztapen sinplea, demo-admin kontrolea eta helmugara nabigazioa.
+  /// Saio-prozesua: Firebase egiaztapena eta helmugara nabigazioa.
   Future<void> _login() async {
     // Ezkutuko geruza: ez berriezarri operazioak bitartean
     if (_isLoading) {
@@ -52,16 +51,6 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Demo-admin kredentzialak baliozkoak badira, sarrera demo moduan egin
-      if (_authService.isDemoAdminCredentials(
-        email: email,
-        password: password,
-      )) {
-        await _enterDemoAdmin();
-        return;
-      }
-
-      // Kredentzialak erabiltzaile normala bezala prozesatu
       await _authService.login(email: email, password: password);
 
       // Gorde/sinkronizatu FCM tokena zerbitzuarekin
@@ -86,22 +75,6 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() => _isLoading = false);
       }
     }
-  }
-
-  /// Demo-admin saioa jartzen du eta demo-profila aukeratzen du.
-  Future<void> _enterDemoAdmin() async {
-    await _authService.startDemoAdminSession();
-    DemoService.instance.enableDemo(true);
-    DemoService.instance.selectDemoUserByUid('demo_1');
-
-    if (!mounted) {
-      return;
-    }
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute<void>(builder: (_) => const MainScaffold()),
-    );
   }
 
   /// Pasahitzaren berrespena: erabiltzaileak emaila sartu eta esteka bidaltzen da.
@@ -237,21 +210,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               )
                             : const Text('Iniciar sesión'),
-                      ),
-                      const SizedBox(height: 8),
-                      OutlinedButton.icon(
-                        onPressed: _isLoading ? null : _enterDemoAdmin,
-                        icon: const Icon(Icons.admin_panel_settings_rounded),
-                        label: const Text('Entrar en Demo Admin'),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Acceso offline: admin@bizimatch.demo / demo2026',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 12,
-                        ),
                       ),
                       const SizedBox(height: 8),
                       TextButton(

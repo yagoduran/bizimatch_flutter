@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 
 import '../models/community_plan_model.dart';
 import '../services/community_service.dart';
-import '../services/demo_service.dart';
 
 class CommunityPlanChatScreen extends StatefulWidget {
   const CommunityPlanChatScreen({super.key, required this.plan});
@@ -19,32 +18,11 @@ class CommunityPlanChatScreen extends StatefulWidget {
 class _CommunityPlanChatScreenState extends State<CommunityPlanChatScreen> {
   final CommunityService _communityService = CommunityService.instance;
   final TextEditingController _controller = TextEditingController();
-  final List<CommunityPlanMessage> _demoMessages = <CommunityPlanMessage>[];
   bool _sending = false;
 
   @override
   void initState() {
     super.initState();
-    if (DemoService.instance.isDemoMode.value) {
-      _demoMessages.addAll([
-        CommunityPlanMessage(
-          id: 'demo_msg_1',
-          planId: widget.plan.id,
-          senderId: 'demo_1',
-          senderName: 'Daniel Ruiz',
-          texto: 'Yo puedo llegar 10 min antes y reservar mesa.',
-          createdAt: DateTime.now().subtract(const Duration(minutes: 35)),
-        ),
-        CommunityPlanMessage(
-          id: 'demo_msg_2',
-          planId: widget.plan.id,
-          senderId: 'demo_2',
-          senderName: 'Lucia Fernandez',
-          texto: 'Perfecto, llevo una lista de preguntas para pisos.',
-          createdAt: DateTime.now().subtract(const Duration(minutes: 22)),
-        ),
-      ]);
-    }
   }
 
   @override
@@ -66,23 +44,6 @@ class _CommunityPlanChatScreenState extends State<CommunityPlanChatScreen> {
     _controller.clear();
     HapticFeedback.lightImpact();
 
-    if (DemoService.instance.isDemoMode.value) {
-      setState(() {
-        _demoMessages.add(
-          CommunityPlanMessage(
-            id: 'demo_msg_${DateTime.now().millisecondsSinceEpoch}',
-            planId: widget.plan.id,
-            senderId: myUidForDemo,
-            senderName: 'Admin Demo',
-            texto: text,
-            createdAt: DateTime.now(),
-          ),
-        );
-        _sending = false;
-      });
-      return;
-    }
-
     try {
       await _communityService.enviarMensajePlan(
         planId: widget.plan.id,
@@ -98,9 +59,7 @@ class _CommunityPlanChatScreenState extends State<CommunityPlanChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final myUid = DemoService.instance.isDemoMode.value
-        ? myUidForDemo
-        : FirebaseAuth.instance.currentUser?.uid ?? '';
+    final myUid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -109,9 +68,7 @@ class _CommunityPlanChatScreenState extends State<CommunityPlanChatScreen> {
         children: [
           Expanded(
             child: StreamBuilder<List<CommunityPlanMessage>>(
-              stream: DemoService.instance.isDemoMode.value
-                  ? Stream<List<CommunityPlanMessage>>.value(_demoMessages)
-                  : _communityService.mensajesPlan(widget.plan.id),
+              stream: _communityService.mensajesPlan(widget.plan.id),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
@@ -215,4 +172,3 @@ class _CommunityPlanChatScreenState extends State<CommunityPlanChatScreen> {
   }
 }
 
-const String myUidForDemo = 'demo_me';

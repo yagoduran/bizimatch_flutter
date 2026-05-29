@@ -5,15 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/auth_service.dart';
-import '../services/demo_service.dart';
 import 'login_screen.dart';
 import 'main_scaffold.dart';
 import 'onboarding_screen.dart';
 
 /// SplashScreen: hasierako pantaila — sesio-egoera eta onboarding egiaztatzen ditu.
 ///
-/// Arau praktikoa: 3 segundo itxaroten du eta aldi berean sesioa egiaztatzen
-/// du; demo-administratzaile saioa lehentasunez kudeatzen da.
+  /// Arau praktikoa: 3 segundo itxaroten du eta aldi berean sesioa egiaztatzen du.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -40,21 +38,6 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _checkSession() async {
     final prefs = await SharedPreferences.getInstance();
     final hasSeenOnboarding = prefs.getBool('seen_onboarding') ?? false;
-    final hasDemoAdminSession = await _authService.hasDemoAdminSession();
-    if (hasDemoAdminSession) {
-      DemoService.instance.enableDemo(true);
-      DemoService.instance.selectDemoUserByUid('demo_1');
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _destination = const MainScaffold();
-        _isReady = true;
-      });
-      _navigateIfReady();
-      return;
-    }
-
     final User? user = await _authService.authStateChanges().first;
 
     if (!mounted) {

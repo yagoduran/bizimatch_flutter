@@ -226,7 +226,7 @@ class _CoexistencePactScreenState extends State<CoexistencePactScreen> {
         ),
       );
 
-      if (!result.isDemoMode && result.contractUrl.trim().isNotEmpty) {
+      if (result.contractUrl.trim().isNotEmpty) {
         await Navigator.push(
           context,
           MaterialPageRoute(
