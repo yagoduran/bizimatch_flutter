@@ -7,6 +7,7 @@ import '../app_theme.dart';
 import '../services/demo_service.dart';
 import '../services/feature_tour_service.dart';
 import '../services/firestore_service.dart';
+import '../widgets/admob_banner.dart';
 import '../widgets/feature_tour_action_button.dart';
 import 'community_screen.dart';
 import 'discover_screen.dart';
@@ -157,101 +158,107 @@ class _MainScaffoldState extends State<MainScaffold>
             }
             ShowcaseView.get().next(force: true);
           },
-        ),
-      ),
-    ];
-  }
-
-  bool _shouldFakeLoad(int index) => index == 1 || index == 3;
-
-  int _bottomIndexFor(int screenIndex) {
-    if (screenIndex <= 3) {
-      return screenIndex;
-    }
-    return 4;
-  }
-
-  /// Pantaila aukeraketa: haptic feedback eta tab kontrola kudeatzen ditu.
-  void _selectScreen(int index) {
-    HapticFeedback.selectionClick();
-    setState(() {
-      _currentIndex = index;
-      if (_shouldFakeLoad(index)) {
-        _loadingRevision++;
-      }
-    });
-    _tabController.animateTo(
-      index,
-      duration: AppTheme.motionNavigation,
-      curve: AppTheme.motionCurveEmphasized,
-    );
-  }
-
-  Future<void> _openMoreMenu() async {
-    HapticFeedback.selectionClick();
-    final selected = await showModalBottomSheet<int>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: GlassCard(
-              borderRadius: 28,
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  _MoreMenuTile(
-                    index: 4,
-                    icon: Icons.person_outline_rounded,
-                    title: 'Perfil',
-                    subtitle: 'Tu identidad y progreso',
+          bottomNavigationBar: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const AdmobBanner(),
+              BottomNavigationBar(
+                currentIndex: _bottomIndexFor(_currentIndex),
+                showUnselectedLabels: false,
+                selectedFontSize: 12,
+                unselectedFontSize: 0,
+                onTap: (index) {
+                  if (index == 4) {
+                    _openMoreMenu();
+                    return;
+                  }
+                  _selectScreen(index);
+                },
+                items: [
+                  BottomNavigationBarItem(
+                    icon: Semantics(
+                      button: true,
+                      label: 'Explorar / Arakatu',
+                      hint: 'Abre la pantalla para descubrir perfiles',
+                      child: ExcludeSemantics(
+                        child: Icon(Icons.travel_explore_rounded),
+                      ),
+                    ),
+                    label: 'Explorar',
                   ),
-                  _MoreMenuTile(
-                    index: 5,
-                    icon: Icons.map_outlined,
-                    title: 'Mapa',
-                    subtitle: 'Pisos y servicios cercanos',
+                  BottomNavigationBarItem(
+                    icon: Showcase(
+                      key: _featureTourService.chatsTabKey,
+                      title: 'Rompe el hielo con BiziBot',
+                      description:
+                          'Nuestra IA analiza los perfiles y te da preguntas personalizadas para empezar a hablar sin vergüenza.',
+                      titleTextStyle: const TextStyle(
+                        color: Color(0xFF101828),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                      descTextStyle: const TextStyle(
+                        color: Color(0xFF475467),
+                        fontSize: 14,
+                        height: 1.45,
+                      ),
+                      tooltipBackgroundColor: Colors.white,
+                      tooltipPadding: const EdgeInsets.all(18),
+                      tooltipActionConfig: const TooltipActionConfig(
+                        alignment: MainAxisAlignment.spaceBetween,
+                        position: TooltipActionPosition.inside,
+                        gapBetweenContentAndAction: 14,
+                      ),
+                      tooltipBorderRadius: BorderRadius.circular(24),
+                      targetPadding: const EdgeInsets.all(8),
+                      overlayColor: Colors.black,
+                      overlayOpacity: 0.72,
+                      disableDefaultTargetGestures: true,
+                      tooltipActions: [
+                        TooltipActionButton.custom(
+                          button: FeatureTourActionButton(
+                            label: 'Saltar',
+                            onTap: () {
+                              _featureTourService.markMainTutorialSeen();
+                              ShowcaseView.get().dismiss();
+                            },
+                          ),
+                        ),
+                        TooltipActionButton.custom(
+                          button: FeatureTourActionButton(
+                            label: 'Siguiente',
+                            primary: true,
+                            onTap: () => ShowcaseView.get().next(force: true),
+                          ),
+                        ),
+                      ],
+                      child: const Icon(Icons.chat_bubble_rounded),
+                    ),
+                    label: 'Vínculos',
                   ),
-                  _MoreMenuTile(
-                    index: 6,
-                    icon: Icons.tune_rounded,
-                    title: 'Ajustes',
-                    subtitle: 'Demo, notificaciones y privacidad',
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.groups_rounded),
+                    label: 'Comunidad',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.home_rounded),
+                    label: 'Mi casa',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.person_rounded),
+                    label: 'Perfil',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.map_rounded),
+                    label: 'Mapa',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.settings_rounded),
+                    label: 'Ajustes',
                   ),
                 ],
               ),
-            ),
-          ),
-        );
-      },
-    );
-
-    if (selected != null && mounted) {
-      _selectScreen(selected);
-    }
-  }
-
-  Widget _buildTabBody(Widget screen, int index) {
-    if (!_shouldFakeLoad(index)) {
-      return screen;
-    }
-
-    return FutureBuilder<void>(
-      key: ValueKey<String>('fake-load-$index-$_loadingRevision'),
-      future: Future<void>.delayed(const Duration(milliseconds: 500)),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const ShimmerSkeleton(itemCount: 5);
-        }
-        return screen;
-      },
-    );
-  }
-
-  /// Likes ez irakurrien egiaztapena eta dialog-en eraketa abian jartzen du.
-  Future<void> _verificarLikesRecibidos() async {
+            ],
     try {
       // Pequeño delay para asegurar que el widget esté montado
       await Future.delayed(const Duration(milliseconds: 500));
@@ -376,94 +383,100 @@ class _MainScaffoldState extends State<MainScaffold>
             _buildTabBody(_screens[i], i),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _bottomIndexFor(_currentIndex),
-        showUnselectedLabels: false,
-        selectedFontSize: 12,
-        unselectedFontSize: 0,
-        onTap: (index) {
-          if (index == 4) {
-            _openMoreMenu();
-            return;
-          }
-          _selectScreen(index);
-        },
-        items: [
-          BottomNavigationBarItem(
-            icon: Semantics(
-              button: true,
-              label: 'Explorar / Arakatu',
-              hint: 'Abre la pantalla para descubrir perfiles',
-              child: ExcludeSemantics(
-                child: Icon(Icons.travel_explore_rounded),
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const AdmobBanner(),
+          BottomNavigationBar(
+            currentIndex: _bottomIndexFor(_currentIndex),
+            showUnselectedLabels: false,
+            selectedFontSize: 12,
+            unselectedFontSize: 0,
+            onTap: (index) {
+              if (index == 4) {
+                _openMoreMenu();
+                return;
+              }
+              _selectScreen(index);
+            },
+            items: [
+              BottomNavigationBarItem(
+                icon: Semantics(
+                  button: true,
+                  label: 'Explorar / Arakatu',
+                  hint: 'Abre la pantalla para descubrir perfiles',
+                  child: ExcludeSemantics(
+                    child: Icon(Icons.travel_explore_rounded),
+                  ),
+                ),
+                label: 'Explorar',
               ),
-            ),
-            label: 'Explorar',
-          ),
-          BottomNavigationBarItem(
-            icon: Showcase(
-              key: _featureTourService.chatsTabKey,
-              title: 'Rompe el hielo con BiziBot',
-              description:
-                  'Nuestra IA analiza los perfiles y te da preguntas personalizadas para empezar a hablar sin vergüenza.',
-              titleTextStyle: const TextStyle(
-                color: Color(0xFF101828),
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
+              BottomNavigationBarItem(
+                icon: Showcase(
+                  key: _featureTourService.chatsTabKey,
+                  title: 'Rompe el hielo con BiziBot',
+                  description:
+                      'Nuestra IA analiza los perfiles y te da preguntas personalizadas para empezar a hablar sin vergüenza.',
+                  titleTextStyle: const TextStyle(
+                    color: Color(0xFF101828),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  descTextStyle: const TextStyle(
+                    color: Color(0xFF475467),
+                    fontSize: 14,
+                    height: 1.45,
+                  ),
+                  tooltipBackgroundColor: Colors.white,
+                  tooltipPadding: const EdgeInsets.all(18),
+                  tooltipActionConfig: const TooltipActionConfig(
+                    alignment: MainAxisAlignment.spaceBetween,
+                    position: TooltipActionPosition.inside,
+                    gapBetweenContentAndAction: 14,
+                  ),
+                  tooltipBorderRadius: BorderRadius.circular(24),
+                  targetPadding: const EdgeInsets.all(8),
+                  overlayColor: Colors.black,
+                  overlayOpacity: 0.72,
+                  disableDefaultTargetGestures: true,
+                  tooltipActions: _buildChatsTooltipActions(),
+                  child: Semantics(
+                    button: true,
+                    label: 'Vínculos y chats / Loturak eta txatak',
+                    hint: 'Abre tus conversaciones y conexiones',
+                    child: ExcludeSemantics(child: Icon(Icons.groups_rounded)),
+                  ),
+                ),
+                label: 'Vínculos',
               ),
-              descTextStyle: const TextStyle(
-                color: Color(0xFF475467),
-                fontSize: 14,
-                height: 1.45,
+              BottomNavigationBarItem(
+                icon: Semantics(
+                  button: true,
+                  label: 'Comunidad / Komunitatea',
+                  hint: 'Abre los planes y actividades compartidas',
+                  child: ExcludeSemantics(child: Icon(Icons.local_bar_outlined)),
+                ),
+                label: 'Comunidad',
               ),
-              tooltipBackgroundColor: Colors.white,
-              tooltipPadding: const EdgeInsets.all(18),
-              tooltipActionConfig: const TooltipActionConfig(
-                alignment: MainAxisAlignment.spaceBetween,
-                position: TooltipActionPosition.inside,
-                gapBetweenContentAndAction: 14,
+              BottomNavigationBarItem(
+                icon: Semantics(
+                  button: true,
+                  label: 'Mi casa / Nire etxea',
+                  hint: 'Gestiona tareas y gastos del hogar',
+                  child: ExcludeSemantics(child: Icon(Icons.home_work_outlined)),
+                ),
+                label: 'Casa',
               ),
-              tooltipBorderRadius: BorderRadius.circular(24),
-              targetPadding: const EdgeInsets.all(8),
-              overlayColor: Colors.black,
-              overlayOpacity: 0.72,
-              disableDefaultTargetGestures: true,
-              tooltipActions: _buildChatsTooltipActions(),
-              child: Semantics(
-                button: true,
-                label: 'Vínculos y chats / Loturak eta txatak',
-                hint: 'Abre tus conversaciones y conexiones',
-                child: ExcludeSemantics(child: Icon(Icons.groups_rounded)),
+              BottomNavigationBarItem(
+                icon: Semantics(
+                  button: true,
+                  label: 'Más opciones / Aukera gehiago',
+                  hint: 'Abre perfil, mapa y ajustes',
+                  child: ExcludeSemantics(child: Icon(Icons.more_horiz_rounded)),
+                ),
+                label: 'Más',
               ),
-            ),
-            label: 'Vínculos',
-          ),
-          BottomNavigationBarItem(
-            icon: Semantics(
-              button: true,
-              label: 'Comunidad / Komunitatea',
-              hint: 'Abre los planes y actividades compartidas',
-              child: ExcludeSemantics(child: Icon(Icons.local_bar_outlined)),
-            ),
-            label: 'Comunidad',
-          ),
-          BottomNavigationBarItem(
-            icon: Semantics(
-              button: true,
-              label: 'Mi casa / Nire etxea',
-              hint: 'Gestiona tareas y gastos del hogar',
-              child: ExcludeSemantics(child: Icon(Icons.home_work_outlined)),
-            ),
-            label: 'Casa',
-          ),
-          BottomNavigationBarItem(
-            icon: Semantics(
-              button: true,
-              label: 'Más opciones / Aukera gehiago',
-              hint: 'Abre perfil, mapa y ajustes',
-              child: ExcludeSemantics(child: Icon(Icons.more_horiz_rounded)),
-            ),
-            label: 'Más',
+            ],
           ),
         ],
       ),

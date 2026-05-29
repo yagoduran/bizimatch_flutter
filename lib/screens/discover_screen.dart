@@ -9,6 +9,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:lottie/lottie.dart';
 import 'package:showcaseview/showcaseview.dart';
 
@@ -23,7 +24,10 @@ import '../services/escuadron_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/app_cached_network_image.dart';
 import '../widgets/feature_tour_action_button.dart';
+import '../widgets/native_ad_card.dart';
 import 'profile_detail_screen.dart';
+
+typedef _DiscoverCardSlot = ({bool isAd, UserProfile? profile});
 
 class DiscoverScreen extends StatefulWidget {
   const DiscoverScreen({super.key});
@@ -35,6 +39,10 @@ class DiscoverScreen extends StatefulWidget {
 class _DiscoverScreenState extends State<DiscoverScreen>
     with TickerProviderStateMixin {
   static const double _swipeThreshold = 140;
+  static const int _profilesPerAdBatch = 10;
+  static const String _nativeAdFactoryId = 'discover_native_ad_factory';
+  static const String _nativeAdUnitId =
+      'ca-app-pub-3940256099942544/2247696110';
 
   final FirestoreService _firestoreService = FirestoreService();
   StreamSubscription<UserProfile?>? _myProfileSub;
@@ -53,6 +61,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   StreamSubscription<Duration>? _audioDurationSub;
 
   int _activeIndex = 0;
+  int _swipeCount = 0;
   Offset _dragOffset = Offset.zero;
   bool _didThresholdHaptic = false;
   bool _swipeLike = false;
@@ -66,6 +75,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   String? _playingVoiceUid;
   bool _isVoicePlaying = false;
   bool _isVoiceScrubbing = false;
+  NativeAd? _nativeAd;
+  bool _nativeAdLoaded = false;
+  bool _nativeAdLoading = false;
   Duration _voicePosition = Duration.zero;
   Duration _voiceDuration = Duration.zero;
   final Map<String, Duration> _voiceDurationsByUid = <String, Duration>{};
@@ -135,7 +147,16 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           })
           ..addStatusListener((status) {
             if (status == AnimationStatus.completed) {
-              final current = _currentProfileOrNull();
+              final currentSlot = _cardSlotForOffset(0);
+              final current = currentSlot.profile;
+              if (currentSlot.isAd) {
+                _pendingApprovedUid = null;
+                _swipeLike = false;
+                _swipeOutController.reset();
+                _advanceProfileIfNeeded(adCard: true);
+                return;
+              }
+
               if (current != null && _pendingApprovedUid != null) {
                 final tipo = _swipeLike ? 'like' : 'dislike';
                 _guardarSwipeYDetectarMatch(current.uid, tipo);
@@ -175,6 +196,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       }
     });
     DemoService.instance.resetRevision.addListener(_onDemoReset);
+    _preloadNativeAd();
 
     _audioStateSub = _audioPlayer.onPlayerStateChanged.listen((state) {
       if (!mounted) {
@@ -231,10 +253,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         .toList();
     _filteredProfiles = _filtrar(_allProfiles);
     _activeIndex = 0;
+    _swipeCount = 0;
     _loading = false;
     if (mounted) {
       setState(() {});
     }
+    _preloadNativeAd();
   }
 
   void _subscribeToFirestoreProfiles() {
@@ -270,6 +294,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       }
       _didOpenSquadBrowser = false;
       _scheduleNextProfilePrecache();
+      _preloadNativeAd();
     });
 
     _discoverSub = _firestoreService.discoverProfiles().listen((profiles) {
@@ -285,7 +310,79 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         _loading = false;
       });
       _scheduleNextProfilePrecache();
+      _preloadNativeAd();
     });
+  }
+
+  bool _isAdFeedIndex(int feedIndex) {
+    return feedIndex > 0 &&
+        feedIndex % (_profilesPerAdBatch + 1) == _profilesPerAdBatch;
+  }
+
+  int _profileIndexForFeedIndex(int feedIndex) {
+    return feedIndex - ((feedIndex + 1) ~/ (_profilesPerAdBatch + 1));
+  }
+
+  _DiscoverCardSlot _cardSlotForOffset(int offset) {
+    if (_filteredProfiles.isEmpty) {
+      return (isAd: false, profile: null);
+    }
+
+    final feedIndex = _swipeCount + offset;
+    if (_isAdFeedIndex(feedIndex) && _nativeAdLoaded && _nativeAd != null) {
+      return (isAd: true, profile: null);
+    }
+
+    final profileIndex = _profileIndexForFeedIndex(feedIndex);
+    final clampedIndex = profileIndex % _filteredProfiles.length;
+    return (isAd: false, profile: _filteredProfiles[clampedIndex]);
+  }
+
+  void _preloadNativeAd() {
+    if (!Platform.isAndroid || _nativeAdLoaded || _nativeAdLoading) {
+      return;
+    }
+
+    _nativeAdLoading = true;
+    final nativeAd = NativeAd(
+      adUnitId: _nativeAdUnitId,
+      factoryId: _nativeAdFactoryId,
+      request: const AdRequest(),
+      listener: NativeAdListener(
+        onAdLoaded: (ad) {
+          if (!mounted) {
+            ad.dispose();
+            return;
+          }
+          setState(() {
+            _nativeAd = ad as NativeAd;
+            _nativeAdLoaded = true;
+            _nativeAdLoading = false;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          if (!mounted) {
+            return;
+          }
+          setState(() {
+            _nativeAd = null;
+            _nativeAdLoaded = false;
+            _nativeAdLoading = false;
+          });
+        },
+      ),
+    );
+
+    _nativeAd = nativeAd;
+    nativeAd.load();
+  }
+
+  void _disposeNativeAd() {
+    _nativeAd?.dispose();
+    _nativeAd = null;
+    _nativeAdLoaded = false;
+    _nativeAdLoading = false;
   }
 
   UserProfile? _currentProfileOrNull() {
@@ -298,18 +395,25 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     return _filteredProfiles[_activeIndex];
   }
 
-  void _advanceProfileIfNeeded() {
+  void _advanceProfileIfNeeded({bool adCard = false}) {
     if (_filteredProfiles.isEmpty) {
       return;
     }
     setState(() {
-      if (_activeIndex < _filteredProfiles.length - 1) {
-        _activeIndex += 1;
-      } else {
-        _activeIndex = 0;
+      _swipeCount += 1;
+      if (!adCard) {
+        if (_activeIndex < _filteredProfiles.length - 1) {
+          _activeIndex += 1;
+        } else {
+          _activeIndex = 0;
+        }
       }
       _dragOffset = Offset.zero;
     });
+    if (adCard) {
+      _disposeNativeAd();
+      _preloadNativeAd();
+    }
     _scheduleNextProfilePrecache();
   }
 
@@ -326,6 +430,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           .toList(growable: false);
       _filteredProfiles = _filtrar(_allProfiles);
       _activeIndex = 0;
+      _swipeCount = 0;
       _dragOffset = Offset.zero;
       _pendingApprovedUid = null;
       _loading = false;
@@ -684,6 +789,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     _audioPositionSub?.cancel();
     _audioDurationSub?.cancel();
     _audioPlayer.dispose();
+    _disposeNativeAd();
     _swipeOutController.dispose();
     _snapBackController.dispose();
     _loadingShimmerController.dispose();
@@ -701,7 +807,13 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         return;
       }
 
-      final nextIndex = (_activeIndex + 1) % _filteredProfiles.length;
+      var nextFeedIndex = _swipeCount + 1;
+      while (_isAdFeedIndex(nextFeedIndex)) {
+        nextFeedIndex += 1;
+      }
+
+      final nextIndex =
+          _profileIndexForFeedIndex(nextFeedIndex) % _filteredProfiles.length;
       final nextProfile = _filteredProfiles[nextIndex];
       precacheImage(_profileImageProvider(nextProfile), context);
     });
@@ -761,6 +873,85 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         );
     _didThresholdHaptic = false;
     _snapBackController.forward(from: 0);
+  }
+
+  Widget _buildStackSlot(
+    _DiscoverCardSlot slot,
+    int affinity, {
+    required double topOffset,
+    required double scale,
+    required double opacity,
+    bool showApprove = false,
+    bool showReject = false,
+    double overlayOpacity = 0,
+    bool enableHero = false,
+    bool positioned = true,
+    double dynamicRotation = 0,
+    required Key key,
+  }) {
+    final ad = _nativeAd;
+    if (slot.isAd && ad != null && _nativeAdLoaded) {
+      return _nativeAdStackCard(
+        ad,
+        topOffset: topOffset,
+        scale: scale,
+        opacity: opacity,
+        positioned: positioned,
+        key: key,
+      );
+    }
+
+    final user = slot.profile;
+    if (user == null) {
+      return const SizedBox.shrink();
+    }
+
+    return _profileCard(
+      user,
+      affinity,
+      topOffset: topOffset,
+      scale: scale,
+      opacity: opacity,
+      showApprove: showApprove,
+      showReject: showReject,
+      overlayOpacity: overlayOpacity,
+      enableHero: enableHero,
+      positioned: positioned,
+      dynamicRotation: dynamicRotation,
+      key: key,
+    );
+  }
+
+  Widget _nativeAdStackCard(
+    NativeAd nativeAd, {
+    required double topOffset,
+    required double scale,
+    required double opacity,
+    bool positioned = true,
+    required Key key,
+  }) {
+    final card = Opacity(
+      opacity: opacity,
+      child: Transform.scale(
+        scale: scale,
+        child: NativeAdCard(nativeAd: nativeAd),
+      ),
+    );
+
+    if (!positioned) {
+      return KeyedSubtree(key: key, child: card);
+    }
+
+    return AnimatedPositioned(
+      key: key,
+      duration: AppTheme.motionFast,
+      curve: AppTheme.motionCurve,
+      top: topOffset,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: card,
+    );
   }
 
   UserModel _toUserModel(UserProfile profile) {
@@ -2030,12 +2221,14 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       );
     }
 
-    final clampedIndex = _activeIndex % perfiles.length;
-    final current = perfiles[clampedIndex];
-    final next = perfiles[(clampedIndex + 1) % perfiles.length];
-    final third = perfiles[(clampedIndex + 2) % perfiles.length];
+    final currentSlot = _cardSlotForOffset(0);
+    final nextSlot = _cardSlotForOffset(1);
+    final thirdSlot = _cardSlotForOffset(2);
+    final current = currentSlot.profile;
+    final next = nextSlot.profile;
+    final third = thirdSlot.profile;
     final miUsuario = _toUserModel(yo);
-    final afinidad = calcularAfinidad(miUsuario, _toUserModel(current));
+    final afinidad = current == null ? 0 : calcularAfinidad(miUsuario, _toUserModel(current));
 
     final dragProgress = (_dragOffset.dx.abs() / _swipeThreshold).clamp(
       0.0,
@@ -2052,10 +2245,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                 Text('Descubrir', style: textTheme.headlineMedium),
                 const Spacer(),
                 IconButton(
-                  onPressed: () {
-                    HapticFeedback.selectionClick();
-                    _openSafetyActions(current);
-                  },
+                  onPressed: currentSlot.isAd || current == null
+                      ? null
+                      : () {
+                          HapticFeedback.selectionClick();
+                          _openSafetyActions(current);
+                        },
                   icon: const Icon(Icons.more_vert_rounded),
                   tooltip: 'Más opciones',
                 ),
@@ -2085,7 +2280,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Perfiles recomendados según tu afinidad',
+                currentSlot.isAd
+                    ? 'Publicidad patrocinada'
+                    : 'Perfiles recomendados según tu afinidad',
                 style: textTheme.bodyMedium,
               ),
             ),
@@ -2094,21 +2291,33 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  _profileCard(
-                    third,
-                    calcularAfinidad(miUsuario, _toUserModel(third)),
+                  _buildStackSlot(
+                    thirdSlot,
+                    third == null
+                        ? 0
+                        : calcularAfinidad(miUsuario, _toUserModel(third)),
                     topOffset: 26,
                     scale: 0.9,
                     opacity: 0.35,
-                    key: _profileCardKey(third, 'third'),
+                    key: ValueKey<String>(
+                      thirdSlot.isAd
+                          ? 'third-ad-${_swipeCount + 2}'
+                          : 'third-${third?.uid ?? 'empty'}',
+                    ),
                   ),
-                  _profileCard(
-                    next,
-                    calcularAfinidad(miUsuario, _toUserModel(next)),
+                  _buildStackSlot(
+                    nextSlot,
+                    next == null
+                        ? 0
+                        : calcularAfinidad(miUsuario, _toUserModel(next)),
                     topOffset: 12,
                     scale: 0.95,
                     opacity: 0.56,
-                    key: _profileCardKey(next, 'next'),
+                    key: ValueKey<String>(
+                      nextSlot.isAd
+                          ? 'next-ad-${_swipeCount + 1}'
+                          : 'next-${next?.uid ?? 'empty'}',
+                    ),
                   ),
                   Positioned.fill(
                     child: GestureDetector(
@@ -2127,10 +2336,15 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                       onPanEnd: (details) {
                         final v = details.velocity.pixelsPerSecond.dx;
                         if (_dragOffset.dx > _swipeThreshold || v > 800) {
-                          _pendingApprovedUid = current.uid;
-                          if (afinidad >= 85) {
-                            HapticFeedback.heavyImpact();
+                          if (!currentSlot.isAd && current != null) {
+                            _pendingApprovedUid = current.uid;
+                            if (afinidad >= 85) {
+                              HapticFeedback.heavyImpact();
+                            } else {
+                              HapticFeedback.lightImpact();
+                            }
                           } else {
+                            _pendingApprovedUid = null;
                             HapticFeedback.lightImpact();
                           }
                           _animateOut(true);
@@ -2143,56 +2357,67 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                           _snapBack();
                         }
                       },
-                      onTap: () => _openProfileDetail(current),
+                      onTap: currentSlot.isAd || current == null
+                          ? null
+                          : () => _openProfileDetail(current),
                       child: Transform.translate(
                         offset: _dragOffset,
                         child: Transform.scale(
                           scale: 1 - (dragProgress * 0.035),
-                          child: Showcase(
-                            key: FeatureTourService.instance.discoverCardKey,
-                            title: '¡Encuentra a tu compañero ideal!',
-                            description:
-                                'Haz swipe a la derecha si te gusta su perfil, o a la izquierda para pasar.',
-                            titleTextStyle: const TextStyle(
-                              color: Color(0xFF101828),
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                            ),
-                            descTextStyle: const TextStyle(
-                              color: Color(0xFF475467),
-                              fontSize: 14,
-                              height: 1.45,
-                            ),
-                            tooltipBackgroundColor: Colors.white,
-                            tooltipPadding: const EdgeInsets.all(18),
-                            tooltipActionConfig: const TooltipActionConfig(
-                              alignment: MainAxisAlignment.spaceBetween,
-                              position: TooltipActionPosition.inside,
-                              gapBetweenContentAndAction: 14,
-                            ),
-                            tooltipBorderRadius: BorderRadius.circular(24),
-                            targetPadding: const EdgeInsets.all(10),
-                            targetBorderRadius: BorderRadius.circular(34),
-                            overlayColor: Colors.black,
-                            overlayOpacity: 0.72,
-                            disableDefaultTargetGestures: true,
-                            tooltipActions: _buildDiscoverTooltipActions(),
-                            child: _profileCard(
-                              current,
-                              afinidad,
-                              topOffset: 0,
-                              scale: 1,
-                              opacity: 1,
-                              showApprove: _dragOffset.dx > 8,
-                              showReject: _dragOffset.dx < -8,
-                              overlayOpacity: dragProgress,
-                              enableHero: true,
-                              positioned: false,
-                              dynamicRotation:
-                                  (_dragOffset.dx / 260) * (math.pi / 18),
-                              key: _profileCardKey(current, 'current'),
-                            ),
-                          ),
+                          child: currentSlot.isAd
+                              ? _nativeAdStackCard(
+                                  _nativeAd!,
+                                  topOffset: 0,
+                                  scale: 1,
+                                  opacity: 1,
+                                  positioned: false,
+                                  key: ValueKey<String>('current-ad-$_swipeCount'),
+                                )
+                              : Showcase(
+                                  key: FeatureTourService.instance.discoverCardKey,
+                                  title: '¡Encuentra a tu compañero ideal!',
+                                  description:
+                                      'Haz swipe a la derecha si te gusta su perfil, o a la izquierda para pasar.',
+                                  titleTextStyle: const TextStyle(
+                                    color: Color(0xFF101828),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                  descTextStyle: const TextStyle(
+                                    color: Color(0xFF475467),
+                                    fontSize: 14,
+                                    height: 1.45,
+                                  ),
+                                  tooltipBackgroundColor: Colors.white,
+                                  tooltipPadding: const EdgeInsets.all(18),
+                                  tooltipActionConfig: const TooltipActionConfig(
+                                    alignment: MainAxisAlignment.spaceBetween,
+                                    position: TooltipActionPosition.inside,
+                                    gapBetweenContentAndAction: 14,
+                                  ),
+                                  tooltipBorderRadius: BorderRadius.circular(24),
+                                  targetPadding: const EdgeInsets.all(10),
+                                  targetBorderRadius: BorderRadius.circular(34),
+                                  overlayColor: Colors.black,
+                                  overlayOpacity: 0.72,
+                                  disableDefaultTargetGestures: true,
+                                  tooltipActions: _buildDiscoverTooltipActions(),
+                                  child: _profileCard(
+                                    current!,
+                                    afinidad,
+                                    topOffset: 0,
+                                    scale: 1,
+                                    opacity: 1,
+                                    showApprove: _dragOffset.dx > 8,
+                                    showReject: _dragOffset.dx < -8,
+                                    overlayOpacity: dragProgress,
+                                    enableHero: true,
+                                    positioned: false,
+                                    dynamicRotation:
+                                        (_dragOffset.dx / 260) * (math.pi / 18),
+                                    key: _profileCardKey(current, 'current'),
+                                  ),
+                                ),
                         ),
                       ),
                     ),
@@ -2201,45 +2426,47 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               ),
             ),
             const SizedBox(height: 14),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _actionButton(
-                  icon: Icons.close_rounded,
-                  color: const Color(0xFFEA5A5A),
-                  isPressed: _isDislikePressed,
-                  onPressChanged: _setDislikePressed,
-                  semanticsLabel: 'Descartar perfil / Baztertu profila',
-                  semanticsHint: 'Pasa al siguiente perfil sin hacer match',
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    _pendingApprovedUid = null;
-                    _animateOut(false);
-                  },
-                ),
-                const SizedBox(width: 26),
-                _actionButton(
-                  icon: _swipeLike
-                      ? Icons.home_work_rounded
-                      : Icons.check_rounded,
-                  color: AppTheme.primary,
-                  isPressed: _isLikePressed,
-                  onPressChanged: _setLikePressed,
-                  semanticsLabel: 'Me gusta / Gustatzen zait',
-                  semanticsHint:
-                      'Muestra interés en este perfil y pasa al siguiente',
-                  onTap: () {
-                    if (afinidad >= 85) {
-                      HapticFeedback.heavyImpact();
-                    } else {
-                      HapticFeedback.lightImpact();
-                    }
-                    _pendingApprovedUid = current.uid;
-                    _animateOut(true);
-                  },
-                ),
-              ],
-            ),
+            currentSlot.isAd || current == null
+                ? const SizedBox.shrink()
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _actionButton(
+                        icon: Icons.close_rounded,
+                        color: const Color(0xFFEA5A5A),
+                        isPressed: _isDislikePressed,
+                        onPressChanged: _setDislikePressed,
+                        semanticsLabel: 'Descartar perfil / Baztertu profila',
+                        semanticsHint: 'Pasa al siguiente perfil sin hacer match',
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          _pendingApprovedUid = null;
+                          _animateOut(false);
+                        },
+                      ),
+                      const SizedBox(width: 26),
+                      _actionButton(
+                        icon: _swipeLike
+                            ? Icons.home_work_rounded
+                            : Icons.check_rounded,
+                        color: AppTheme.primary,
+                        isPressed: _isLikePressed,
+                        onPressChanged: _setLikePressed,
+                        semanticsLabel: 'Me gusta / Gustatzen zait',
+                        semanticsHint:
+                            'Muestra interés en este perfil y pasa al siguiente',
+                        onTap: () {
+                          if (afinidad >= 85) {
+                            HapticFeedback.heavyImpact();
+                          } else {
+                            HapticFeedback.lightImpact();
+                          }
+                          _pendingApprovedUid = current.uid;
+                          _animateOut(true);
+                        },
+                      ),
+                    ],
+                  ),
           ],
         ),
       ),
